@@ -1,0 +1,18 @@
+<svg width="180" height="50" viewBox="0 0 180 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>BudgetLens Logo</title>
+  
+  <!-- Circle background -->
+  <circle cx="25" cy="25" r="20" fill="#343d46"/>
+  
+  <!-- Inner circle -->
+  <circle cx="25" cy="25" r="12" fill="white"/>
+  
+  <!-- Dollar sign -->
+  <path d="M25 15 L25 35 M20 18 Q22.5 16 25 18 Q27.5 16 30 18 M20 32 Q22.5 34 25 32 Q27.5 34 30 32" 
+        stroke="#343d46" stroke-width="2" fill="none" stroke-linecap="round"/>
+  
+  <!-- Text -->
+  <text x="55" y="32" font-family="'Heebo', 'Arial', sans-serif" font-size="18" font-weight="700" fill="#343d46">
+    BudgetLens
+  </text>
+</svg>

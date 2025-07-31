@@ -1,0 +1,271 @@
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: var(--spacing-md);
+  direction: rtl;
+}
+
+.auth-card {
+  background: white;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 500px;
+  overflow: hidden;
+}
+
+.auth-header {
+  text-align: center;
+  padding: var(--spacing-2xl) var(--spacing-lg) var(--spacing-lg);
+  background: var(--color-primary);
+  color: white;
+}
+
+.auth-header .logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.auth-header .logo-image {
+  height: 60px;
+  width: auto;
+}
+
+.auth-header .logo-text {
+  font-size: var(--font-xxl);
+  font-weight: 700;
+  color: white;
+}
+
+.auth-header h1 {
+  font-size: var(--font-xxl);
+  font-weight: 700;
+  margin-bottom: var(--spacing-sm);
+}
+
+.auth-subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: var(--font-small);
+  margin: 0;
+}
+
+.auth-form {
+  padding: var(--spacing-lg);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+}
+
+.form-group {
+  margin-bottom: var(--spacing-md);
+}
+
+.form-input.error {
+  border-color: var(--danger-500);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.form-error {
+  color: var(--danger-500);
+  font-size: var(--font-xs);
+  margin-top: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.auth-footer {
+  text-align: center;
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--gray-200);
+  background-color: var(--gray-50);
+}
+
+.auth-footer p {
+  margin: 0;
+  color: var(--gray-600);
+  font-size: var(--font-small);
+}
+
+.auth-link {
+  color: var(--color-blue);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.auth-link:hover {
+  color: var(--primary-500);
+  text-decoration: underline;
+}
+
+.password-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-container .form-input {
+  padding-right: 45px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--gray-500);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  transition: color 0.2s ease;
+}
+
+.password-toggle-btn:hover {
+  color: var(--gray-700);
+}
+
+.password-toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .auth-container {
+    padding: var(--spacing-sm);
+  }
+  
+  .auth-card {
+    max-width: none;
+  }
+  
+  .auth-header {
+    padding: var(--spacing-xl) var(--spacing-md) var(--spacing-md);
+  }
+  
+  .auth-header .logo-image {
+    height: 50px;
+  }
+  
+  .auth-header h1 {
+    font-size: var(--font-xl);
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  
+  .auth-form {
+    padding: var(--spacing-md);
+  }
+}
+
+/* Email Verification Styles */
+.verification-container {
+  text-align: center;
+  padding: 2rem;
+}
+
+.verification-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.verification-icon.success {
+  color: #28a745;
+}
+
+.verification-icon.error {
+  color: #dc3545;
+}
+
+.verification-icon.loading {
+  color: #ffc107;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.verification-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.verification-message {
+  color: #666;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+/* Success/Error Messages */
+.message {
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.message.success {
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+}
+
+.message.error {
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
+/* Reset Password Specific Styles */
+.reset-password-form {
+  margin-top: 1rem;
+}
+
+.password-requirements {
+  text-align: right;
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+}
+
+.password-requirements ul {
+  margin: 0;
+  padding: 0 1rem;
+  list-style: none;
+}
+
+.password-requirements li {
+  margin: 0.25rem 0;
+  position: relative;
+}
+
+.password-requirements li:before {
+  content: "•";
+  color: #007bff;
+  margin-left: 0.5rem;
+}

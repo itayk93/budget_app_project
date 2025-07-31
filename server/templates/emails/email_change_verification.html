@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אימות שינוי כתובת מייל - BudgetLens</title>
+    <style>
+        body, table, td, p, a, li, blockquote {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        table, td {
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+        img {
+            -ms-interpolation-mode: bicubic;
+        }
+        body {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7fa;
+            direction: rtl;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .header .subtitle {
+            margin: 10px 0 0 0;
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 40px 30px;
+            line-height: 1.6;
+            color: #333333;
+        }
+        .content h2 {
+            color: #9b59b6;
+            font-size: 24px;
+            margin: 0 0 20px 0;
+            font-weight: 600;
+        }
+        .content p {
+            font-size: 16px;
+            margin: 0 0 20px 0;
+            color: #555555;
+        }
+        .change-box {
+            background-color: #f8f5ff;
+            border: 2px solid #9b59b6;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        .change-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .email-change-details {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .email-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 15px 0;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .email-row:last-child {
+            border-bottom: none;
+        }
+        .email-label {
+            font-weight: 600;
+            color: #666;
+            display: flex;
+            align-items: center;
+        }
+        .email-value {
+            color: #333;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            background-color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+        .old-email {
+            text-decoration: line-through;
+            color: #dc3545;
+        }
+        .new-email {
+            color: #28a745;
+        }
+        .button-container {
+            text-align: center;
+            margin: 35px 0;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            color: white !important;
+            padding: 18px 40px;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 18px;
+            box-shadow: 0 4px 15px rgba(155, 89, 182, 0.4);
+            transition: all 0.3s ease;
+        }
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(155, 89, 182, 0.6);
+        }
+        .security-notice {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-right: 4px solid #f39c12;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+        }
+        .security-notice .icon {
+            color: #f39c12;
+            font-size: 20px;
+            margin-left: 10px;
+        }
+        .security-notice p {
+            margin: 0;
+            font-size: 14px;
+            color: #856404;
+        }
+        .footer {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 30px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .footer p {
+            margin: 5px 0;
+            opacity: 0.8;
+        }
+        .footer a {
+            color: #9b59b6;
+            text-decoration: none;
+        }
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #9b59b6, transparent);
+            margin: 30px 0;
+        }
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            .header, .content, .footer {
+                padding: 25px 20px !important;
+            }
+            .header h1 {
+                font-size: 24px !important;
+            }
+            .content h2 {
+                font-size: 20px !important;
+            }
+            .change-box {
+                margin: 20px 0;
+                padding: 20px;
+            }
+            .button {
+                padding: 16px 30px !important;
+                font-size: 16px !important;
+            }
+            .email-row {
+                flex-direction: column;
+                align-items: flex-start;
+                text-align: right;
+            }
+            .email-value {
+                margin-top: 8px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+        }
+    </style>
+</head>
+<body dir="rtl">
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📧 אימות שינוי כתובת מייל</h1>
+            <p class="subtitle">אימות כתובת המייל החדשה שלך ב-BudgetLens</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <h2>שלום {{ user_name }}! 👋</h2>
+            
+            <p>קיבלנו בקשה לשינוי כתובת המייל עבור החשבון שלך ב-BudgetLens. כדי להשלים את התהליך, אנחנו צריכים לאמת את כתובת המייל החדשה.</p>
+
+            <div class="change-box">
+                <div class="change-icon">🔄</div>
+                <div class="email-change-details">
+                    <div class="email-row">
+                        <div class="email-label">📧 כתובת מייל נוכחית:</div>
+                        <div class="email-value old-email">{{ old_email }}</div>
+                    </div>
+                    <div class="email-row">
+                        <div class="email-label">📧 כתובת מייל חדשה:</div>
+                        <div class="email-value new-email">{{ new_email }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <p>לחצו על הכפתור למטה כדי לאמת את כתובת המייל החדשה ולהשלים את השינוי:</p>
+
+            <div class="button-container">
+                <a href="{{ verification_url }}" class="button">אמתו את כתובת המייל החדשה ✓</a>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="security-notice">
+                <p><span class="icon">🔒</span><strong>הערת אבטחה:</strong> לאחר אימות כתובת המייל החדשה, כל התכתבויות העתידיות יישלחו לכתובת החדשה. הכתובת הישנה לא תהיה בשימוש עוד.</p>
+            </div>
+
+            <p style="font-size: 14px; color: #777;">
+                <strong>לא ביקשתם לשנות את כתובת המייל?</strong><br>
+                אם לא ביקשתם לשנות את כתובת המייל, אנא התעלמו ממייל זה. כתובת המייל שלכם תישאר כמו שהיא.
+            </p>
+
+            <p style="font-size: 14px; color: #777;">
+                <strong>בעיות עם הקישור?</strong><br>
+                אם הכפתור לא עובד, העתיקו והדביקו את הקישור הבא בדפדפן שלכם:<br>
+                <span style="word-break: break-all; color: #9b59b6;">{{ verification_url }}</span>
+            </p>
+
+            <p style="font-size: 14px; color: #777; margin-top: 30px;">
+                💡 <strong>זכרו:</strong> קישור זה תקף ל-24 שעות בלבד. אחרי זמן זה תצטרכו לבקש שינוי כתובת מייל מחדש.
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>צוות BudgetLens</strong></p>
+            <p>© 2024 BudgetLens. כל הזכויות שמורות.</p>
+            <p>נשלח מ: <a href="mailto:noreply@budgetlens.com">noreply@budgetlens.com</a></p>
+        </div>
+    </div>
+</body>
+</html>

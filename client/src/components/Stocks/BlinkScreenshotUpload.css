@@ -1,0 +1,572 @@
+/* Blink Screenshot Upload Styles */
+.blink-upload-container {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.blink-upload-header {
+  margin-bottom: var(--spacing-lg);
+}
+
+.blink-upload-title {
+  margin: 0;
+  font-size: var(--font-xl);
+  font-weight: 700;
+  color: var(--gray-900);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.blink-upload-title::before {
+  content: "📸";
+  font-size: var(--font-xxl);
+}
+
+.blink-upload-subtitle {
+  margin: var(--spacing-sm) 0 0 0;
+  font-size: var(--font-small);
+  color: var(--gray-600);
+}
+
+/* Alert Messages */
+.blink-error-alert {
+  background: linear-gradient(135deg, #fef2f2 0%, #fff5f5 100%);
+  border: 2px solid #fca5a5;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  color: var(--danger-700);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  border-right: 4px solid var(--danger-500);
+}
+
+.blink-warning-alert {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef9e7 100%);
+  border: 2px solid #fed7aa;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  color: #d97706;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  border-right: 4px solid #ff9800;
+}
+
+/* Drop Zone */
+.blink-drop-zone {
+  border: 2px dashed var(--gray-400);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-2xl);
+  text-align: center;
+  background: var(--gray-50);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.blink-drop-zone.active {
+  border-color: var(--color-blue);
+  background: rgba(59, 130, 246, 0.05);
+  transform: scale(1.02);
+}
+
+.blink-drop-zone.disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  background: var(--gray-100);
+}
+
+.blink-drop-zone:hover:not(.disabled) {
+  border-color: var(--color-blue);
+  background: rgba(59, 130, 246, 0.02);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Upload States */
+.blink-upload-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+}
+
+.blink-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--gray-300);
+  border-top: 3px solid var(--color-blue);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.blink-upload-text {
+  margin: 0;
+  color: var(--gray-700);
+  font-weight: 500;
+}
+
+.blink-upload-idle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+}
+
+.blink-upload-icon {
+  font-size: 4rem;
+  margin-bottom: var(--spacing-md);
+}
+
+.blink-upload-main-text {
+  margin: 0;
+  font-size: var(--font-large);
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
+.blink-upload-sub-text {
+  margin: 0;
+  font-size: var(--font-small);
+  color: var(--gray-500);
+}
+
+.blink-file-input {
+  display: none;
+}
+
+/* Instructions */
+.blink-instructions {
+  margin-top: var(--spacing-lg);
+  font-size: var(--font-small);
+  color: var(--gray-600);
+}
+
+.blink-instructions-title {
+  margin: 0 0 var(--spacing-sm) 0;
+  font-size: var(--font-medium);
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
+.blink-instructions-list {
+  margin: 0;
+  padding-right: var(--spacing-xl);
+  line-height: 1.6;
+}
+
+.blink-instructions-list li {
+  margin-bottom: var(--spacing-xs);
+}
+
+/* Modal Styles */
+.blink-modal {
+  max-width: 900px !important;
+  width: 100% !important;
+}
+
+.blink-modal .modal-header {
+  background: linear-gradient(135deg, var(--color-blue) 0%, #1976d2 100%);
+  color: white;
+  border-bottom: none;
+  padding: var(--spacing-lg) var(--spacing-xl);
+}
+
+.blink-modal .modal-title {
+  color: white;
+  font-size: var(--font-xl);
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.blink-modal .modal-title::before {
+  content: "✅";
+  font-size: var(--font-xxl);
+}
+
+.blink-modal .modal-close {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  width: 40px;
+  height: 40px;
+}
+
+.blink-modal .modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.blink-modal-content {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: var(--spacing-xl);
+}
+
+.blink-transactions-info {
+  margin-bottom: var(--spacing-lg);
+  color: var(--gray-700);
+  font-weight: 500;
+}
+
+/* Duplicate Warning */
+.blink-duplicate-warning {
+  background: linear-gradient(135deg, #fef3c7 0%, #fef9e7 100%);
+  border: 2px solid #f59e0b;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  border-right: 4px solid #ff9800;
+}
+
+.blink-duplicate-title {
+  margin: 0 0 var(--spacing-sm) 0;
+  color: #92400e;
+  font-size: var(--font-small);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.blink-duplicate-text {
+  margin: 0;
+  font-size: var(--font-xs);
+  color: #92400e;
+  line-height: 1.5;
+}
+
+/* Transaction Cards */
+.blink-transactions-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.blink-transaction-card {
+  background: var(--gray-50);
+  border: 2px solid var(--gray-300);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.blink-transaction-card.duplicate {
+  background: linear-gradient(135deg, #fef2f2 0%, #fff5f5 100%);
+  border-color: #fca5a5;
+  border-right: 4px solid var(--danger-500);
+}
+
+.blink-duplicate-badge {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  background: var(--danger-500);
+  color: white;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-xs);
+  font-weight: 600;
+}
+
+/* Form Grid */
+.blink-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.blink-form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.blink-form-label {
+  display: block;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: var(--spacing-xs);
+  font-size: var(--font-small);
+}
+
+.blink-form-input,
+.blink-form-select {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 2px solid var(--gray-300);
+  border-radius: var(--radius-md);
+  font-size: var(--font-small);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: white;
+  color: var(--gray-900);
+}
+
+.blink-form-input:hover,
+.blink-form-select:hover {
+  border-color: var(--color-blue);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.blink-form-input:focus,
+.blink-form-select:focus {
+  outline: none;
+  border-color: var(--color-blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Stock Details Section */
+.blink-stock-details {
+  padding: var(--spacing-md);
+  background: var(--gray-100);
+  border-radius: var(--radius-md);
+  border: 2px solid var(--gray-200);
+  margin-bottom: var(--spacing-md);
+}
+
+/* Transaction Actions */
+.blink-transaction-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--spacing-sm);
+  gap: var(--spacing-md);
+}
+
+.blink-remove-btn {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 2px solid #fca5a5;
+  border-radius: var(--radius-md);
+  font-size: var(--font-xs);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-weight: 500;
+}
+
+.blink-remove-btn.duplicate {
+  background: var(--danger-500);
+  color: white;
+  border-color: var(--danger-500);
+}
+
+.blink-remove-btn.normal {
+  background: #fef2f2;
+  color: var(--danger-600);
+  border-color: #fca5a5;
+}
+
+.blink-remove-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.blink-duplicate-info {
+  font-size: var(--font-xs);
+  color: var(--danger-600);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+/* Add Transaction */
+.blink-add-section {
+  text-align: center;
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 2px solid var(--gray-200);
+}
+
+.blink-add-btn {
+  padding: var(--spacing-md) var(--spacing-xl);
+  background: var(--gray-100);
+  color: var(--gray-700);
+  border: 2px solid var(--gray-300);
+  border-radius: var(--radius-md);
+  font-size: var(--font-small);
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.blink-add-btn:hover {
+  background: var(--gray-200);
+  border-color: var(--gray-400);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.blink-add-btn.primary {
+  background: var(--color-blue);
+  color: white;
+  border-color: var(--color-blue);
+}
+
+.blink-add-btn.primary:hover {
+  background: #1976d2;
+  border-color: #1976d2;
+}
+
+/* Empty State */
+.blink-empty-state {
+  text-align: center;
+  padding: var(--spacing-xl);
+}
+
+.blink-empty-text {
+  color: var(--gray-600);
+  margin-bottom: var(--spacing-lg);
+  font-size: var(--font-medium);
+}
+
+/* Modal Footer */
+.blink-modal-footer {
+  margin-top: var(--spacing-xl);
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+.blink-footer-btn {
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-radius: var(--radius-md);
+  font-size: var(--font-small);
+  font-weight: 600;
+  cursor: pointer;
+  flex: 1;
+  min-width: 120px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
+.blink-footer-btn.secondary {
+  background: var(--gray-100);
+  color: var(--gray-700);
+  border: 2px solid var(--gray-300);
+}
+
+.blink-footer-btn.secondary:hover {
+  background: var(--gray-200);
+  border-color: var(--gray-400);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.blink-footer-btn.primary {
+  background: var(--color-blue);
+  color: white;
+  border: 2px solid var(--color-blue);
+}
+
+.blink-footer-btn.primary:hover:not(:disabled) {
+  background: #1976d2;
+  border-color: #1976d2;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.blink-footer-btn:disabled {
+  background: var(--gray-300);
+  color: var(--gray-500);
+  border-color: var(--gray-300);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .blink-upload-container {
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .blink-drop-zone {
+    padding: var(--spacing-xl);
+    min-height: 150px;
+  }
+
+  .blink-upload-icon {
+    font-size: 3rem;
+  }
+
+  .blink-form-row {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+  }
+
+  .blink-transaction-card {
+    padding: var(--spacing-md);
+  }
+
+  .blink-duplicate-badge {
+    position: static;
+    margin-bottom: var(--spacing-sm);
+    align-self: flex-start;
+  }
+
+  .blink-transaction-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-sm);
+  }
+
+  .blink-modal-footer {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .blink-footer-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .blink-upload-title {
+    font-size: var(--font-large);
+  }
+
+  .blink-upload-main-text {
+    font-size: var(--font-medium);
+  }
+
+  .blink-form-input,
+  .blink-form-select {
+    font-size: var(--font-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  .blink-instructions-list {
+    padding-right: var(--spacing-lg);
+  }
+}

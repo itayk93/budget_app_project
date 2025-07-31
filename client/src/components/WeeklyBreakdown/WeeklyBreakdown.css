@@ -1,0 +1,293 @@
+/* Weekly Breakdown Component Styles */
+.weekly-breakdown {
+  width: 100%;
+  background: #fff;
+  border-radius: 8px;
+  overflow: visible;
+}
+
+.weekly-breakdown-header {
+  padding: 16px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.weekly-breakdown-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px 0;
+  transition: background-color 0.2s ease;
+}
+
+.weekly-breakdown-title:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  padding: 8px;
+  margin: -8px;
+}
+
+.header-text {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  gap: 8px;
+}
+
+.update-indicator {
+  color: #206d54;
+  font-size: 8px;
+  margin-right: 4px;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+}
+
+.expand-arrow {
+  font-size: 12px;
+  transition: transform 0.2s ease;
+  color: #666;
+}
+
+.weekly-breakdown-summary {
+  margin-top: 12px;
+}
+
+.summary-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 8px 0;
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+}
+
+.actuals-title {
+  text-align: right;
+}
+
+.recommended-title {
+  text-align: left;
+}
+
+.weekly-breakdown-content {
+  background: #fff;
+}
+
+.week-section {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.week-section:last-child {
+  border-bottom: none;
+}
+
+.separator {
+  height: 1px;
+  background: #e9ecef;
+  margin: 0 16px;
+}
+
+.week-summary {
+  padding: 16px;
+}
+
+.week-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px 0;
+  transition: background-color 0.2s ease;
+}
+
+.week-summary-header:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  padding: 8px;
+  margin: -8px;
+}
+
+.week-summary-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 16px;
+  align-items: center;
+  flex: 1;
+}
+
+.week-label-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.week-label {
+  font-weight: 500;
+  color: #333;
+}
+
+.week-label-text {
+  font-size: 14px;
+}
+
+.week-date-range {
+  font-size: 12px;
+  color: #666;
+  font-weight: normal;
+  margin-top: 2px;
+}
+
+.week-actuals {
+  text-align: center;
+  font-weight: 600;
+  color: #333;
+}
+
+.amount-display {
+  font-size: 14px;
+}
+
+.week-recommended {
+  text-align: center;
+  color: #666;
+}
+
+.recommended-amount {
+  font-size: 14px;
+}
+
+.week-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 8px;
+}
+
+.week-transactions {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* Use existing CategoryCard transaction styles */
+.weekly-breakdown .transactions-container {
+  background: transparent;
+}
+
+.weekly-breakdown .transaction-item {
+  /* Inherit styles from CategoryCard */
+}
+
+.weekly-breakdown .transaction-pagination-info {
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+  margin-top: 12px;
+  padding: 8px;
+  background: rgba(248, 249, 250, 0.5);
+  border-radius: 4px;
+}
+
+.no-transactions {
+  text-align: center;
+  color: #999;
+  font-style: italic;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  margin-top: 16px;
+}
+
+.no-data {
+  text-align: center;
+  color: #999;
+  font-style: italic;
+  padding: 40px 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+/* RTL Support */
+[dir="rtl"] .weekly-breakdown {
+  direction: rtl;
+}
+
+[dir="rtl"] .week-summary-row {
+  grid-template-columns: 1fr 1fr 2fr;
+}
+
+[dir="rtl"] .transaction-row {
+  grid-template-columns: auto auto 2fr auto auto;
+  text-align: right;
+}
+
+[dir="rtl"] .transaction-amount {
+  text-align: left;
+}
+
+[dir="rtl"] .actuals-title {
+  text-align: left;
+}
+
+[dir="rtl"] .recommended-title {
+  text-align: right;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .week-summary-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    text-align: center;
+  }
+  
+  .transaction-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    text-align: right;
+  }
+  
+  .transaction-description {
+    max-width: none;
+    white-space: normal;
+  }
+  
+  .customer-comment {
+    max-width: none;
+    white-space: normal;
+  }
+}
+
+/* Animation for expand/collapse */
+.week-transactions {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Highlight current week */
+.week-section.current-week {
+  background-color: rgba(32, 109, 84, 0.05);
+}
+
+.week-section.current-week .week-label-wrapper {
+  background-color: rgba(32, 109, 84, 0.1);
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin: -4px -8px;
+}

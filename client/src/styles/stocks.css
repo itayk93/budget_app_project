@@ -1,0 +1,1125 @@
+
+/* Override base styles for stocks dashboard */
+.stocks-page {
+    background-color: #f1f5f9 !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    min-height: 100vh;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* Secondary stats styling */
+.secondary-stats {
+    margin-top: 1rem !important;
+}
+
+.secondary-stats .stat-card {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.secondary-stats .stat-card h5 {
+    color: #64748b !important;
+    font-size: 0.875rem !important;
+}
+
+.secondary-stats .stat-card .value {
+    color: #334155 !important;
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+}
+
+.secondary-stats .stat-card .subtitle {
+    color: #94a3b8 !important;
+    font-size: 0.75rem !important;
+}
+
+/* Additional content styling */
+.additional-content {
+    margin-top: 2rem !important;
+}
+
+/* Completed trades styling */
+.completed-trades-card {
+    background: white !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
+    margin-bottom: 1.5rem !important;
+}
+
+.completed-trades-card .card-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    border-radius: 1rem 1rem 0 0 !important;
+    padding: 1rem 1.5rem !important;
+    margin-bottom: 0 !important;
+}
+
+.completed-trades-card .card-header h5 {
+    margin: 0 !important;
+    font-weight: 600 !important;
+    color: #1e293b !important;
+}
+
+.completed-trades-card .summary-stats .total-realized {
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+}
+
+.completed-trades-card .summary-stats .total-realized.positive {
+    color: #059669 !important;
+}
+
+.completed-trades-card .summary-stats .total-realized.negative {
+    color: #dc2626 !important;
+}
+
+.completed-trade-item {
+    padding: 1rem 1.5rem !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.completed-trade-item:last-child {
+    border-bottom: none !important;
+}
+
+.trade-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 0.75rem !important;
+}
+
+.trade-symbol {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+}
+
+.symbol-icon {
+    width: 40px !important;
+    height: 40px !important;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    border-radius: 0.5rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: white !important;
+    font-weight: 600 !important;
+    font-size: 0.75rem !important;
+}
+
+.symbol-info h6 {
+    margin: 0 !important;
+    font-weight: 600 !important;
+    color: #1e293b !important;
+}
+
+.holding-period {
+    color: #64748b !important;
+    font-size: 0.75rem !important;
+}
+
+.trade-result {
+    text-align: right !important;
+}
+
+.trade-result .profit-amount {
+    font-weight: 600 !important;
+    font-size: 1.125rem !important;
+}
+
+.trade-result.profit .profit-amount {
+    color: #059669 !important;
+}
+
+.trade-result.loss .profit-amount {
+    color: #dc2626 !important;
+}
+
+.trade-result .profit-percent {
+    font-size: 0.875rem !important;
+    color: #64748b !important;
+}
+
+.trade-details {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 1rem !important;
+    font-size: 0.875rem !important;
+}
+
+.detail-item {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.detail-item .label {
+    color: #64748b !important;
+    font-size: 0.75rem !important;
+    margin-bottom: 0.25rem !important;
+}
+
+.detail-item .value {
+    color: #1e293b !important;
+    font-weight: 500 !important;
+}
+
+/* Monthly performance styling */
+.monthly-performance-card {
+    background: white !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
+    margin-bottom: 1.5rem !important;
+}
+
+.monthly-performance-card .card-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    border-radius: 1rem 1rem 0 0 !important;
+    padding: 1rem 1.5rem !important;
+    margin-bottom: 0 !important;
+}
+
+.monthly-performance-card .card-header h5 {
+    margin: 0 !important;
+    font-weight: 600 !important;
+    color: #1e293b !important;
+}
+
+.performance-summary {
+    padding: 1rem 1.5rem !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.summary-stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 1rem !important;
+}
+
+.summary-stat {
+    text-align: center !important;
+}
+
+.summary-stat .stat-label {
+    font-size: 0.75rem !important;
+    color: #64748b !important;
+    margin-bottom: 0.25rem !important;
+}
+
+.summary-stat .stat-value {
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+}
+
+.summary-stat .stat-value.primary {
+    color: #3b82f6 !important;
+}
+
+.summary-stat .stat-value.secondary {
+    color: #ef4444 !important;
+}
+
+.summary-stat .stat-value.success {
+    color: #10b981 !important;
+}
+
+.summary-stat .stat-value.info {
+    color: #f59e0b !important;
+}
+
+.chart-container {
+    padding: 1rem 1.5rem !important;
+}
+
+.monthly-table {
+    padding: 0 1.5rem 1rem 1.5rem !important;
+}
+
+.monthly-table .table {
+    margin-bottom: 0 !important;
+    font-size: 0.875rem !important;
+}
+
+.monthly-table .amount.positive {
+    color: #059669 !important;
+}
+
+.monthly-table .amount.negative {
+    color: #dc2626 !important;
+}
+
+.custom-tooltip {
+    background: white !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 0.5rem !important;
+    padding: 0.75rem !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+}
+
+.tooltip-label {
+    font-weight: 600 !important;
+    margin-bottom: 0.5rem !important;
+    color: #1e293b !important;
+}
+
+.no-data {
+    text-align: center !important;
+    padding: 3rem 1.5rem !important;
+    color: #64748b !important;
+}
+
+.no-data i {
+    font-size: 3rem !important;
+    margin-bottom: 1rem !important;
+    color: #cbd5e1 !important;
+}
+
+.no-data h6 {
+    margin-bottom: 0.5rem !important;
+    color: #475569 !important;
+}
+
+.stocks-page .container,
+.stocks-page .container-fluid {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+body {
+    background-color: #f1f5f9 !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.stocks-page .portfolio-header {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%) !important;
+    color: white !important;
+    padding: 1rem 0 !important;
+    margin: 0 auto 2rem auto !important;
+    border-radius: 1rem !important;
+    max-width: 1200px !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+}
+
+.stocks-page .portfolio-header .header-content {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    max-width: 1000px !important;
+    margin: 0 auto !important;
+    padding: 0 2rem !important;
+}
+
+.stocks-page .portfolio-header h1 {
+    font-weight: 600 !important;
+    font-size: 1.5rem !important;
+    margin: 0 !important;
+}
+
+.stocks-page .portfolio-header .btn-update {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    color: white !important;
+    border-radius: 0.5rem !important;
+    padding: 0.5rem 1.5rem !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    backdrop-filter: blur(10px) !important;
+    transition: all 0.2s ease !important;
+}
+
+.stocks-page .portfolio-header .btn-update:hover {
+    background: rgba(255, 255, 255, 0.25) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Add .stocks-page prefix to all main classes */
+.stocks-page .stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1.5rem !important;
+    margin: 0 auto 2rem auto !important;
+    max-width: 800px !important;
+    padding: 0 1rem !important;
+}
+
+.stocks-page .stat-card {
+    background: white !important;
+    border-radius: 1.5rem !important;
+    padding: 2rem !important;
+    box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1) !important;
+    border: none !important;
+    transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+    text-align: center !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.stocks-page .stat-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.15);
+}
+
+.stocks-page .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3b82f6, #1e40af);
+}
+
+.stocks-page .stat-card.success::before {
+    background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.stocks-page .stat-card.profit::before {
+    background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.stocks-page .stat-card.loss::before {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.stocks-page .stat-card.info::before {
+    background: linear-gradient(90deg, #6366f1, #4f46e5);
+}
+
+.stocks-page .stat-card h5 {
+    color: #64748b;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stocks-page .stat-card .value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    line-height: 1.1;
+}
+
+.stocks-page .stat-card .subtitle {
+    color: #94a3b8;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.stat-card.primary .value { color: #3b82f6; }
+.stat-card.success .value { color: #10b981; }
+.stat-card.profit .value { color: #10b981; }
+.stat-card.loss .value { color: #ef4444; }
+.stat-card.info .value { color: #6366f1; }
+
+.stocks-page .main-content {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+ @media (max-width: 1024px) {
+    .stocks-page .main-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+.stocks-page .holdings-card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: none;
+    overflow: hidden;
+    margin: 0 auto;
+    max-width: 1400px;
+}
+
+.stocks-page .holdings-card .card-header {
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1.25rem 1.5rem;
+    border-radius: 1rem 1rem 0 0;
+}
+
+.stocks-page .holdings-card .card-header h5 {
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+}
+
+.stocks-page .holdings-list {
+    padding: 0;
+}
+
+.stocks-page .holding-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background-color 0.2s ease;
+}
+
+.stocks-page .holding-item:hover {
+    background-color: #f8fafc;
+}
+
+.stocks-page .holding-item:last-child {
+    border-bottom: none;
+}
+
+.stocks-page .holding-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.875rem;
+    margin-left: 1rem;
+    flex-shrink: 0;
+}
+
+.stocks-page .holding-info {
+    flex: 1;
+}
+
+.stocks-page .holding-symbol {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.stocks-page .holding-details {
+    color: #64748b;
+    font-size: 0.875rem;
+    margin-bottom: 0.125rem;
+}
+
+.stocks-page .holding-details span:not(:last-child)::after {
+    content: " • ";
+    margin: 0 0.25rem;
+}
+
+.stocks-page .holding-price {
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.stocks-page .holding-price .current-price {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.stocks-page .holding-price .price-change {
+    font-size: 0.875rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+}
+
+.stocks-page .holding-price .price-change.positive {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.stocks-page .holding-price .price-change.negative {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.stocks-page .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.stocks-page .sidebar-card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: none;
+    overflow: hidden;
+}
+
+.stocks-page .sidebar-card .card-header {
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1rem 1.25rem;
+    border-radius: 1rem 1rem 0 0;
+}
+
+.stocks-page .sidebar-card .card-header h6 {
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+    font-size: 1rem;
+}
+
+.stocks-page .sidebar-card .card-body {
+    padding: 1.25rem;
+}
+
+.stocks-page .transaction-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.stocks-page .transaction-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.stocks-page .transaction-item .left {
+    flex: 1;
+}
+
+.stocks-page .transaction-item .symbol {
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.25rem;
+}
+
+.stocks-page .transaction-item .date {
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+.stocks-page .transaction-item .right {
+    text-align: left;
+}
+
+.stocks-page .transaction-type {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.stocks-page .transaction-type.buy {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.stocks-page .transaction-type.sell {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.stocks-page .transaction-amount {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.stocks-page .market-status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.stocks-page .market-status .status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.stocks-page .market-status .status-badge.open {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.stocks-page .market-status .status-badge.closed {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.stocks-page .indices-list {
+    margin-top: 1rem;
+}
+
+.stocks-page .index-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.stocks-page .index-item:last-child {
+    border-bottom: none;
+}
+
+.stocks-page .index-item .name {
+    font-size: 0.875rem;
+    color: #1e293b;
+}
+
+.stocks-page .index-item .value {
+    text-align: left;
+    font-size: 0.875rem;
+}
+
+.stocks-page .index-item .price {
+    font-weight: 500;
+    margin-bottom: 0.125rem;
+}
+
+.stocks-page .index-item .change {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.stocks-page .index-item .change.positive {
+    color: #10b981;
+}
+
+.stocks-page .index-item .change.negative {
+    color: #ef4444;
+}
+
+.stocks-page .quick-actions {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.stocks-page .quick-action-btn {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    color: #1e293b;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+}
+
+.stocks-page .quick-action-btn:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #1e293b;
+    transform: translateY(-1px);
+}
+
+.stocks-page .quick-action-btn i {
+    margin-left: 0.75rem;
+    width: 1rem;
+}
+
+.stocks-page .alert-daily {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    border-radius: 1rem;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.stocks-page .alert-daily.negative {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.stocks-page .alert-daily .d-flex {
+    align-items: center;
+}
+
+.stocks-page .alert-daily i {
+    font-size: 1.25rem;
+    margin-left: 0.75rem;
+}
+
+.stocks-page .cash-flow-selector {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+}
+
+.stocks-page .cash-flow-selector .form-select {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+/* Zero Holdings Section Styles */
+.stocks-page .expandable-section .expandable-header {
+    transition: background-color 0.2s ease;
+    z-index: 1;
+    position: relative;
+}
+
+.stocks-page .expandable-section .expandable-header:hover {
+    background: #f1f5f9 !important;
+}
+
+.stocks-page .expandable-section .expand-arrow {
+    transition: transform 0.3s ease;
+    font-size: 0.75rem;
+}
+
+.stocks-page .expandable-section.expanded .expand-arrow {
+    transform: rotate(180deg);
+}
+
+.stocks-page .expandable-section .expandable-content {
+    transition: max-height 0.3s ease;
+    z-index: 1;
+    position: relative;
+}
+
+.stocks-page .expandable-section.expanded .expandable-content {
+    max-height: 500px !important;
+}
+
+/* Chart Button Styles */
+.stocks-page .chart-btn {
+    margin-top: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    border: 1px solid #3b82f6;
+    color: #3b82f6;
+    background: transparent;
+    transition: all 0.2s ease;
+}
+
+.stocks-page .chart-btn:hover {
+    background: #3b82f6;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.stocks-page .chart-btn i {
+    margin: 0;
+}
+
+/* New detailed holding item styles */
+.stocks-page .holding-item-detailed {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.stocks-page .holding-item-detailed:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+.stocks-page .holding-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.stocks-page .holding-symbol-main {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.stocks-page .holding-symbol-main h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+.stocks-page .holding-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+}
+
+.stocks-page .holding-stats-grid .stat-item {
+    background: #f8fafc;
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+    text-align: center;
+    border: 1px solid #e2e8f0;
+}
+
+.stocks-page .holding-stats-grid .stat-item.span-2 {
+    grid-column: span 1;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.stocks-page .stat-label {
+    font-size: 0.875rem;
+    color: #64748b;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.stocks-page .stat-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.stocks-page .stat-value-profit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.stocks-page .stat-value-profit .profit-amount {
+    font-size: 1.25rem;
+    font-weight: 800;
+}
+
+.stocks-page .stat-value-profit .profit-percent {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.stocks-page .stat-value-profit.positive .profit-amount,
+.stocks-page .stat-value-profit.positive .profit-percent {
+    color: #10b981;
+}
+
+.stocks-page .stat-value-profit.negative .profit-amount,
+.stocks-page .stat-value-profit.negative .profit-percent {
+    color: #ef4444;
+}
+
+/* Special styling for different stat types using more specific classes */
+.stocks-page .stat-item-price {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
+    border-color: #3b82f6 !important;
+}
+
+.stocks-page .stat-item-current {
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%) !important;
+    border-color: #10b981 !important;
+}
+
+.stocks-page .stat-item-invested {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
+    border-color: #f59e0b !important;
+}
+
+/* Mobile responsiveness for detailed holdings */
+ @media (max-width: 1200px) {
+    .stocks-page .holding-stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+ @media (max-width: 768px) {
+    .stocks-page .holding-item-detailed {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .stocks-page .holding-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .stocks-page .holding-symbol-main {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .stocks-page .holding-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .stocks-page .holding-stats-grid .stat-item.span-2 {
+        grid-column: span 2;
+    }
+    
+    .stocks-page .stat-value-profit {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+}
+
+.stocks-page .no-holdings {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: #64748b;
+}
+
+.stocks-page .no-holdings i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #cbd5e1;
+}
+
+.stocks-page .no-holdings h6 {
+    color: #475569;
+    margin-bottom: 0.5rem;
+}
+
+/* Modal fixes for better z-index handling */
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+
+.modal {
+    z-index: 1050 !important;
+}
+
+.modal-dialog {
+    z-index: 1060 !important;
+}
+
+.stocks-page .loading-modal .modal-content {
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    z-index: 1070 !important;
+}
+
+.stocks-page .loading-modal .modal-body {
+    padding: 2rem;
+}
+
+.stocks-page .loading-modal .spinner-border {
+    width: 2rem;
+    height: 2rem;
+}
+
+/* Ensure all modals have proper z-index */
+#progressModal,
+#investmentTransactionsModal,
+#investmentFlowModal {
+    z-index: 1050 !important;
+}
+
+#progressModal .modal-dialog,
+#investmentTransactionsModal .modal-dialog,
+#investmentFlowModal .modal-dialog {
+    z-index: 1060 !important;
+}
+
+/* Center the page content */
+.stocks-page .container {
+    text-align: center;
+}
+
+.stocks-page .main-content {
+    text-align: right;
+}
+
+ @media (max-width: 768px) {
+    .stocks-page .portfolio-header {
+        margin: 0 1rem 2rem 1rem !important;
+        padding: 0.75rem 0 !important;
+    }
+    
+    .stocks-page .portfolio-header .header-content {
+        flex-direction: column !important;
+        gap: 1rem !important;
+        padding: 0 1rem !important;
+    }
+    
+    .stocks-page .portfolio-header h1 {
+        font-size: 1.25rem !important;
+    }
+    
+    .stocks-page .portfolio-header .btn-update {
+        font-size: 0.85rem !important;
+        padding: 0.5rem 1.25rem !important;
+    }
+    
+    .stocks-page .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        max-width: 400px;
+    }
+    
+    .stocks-page .stat-card {
+        padding: 1.5rem;
+    }
+    
+    .stocks-page .stat-card .value {
+        font-size: 2rem;
+    }
+    
+    .stocks-page .holding-item {
+        padding: 0.75rem 1rem;
+    }
+    
+    .stocks-page .holding-icon {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+/* Hide script content if it appears as text */
+script {
+    display: none !important;
+}
+
+/* Additional centering and spacing improvements */
+
+/* Improved stats grid spacing */
+.stocks-page .stats-grid {
+    justify-items: center;
+}
+
+/* Better main content layout */
+.stocks-page .main-content {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Improved cash flow selector */
+.stocks-page .cash-flow-selector {
+    max-width: 600px;
+    margin: 0 auto 2rem auto !important;
+    text-align: center;
+}
+
+/* Responsive improvements */
+ @media (max-width: 768px) {
+    
+    .stocks-page .stats-grid {
+        max-width: 100%;
+        padding: 0 0.5rem;
+    }
+    
+    .stocks-page .main-content {
+        padding: 0 0.5rem;
+    }
+}

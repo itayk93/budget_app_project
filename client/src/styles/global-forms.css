@@ -1,0 +1,258 @@
+/* Global Form Styles - Beautiful Select Boxes */
+
+/* Base form element reset */
+select, input, textarea, button {
+  font-family: 'Heebo', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-size: 14px;
+  direction: rtl;
+}
+
+/* Modern Select Styling */
+select, .form-select, .category-selection-section select, .new-category-section input, 
+.budget-input-section select, .budget-input-section input {
+  width: 100%;
+  padding: 12px 16px;
+  padding-left: 40px; /* Space for dropdown arrow */
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #333;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  direction: rtl;
+  text-align: right;
+  
+  /* Custom dropdown arrow */
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: left 12px center;
+  background-size: 16px;
+  
+  /* Remove default arrow */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Hover state */
+select:hover, .form-select:hover {
+  border-color: #2196F3;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.1);
+  transform: translateY(-1px);
+}
+
+/* Focus state */
+select:focus, .form-select:focus {
+  outline: none;
+  border-color: #2196F3;
+  box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.15);
+  background-color: #fafbff;
+}
+
+/* Disabled state */
+select:disabled, .form-select:disabled {
+  background-color: #f8f9fa;
+  border-color: #e9ecef;
+  color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.7;
+  transform: none;
+}
+
+/* Option styling */
+select option {
+  padding: 12px 16px;
+  background-color: #ffffff;
+  color: #333;
+  border: none;
+  direction: rtl;
+}
+
+select option:hover {
+  background-color: #f8f9fa;
+}
+
+select option:checked,
+select option:focus {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+/* Special styling for empty/placeholder options */
+select option[value=""] {
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* Input styling to match selects */
+input[type="text"], input[type="number"], input[type="date"], 
+input[type="email"], input[type="password"], textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #333;
+  font-size: 14px;
+  font-weight: 400;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  direction: rtl;
+  text-align: right;
+}
+
+input[type="text"]:hover, input[type="number"]:hover, 
+input[type="date"]:hover, input[type="email"]:hover, 
+input[type="password"]:hover, textarea:hover {
+  border-color: #2196F3;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.1);
+}
+
+input[type="text"]:focus, input[type="number"]:focus, 
+input[type="date"]:focus, input[type="email"]:focus, 
+input[type="password"]:focus, textarea:focus {
+  outline: none;
+  border-color: #2196F3;
+  box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.15);
+  background-color: #fafbff;
+}
+
+/* Textarea specific */
+textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+
+/* Button styling to match */
+.btn, button {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  direction: rtl;
+}
+
+.btn:disabled, button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn:hover:not(:disabled), button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn:active:not(:disabled), button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Primary button */
+.btn-primary, .btn.btn-primary {
+  background-color: #2196F3;
+  color: white;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #1976D2;
+  box-shadow: 0 6px 16px rgba(33, 150, 243, 0.4);
+}
+
+/* Secondary button */
+.btn-secondary, .btn.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+  box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #5a6268;
+  box-shadow: 0 6px 16px rgba(108, 117, 125, 0.4);
+}
+
+/* Small buttons */
+.btn-sm {
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+/* Large buttons */
+.btn-lg {
+  padding: 16px 32px;
+  font-size: 16px;
+}
+
+/* Outline buttons */
+.btn-outline {
+  background: transparent;
+  border: 2px solid #2196F3;
+  color: #2196F3;
+}
+
+.btn-outline:hover:not(:disabled) {
+  background-color: #2196F3;
+  color: white;
+}
+
+/* Form groups and labels */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+}
+
+/* Special styling for dashboard controls */
+.dashboard-controls select {
+  min-width: 200px;
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-controls select:focus {
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  select, .form-select, input[type="text"], input[type="number"], 
+  input[type="date"], input[type="email"], input[type="password"], textarea {
+    font-size: 16px; /* Prevent zoom on iOS */
+    padding: 14px 16px;
+  }
+  
+  select {
+    padding-left: 44px;
+    background-size: 18px;
+    background-position: left 14px center;
+  }
+  
+  .btn, button {
+    padding: 14px 24px;
+    font-size: 15px;
+  }
+  
+  .btn-sm {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+}

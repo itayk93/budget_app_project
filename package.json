@@ -1,0 +1,65 @@
+{
+  "name": "budgetlens-app",
+  "version": "1.0.0",
+  "description": "BudgetLens - Personal Finance Management App",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "node server/index.js",
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "server:dev": "nodemon server/index.js",
+    "client:dev": "cd client && npm start",
+    "client": "cd client && npm run build && serve -s build",
+    "build": "cd client && npm run build",
+    "client:install": "cd client && npm install",
+    "server:install": "npm install",
+    "postinstall": "npm run client:install",
+    "dev-start": "node start.js"
+  },
+  "dependencies": {
+    "@getbrevo/brevo": "^2.5.0",
+    "@supabase/supabase-js": "^2.50.4",
+    "archiver": "^7.0.1",
+    "axios": "^1.5.0",
+    "bcryptjs": "^2.4.3",
+    "compression": "^1.7.4",
+    "concurrently": "^8.2.0",
+    "cors": "^2.8.5",
+    "csv-parser": "^3.0.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.10.0",
+    "express-session": "^1.17.3",
+    "glob": "^11.0.3",
+    "helmet": "^7.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "moment": "^2.29.4",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "node-cron": "^3.0.2",
+    "nodemailer": "^6.9.4",
+    "openai": "^5.10.2",
+    "serve": "^14.2.1",
+    "uuid": "^9.0.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "client/*",
+      "uploads/*",
+      "server/temp/*"
+    ]
+  },
+  "keywords": [
+    "budget",
+    "finance",
+    "personal-finance",
+    "expense-tracker"
+  ],
+  "author": "BudgetLens",
+  "license": "MIT",
+  "packageManager": "pnpm@10.12.4+sha512.5ea8b0deed94ed68691c9bad4c955492705c5eeb8a87ef86bc62c74a26b037b08ff9570f108b2e4dbd1dd1a9186fea925e527f141c648e85af45631074680184"
+}

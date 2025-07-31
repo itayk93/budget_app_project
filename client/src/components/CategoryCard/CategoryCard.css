@@ -1,0 +1,1214 @@
+.category-card.modal-open {
+  overflow: visible;
+  z-index: 999; /* Ensure it's below the modal backdrop */
+}
+
+/* Weekly breakdown integration styles */
+.category-card .weekly-breakdown {
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.category-card .weekly-breakdown .weekly-breakdown-header {
+  display: none; /* Hide duplicate header since CategoryCard already has one */
+}
+
+.category-card .weekly-breakdown .weekly-breakdown-content {
+  padding: 0;
+  margin-top: 12px;
+}
+
+/* Sub-categories styling */
+.sub-categories-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sub-category-item {
+  background: rgba(248, 249, 250, 0.8);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.sub-category-header {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.sub-category-header:hover {
+  background: rgba(33, 150, 243, 0.05);
+}
+
+.sub-category-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.sub-category-name {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+.sub-category-amount {
+  font-weight: 700;
+  color: #e74c3c;
+  font-size: 14px;
+}
+
+.sub-category-count {
+  font-size: 12px;
+  color: #7f8c8d;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+.sub-category-transactions {
+  padding: 0 16px 16px 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.sub-category-transactions .transaction-item {
+  margin-bottom: 8px;
+  padding: 8px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Modern Category Cards - Clean Design */
+.category-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e9ecef;
+  transition: all 0.2s ease;
+  position: relative;
+  margin-bottom: 16px;
+  overflow: hidden;
+  direction: rtl;
+}
+
+.category-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border-color: #2196F3;
+}
+
+.category-header {
+  padding: 20px;
+  background: transparent;
+  border-bottom: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  position: relative;
+}
+
+.ri-bold-title {
+  font-weight: 600;
+  font-size: 18px;
+  color: #333;
+}
+
+.category-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.ri-bold-body {
+  font-weight: 500;
+  font-size: 16px;
+}
+
+.text-blue {
+  color: #2196F3;
+}
+
+/* Menu dots */
+.menu-dots {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  position: relative;
+}
+
+.menu-dots:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.dot {
+  width: 4px;
+  height: 4px;
+  background-color: #666;
+  border-radius: 50%;
+}
+
+/* Dropdown menu */
+.dropdown-menu {
+  position: fixed;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 8px;
+  min-width: 200px;
+  max-width: 250px;
+  z-index: 99999;
+  display: none;
+  
+  /* Ensure menu stays within viewport */
+  max-height: 300px;
+  overflow-y: auto;
+  
+  /* Animation for smooth appearance */
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* When dropdown needs to align to the left side */
+.dropdown-menu.align-left {
+  right: auto;
+  left: 0;
+}
+
+/* When dropdown needs to appear above the trigger */
+.dropdown-menu.align-up {
+  top: auto;
+  bottom: 100%;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .dropdown-menu {
+    min-width: 180px;
+    max-width: 200px;
+    right: 0; /* Align with the button */
+  }
+  
+  .dropdown-menu.align-left {
+    left: 0;
+    right: auto;
+  }
+}
+
+/* Extra small screens - ensure dropdown fits */
+@media (max-width: 480px) {
+  .dropdown-menu {
+    min-width: 160px;
+    max-width: calc(100vw - 40px); /* Ensure it never exceeds screen width */
+    font-size: 14px;
+    /* Center the dropdown for very small screens */
+    left: 50% !important;
+    right: auto !important;
+  }
+  
+  .dropdown-menu.show {
+    transform: translateX(-50%) translateY(0);
+  }
+  
+  .dropdown-menu.align-left {
+    left: 10px !important;
+    right: auto !important;
+  }
+  
+  .dropdown-menu.align-left.show {
+    transform: translateY(0);
+  }
+  
+  .dropdown-item {
+    padding: 8px 12px;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.dropdown-menu.show {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  margin: 2px 0;
+  border: none;
+  background: none;
+  text-align: right;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+  font-size: 14px;
+  color: #333;
+  direction: rtl;
+  pointer-events: auto;
+  position: relative;
+  z-index: inherit;
+}
+
+.dropdown-item:hover {
+  background-color: #f5f5f5;
+}
+
+.dropdown-item i {
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+/* Card body */
+.card-body {
+  padding: 0 20px 20px;
+}
+
+/* RiseUp-style Budget Progress Section */
+.budget-info-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 0;
+  background: none;
+  border-radius: 0;
+}
+
+.budget-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  flex: 1;
+}
+
+.budget-item:last-child {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.budget-label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.budget-value {
+  font-weight: 700;
+  font-size: 18px;
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+.budget-value.spent {
+  color: #f44336;
+}
+
+.budget-value.target {
+  color: #333;
+}
+
+/* RiseUp-style Progress Bar */
+.progress-container {
+  width: 100%;
+  height: 12px;
+  background-color: #e1e5e9;
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 12px 0;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4CAF50 0%, #2196F3 100%);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 6px;
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 100%);
+  border-radius: 6px;
+}
+
+/* Progress for different states */
+.progress-fill.over-budget {
+  background: linear-gradient(90deg, #FF9800 0%, #F44336 100%);
+}
+
+.progress-fill.warning {
+  background: linear-gradient(90deg, #FFC107 0%, #FF9800 100%);
+}
+
+/* Remaining text with RiseUp styling */
+.remaining-text {
+  text-align: center;
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 16px;
+  font-weight: 500;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e1e5e9;
+}
+
+.remaining-text.over-budget {
+  background: #ffebee;
+  border-color: #ffcdd2;
+  color: #d32f2f;
+}
+
+.remaining-text.warning {
+  background: #fff3e0;
+  border-color: #ffcc02;
+  color: #f57c00;
+}
+
+.remaining-text.on-track {
+  background: #e8f5e8;
+  border-color: #c8e6c9;
+  color: #2e7d32;
+}
+
+/* Budget divider */
+.budget-divider {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 16px 0;
+}
+
+/* Expandable section */
+.expandable-section {
+  margin: 0;
+  padding-top: 0;
+  transition: background-color 0.2s;
+  border-radius: 8px;
+}
+
+.expandable-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  padding: 12px 16px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  user-select: none;
+  background: #f8f9fa;
+  position: relative;
+}
+
+.expandable-header:hover {
+  background: #e9ecef;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.transaction-count-badge {
+  background: #2196F3;
+  color: white;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.expand-arrow {
+  transition: transform 0.2s ease;
+  position: absolute;
+  left: 16px;
+}
+
+.expandable-section.expanded .expand-arrow {
+  transform: rotate(180deg);
+}
+
+.expandable-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+  background: transparent;
+}
+
+.expandable-section.expanded .expandable-content {
+  max-height: 2000px;
+  padding-top: 16px;
+}
+
+/* Transaction list */
+.transaction-list {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.transactions-container {
+  /* Container styles if needed */
+}
+
+/* Scrollable transactions container */
+.transactions-scrollable-container {
+  max-height: 400px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  position: relative;
+}
+
+/* Fade effect at bottom to indicate scrollable content */
+.transactions-scrollable-container::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.9));
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Show fade effect when scrollable */
+.transactions-scrollable-container[data-scrollable="true"]::after {
+  opacity: 1;
+}
+
+/* Custom scrollbar for transaction list */
+.transactions-scrollable-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.transactions-scrollable-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.transactions-scrollable-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.transactions-scrollable-container::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Transaction item */
+.transaction-item {
+  display: flex !important;
+  align-items: center !important;
+  padding: 12px 16px !important;
+  background-color: white !important;
+  border: none !important;
+  border-bottom: 1px solid #e9ecef !important;
+  border-radius: 0 !important;
+  transition: all 0.2s ease !important;
+  margin-bottom: 0 !important;
+  box-shadow: none !important;
+  min-height: 60px !important;
+  height: auto !important;
+  gap: 12px !important;
+  direction: rtl !important;
+}
+
+.transaction-item * {
+  background: none !important;
+  box-shadow: none !important;
+}
+
+.transaction-item:last-child {
+  border-bottom: none;
+}
+
+.transaction-item:hover {
+  background-color: #f8f9fa;
+}
+
+/* New clean transaction info section */
+.transaction-info-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 12px 0 0;
+}
+
+.transaction-info-section .ri-body {
+  font-weight: 600;
+  color: #333;
+  font-size: 16px;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  display: block;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.transaction-info-section .ri-body a {
+  color: inherit;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  display: block;
+}
+
+.transaction-info-section .ri-body a:hover {
+  color: #2196F3;
+}
+
+.transaction-date {
+  font-size: 14px;
+  color: #666;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.transaction-payment-info,
+.transaction-currency-info {
+  background-color: #e9ecef;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* Remove any parentheses that might be added by pseudo-elements */
+.transaction-payment-info::before,
+.transaction-payment-info::after,
+.transaction-currency-info::before,
+.transaction-currency-info::after,
+.transaction-date::before,
+.transaction-date::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Force remove any bracket characters */
+.transaction-payment-info {
+  font-family: inherit !important;
+}
+
+.transaction-date {
+  font-family: inherit !important;
+}
+
+/* Hide any potential Font Awesome parentheses */
+.transaction-date *::before,
+.transaction-date *::after,
+.transaction-info-section::before,
+.transaction-info-section::after,
+.transaction-info-section *::before,
+.transaction-info-section *::after {
+  content: none !important;
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Force hide any curved elements that might look like parentheses */
+.transaction-item *[style*="border-radius: 50%"],
+.transaction-item *[style*="border-radius:50%"] {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Aggressive override to hide parentheses-like elements */
+.transaction-item * {
+  text-shadow: none !important;
+}
+
+.transaction-item *::before,
+.transaction-item *::after {
+  content: none !important;
+  display: none !important;
+  visibility: hidden !important;
+  position: absolute !important;
+  left: -9999px !important;
+}
+
+/* Override any Bootstrap or framework styles */
+.transaction-date,
+.transaction-payment-info,
+.transaction-currency-info {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* Hide any potential parentheses characters from CSS */
+.transaction-date::before,
+.transaction-payment-info::before,
+.transaction-currency-info::before {
+  content: '' !important;
+}
+
+.transaction-actions {
+  display: flex !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.action-btn {
+  padding: 3px 4px;
+  font-size: 11px;
+  border-radius: 3px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+}
+
+.action-btn:hover {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-color: #2196F3;
+  color: #2196F3;
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+}
+
+.action-btn.text-danger {
+  color: #f44336;
+  border-color: #ffcdd2;
+}
+
+.action-btn.text-danger:hover {
+  background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+  border-color: #f44336;
+  color: #d32f2f;
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+}
+
+.action-btn i {
+  font-size: 14px;
+}
+
+/* Three dots menu button */
+.transaction-menu-btn {
+  background: #f8f9fa !important;
+  border: 1px solid #dee2e6 !important;
+  cursor: pointer !important;
+  padding: 8px !important;
+  border-radius: 50% !important;
+  color: #666 !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 10 !important;
+}
+
+.transaction-menu-btn:hover {
+  background: #e9ecef !important;
+  color: #333 !important;
+  border-color: #2196F3 !important;
+}
+
+.transaction-menu-btn i {
+  font-size: 16px;
+}
+
+/* Transaction right side - amount only */
+.transaction-right-side {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-shrink: 0;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Transaction amount */
+.transaction-amount {
+  font-weight: 600;
+  font-size: 16px;
+  text-align: left;
+  min-width: 80px;
+  line-height: 1.2;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.transaction-amount.expense {
+  color: #f44336 !important;
+  background: none !important;
+}
+
+.transaction-amount.income {
+  color: #4caf50 !important;
+  background: none !important;
+}
+
+/* Pagination info */
+.transaction-pagination-info {
+  padding: 12px 16px;
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+  background: #f8f9fa;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Utility classes */
+.margin-top-m {
+  margin-top: 16px;
+}
+
+.margin-top-s {
+  margin-top: 8px;
+}
+
+/* Categories container */
+.categories-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .category-header {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+  }
+  
+  .category-header-actions {
+    justify-content: flex-end;
+    align-self: flex-end;
+    margin-top: 8px;
+  }
+  
+  .budget-info-section {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .transaction-item {
+    flex-direction: column;
+    gap: 12px;
+    text-align: right;
+    padding: 12px;
+  }
+  
+  .transaction-info-section {
+    order: 1;
+  }
+  
+  .transaction-amount {
+    order: 2;
+    text-align: right;
+    min-width: auto;
+    align-self: flex-end;
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+  
+  .transaction-date {
+    order: 3;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  
+  .transaction-actions {
+    order: 4;
+    justify-content: flex-end;
+    margin-top: 12px;
+    gap: 10px;
+  }
+  
+  /* Mobile-friendly button spacing */
+  .action-btn {
+    min-width: 40px;
+    height: 40px;
+    margin-left: 8px;
+  }
+  
+  /* Card body padding adjustment */
+  .card-body {
+    padding: 0 16px 16px;
+  }
+  
+  /* Transaction list mobile optimization */
+  .transaction-list {
+    overflow-x: visible;
+  }
+  
+  /* Mobile scrollable container adjustments */
+  .transactions-scrollable-container {
+    max-height: 300px; /* Smaller height on mobile */
+  }
+  
+  /* Expandable header mobile */
+  .expandable-header {
+    padding: 12px;
+    flex-direction: row-reverse;
+  }
+  
+  .header-content {
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+    width: 100%;
+  }
+  
+  .transaction-count-badge {
+    margin-left: 12px;
+  }
+  
+  /* הגבלת רוחב טקסט בטאבלט */
+  .transaction-info-section .ri-body {
+    max-width: 150px;
+  }
+}
+
+/* Extra small mobile screens */
+@media (max-width: 480px) {
+  .category-header {
+    padding: 12px;
+  }
+  
+  .ri-bold-title {
+    font-size: 16px;
+  }
+  
+  .transaction-item {
+    padding: 10px;
+  }
+  
+  .transaction-amount {
+    font-size: 16px;
+  }
+  
+  .action-btn {
+    min-width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+  
+  .budget-info-section {
+    margin-bottom: 12px;
+  }
+  
+  .budget-value {
+    font-size: 16px;
+  }
+  
+  .remaining-text {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+  
+  /* Extra small mobile scrollable container */
+  .transactions-scrollable-container {
+    max-height: 250px; /* Even smaller height on very small screens */
+  }
+  
+  /* הגבלת רוחב טקסט במובייל */
+  .transaction-info-section .ri-body {
+    max-width: 120px;
+  }
+}
+
+/* Font Awesome icons fallback */
+.fas, .fa {
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900;
+}
+
+.fas.fa-bullseye::before { 
+  content: "🎯"; 
+  background: none !important;
+  filter: none !important;
+  font-style: normal;
+}
+.fas.fa-tags::before { 
+  content: "🏷️"; 
+  background: none !important;
+  filter: none !important;
+  font-style: normal;
+}
+.fas.fa-tag::before { 
+  content: "🏷️"; 
+  background: none !important;
+  filter: none !important;
+  font-style: normal;
+}
+.fas.fa-copy::before { 
+  content: "📋"; 
+  background: none !important;
+  filter: none !important;
+  font-style: normal;
+}
+.fas.fa-calendar-alt::before { 
+  content: "📅"; 
+  background: none !important;
+  filter: none !important;
+  font-style: normal;
+}
+.fas.fa-edit::before { 
+  content: "✏️"; 
+  background: none !important;
+  filter: none !important;
+  font-style: normal;
+}
+.fas.fa-trash::before { 
+  content: "🗑️"; 
+  background: none !important;
+  filter: none !important;
+  font-style: normal;
+}
+.fas.fa-chevron-down::before { content: "▼"; }
+.fas.fa-chevron-up::before { content: "▲"; }
+
+/* Monthly Target Section Styles */
+.monthly-target-section {
+  margin-bottom: 20px;
+}
+
+.target-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.target-title {
+  font-weight: bold;
+  color: #333;
+  font-size: 16px;
+}
+
+.edit-target-btn {
+  background: transparent;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.edit-target-btn:hover {
+  background: rgba(0, 123, 255, 0.1);
+}
+
+.target-info-section {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.target-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.target-label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.target-value {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.target-value.current {
+  color: #007bff;
+}
+
+.target-value.target {
+  color: #28a745;
+}
+
+.monthly-progress-container {
+  width: 100%;
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.monthly-progress-fill {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+  border-radius: 4px;
+}
+
+.monthly-progress-fill.on-track {
+  background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.monthly-progress-fill.warning {
+  background: linear-gradient(90deg, #ffc107, #fd7e14);
+}
+
+.monthly-progress-fill.over-target {
+  background: linear-gradient(90deg, #dc3545, #e74c3c);
+}
+
+.monthly-progress-fill.over-target-good {
+  background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.monthly-remaining-text {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.monthly-remaining-text.on-track {
+  color: #28a745;
+}
+
+.monthly-remaining-text.warning {
+  color: #ffc107;
+}
+
+.monthly-remaining-text.over-target {
+  color: #dc3545;
+}
+
+.monthly-remaining-text.over-target-good {
+  color: #28a745;
+}
+
+.target-divider {
+  height: 1px;
+  background: #e9ecef;
+  margin: 12px 0;
+}
+
+/* Weekly Target Adjustments */
+.weekly-target-note {
+  font-size: 11px;
+  color: #6c757d;
+  text-align: center;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* No Target Section Styles */
+.no-target-indicator {
+  font-size: 12px;
+  color: #dc3545;
+  font-weight: normal;
+}
+
+.no-target-section {
+  margin-bottom: 16px;
+}
+
+.no-target-message {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #495057;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.4;
+}
+
+.no-target-message i {
+  color: #17a2b8;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.current-spending-only {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+  background: rgba(0, 123, 255, 0.05);
+  border-radius: 6px;
+}
+
+.current-spending-only .target-label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.current-spending-only .target-value {
+  font-weight: bold;
+  font-size: 16px;
+  color: #007bff;
+}
