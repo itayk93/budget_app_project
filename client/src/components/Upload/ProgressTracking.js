@@ -37,7 +37,7 @@ const ProgressTracking = ({ uploadId, onComplete, onError }) => {
           setProgress(data);
 
           // Check if upload is complete or needs user interaction
-          if (data.stage === 'completed' || data.stage === 'needs_currency_selection' || data.stage === 'needs_duplicates_review') {
+          if (data.stage === 'completed' || data.stage === 'needs_currency_selection' || data.stage === 'needs_duplicates_review' || data.stage === 'needs_transaction_review') {
             clearInterval(polling);
             onComplete(data.result);
           } else if (data.stage === 'error') {

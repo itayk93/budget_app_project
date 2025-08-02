@@ -3143,7 +3143,26 @@ class WorkingExcelService {
         };
       }
       
-      // No duplicates found or forceImport is true
+      // Check if this is a non-BudgetLens file that needs transaction review
+      if (detectedFormat && detectedFormat.toLowerCase() !== 'budgetlens' && !forceImport) {
+        console.log('🔄 Non-BudgetLens file detected, returning for transaction review');
+        return {
+          success: true,
+          needs_transaction_review: true,
+          has_duplicates: false,
+          currencyGroups: finalCurrencyGroups,
+          transactions: transactions,
+          fileFormat: detectedFormat,
+          fileSource: options.fileSource || 'other',
+          totalRows: conversionResult.totalRows,
+          processedTransactions: conversionResult.processedTransactions,
+          imported: 0, // Not imported yet, pending review
+          errors: processingResult.errors || 0,
+          processing_result: processingResult
+        };
+      }
+      
+      // No duplicates found and either BudgetLens or forceImport is true
       const result = {
         success: true,
         has_duplicates: false,

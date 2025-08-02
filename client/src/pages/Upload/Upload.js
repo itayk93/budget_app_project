@@ -7,6 +7,7 @@ import CurrencySelection from '../../components/Upload/CurrencySelection';
 import CurrencyGroupsReview from '../../components/Upload/CurrencyGroupsReview';
 import DuplicateReview from '../../components/Upload/DuplicateReview';
 import ProgressTracking from '../../components/Upload/ProgressTracking';
+import TransactionReviewModal from '../../components/Upload/TransactionReviewModal';
 import './Upload.css';
 
 const Upload = () => {
@@ -46,6 +47,11 @@ const Upload = () => {
   const [duplicatesTempId, setDuplicatesTempId] = useState(null);
   const [isFinalizingImport, setIsFinalizingImport] = useState(false);
   const isFinalizingImportRef = useRef(false);
+  
+  // Transaction review modal state
+  const [showTransactionReview, setShowTransactionReview] = useState(false);
+  const [reviewTransactions, setReviewTransactions] = useState([]);
+  const [reviewFileSource, setReviewFileSource] = useState('');
   
   const steps = [
     { title: 'העלאת קובץ', description: 'בחר את הקובץ לייבוא' },
@@ -314,6 +320,12 @@ const Upload = () => {
       console.log('🔄 Multi-currency detected, moving to currency groups review');
       setCurrencyGroupsTempId(result.currency_groups_temp_id);
       setCurrentStep(2); // Move to currency groups review
+    } else if (result.needs_transaction_review && result.transactions && fileSource !== 'budgetlens') {
+      // Non-BudgetLens file needs transaction review
+      console.log('🔄 Non-BudgetLens file detected, showing transaction review modal');
+      setReviewTransactions(result.transactions);
+      setReviewFileSource(result.fileSource || fileSource);
+      setShowTransactionReview(true);
     } else if (result.has_duplicates && (result.duplicates_temp_id || result.temp_duplicates_id)) {
       // Duplicates detected, go to duplicates review
       const tempId = result.duplicates_temp_id || result.temp_duplicates_id;
@@ -462,6 +474,37 @@ const Upload = () => {
       }
     });
     setCurrentStep(4);
+  };
+
+  // Handle transaction review modal
+  const handleTransactionReviewConfirm = async (reviewData) => {
+    try {
+      setShowTransactionReview(false);
+      
+      // Send reviewed transactions to backend for final import
+      const finalData = {
+        uploadId,
+        transactions: reviewData.transactions,
+        deletedIndices: reviewData.deletedIndices,
+        cashFlowId: selectedCashFlow,
+        fileSource: reviewFileSource
+      };
+      
+      finalImportMutation.mutate(finalData);
+    } catch (error) {
+      console.error('Error confirming transaction review:', error);
+      setUploadResult({
+        success: false,
+        error: 'שגיאה באישור העסקאות'
+      });
+    }
+  };
+
+  const handleTransactionReviewCancel = () => {
+    setShowTransactionReview(false);
+    setReviewTransactions([]);
+    setReviewFileSource('');
+    handleBackToUpload();
   };
 
   const formatFileSize = (bytes) => {
@@ -1148,6 +1191,16 @@ const Upload = () => {
           </div>
         )}
       </div>
+
+      {/* Transaction Review Modal */}
+      <TransactionReviewModal
+        isOpen={showTransactionReview}
+        onClose={handleTransactionReviewCancel}
+        onConfirm={handleTransactionReviewConfirm}
+        transactions={reviewTransactions}
+        fileSource={reviewFileSource}
+        cashFlowId={selectedCashFlow}
+      />
     </div>
   );
 };

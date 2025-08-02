@@ -537,7 +537,7 @@ router.post('/check-duplicates', authenticateToken, async (req, res) => {
 // Multi-step upload: Step 4 - Finalize import
 router.post('/finalize', authenticateToken, async (req, res) => {
   try {
-    const { uploadId, selectedCurrency, duplicateResolutions, cashFlowId } = req.body;
+    const { uploadId, selectedCurrency, duplicateResolutions, cashFlowId, transactions: reviewedTransactions, deletedIndices, fileSource } = req.body;
     const session = uploadSessions.get(uploadId);
 
     if (!session || session.userId !== req.user.id) {
@@ -569,15 +569,19 @@ router.post('/finalize', authenticateToken, async (req, res) => {
     const processedData = session.processedData;
     let transactions;
 
-    if (selectedCurrency && processedData.currencyGroups) {
+    // Check if we have reviewed transactions from the modal
+    if (reviewedTransactions && Array.isArray(reviewedTransactions)) {
+      console.log('🔄 Using reviewed transactions from modal:', reviewedTransactions.length);
+      transactions = reviewedTransactions;
+    } else if (selectedCurrency && processedData.currencyGroups) {
       transactions = processedData.currencyGroups[selectedCurrency].transactions;
     } else {
       transactions = processedData.transactions;
     }
 
-    // Apply duplicate resolutions
+    // Apply duplicate resolutions (only if not from modal)
     let finalTransactions = transactions;
-    if (duplicateResolutions) {
+    if (duplicateResolutions && !reviewedTransactions) {
       finalTransactions = ExcelService.applyDuplicateResolutions(transactions, duplicateResolutions);
     }
 
