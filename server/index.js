@@ -109,6 +109,22 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// Ping endpoint for cron jobs - returns HTML page (BEFORE React routes)
+app.get('/ping', (req, res) => {
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+    <title>Cron Ping</title>
+</head>
+<body>
+    <h1>Ping Successful</h1>
+    <p>Server is running and responding to requests.</p>
+    <p>Timestamp: ${new Date().toISOString()}</p>
+</body>
+</html>`;
+  res.send(html);
+});
+
 // Serve logo file
 app.get('/logo.png', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/public/logo.svg'));

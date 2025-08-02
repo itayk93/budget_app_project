@@ -40,7 +40,7 @@
 }
 
 .monthly-goal-modal .modal-body {
-  padding: var(--spacing-xl);
+  padding: var(--spacing-xl) var(--spacing-xxl);
   background: var(--gray-50);
 }
 
@@ -54,7 +54,7 @@
 .form-group {
   background: white;
   border-radius: var(--radius-md);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xl);
   box-shadow: var(--shadow-sm);
   border-right: 4px solid var(--color-green);
 }
@@ -82,7 +82,7 @@
 
 .form-input {
   width: 100%;
-  padding: var(--spacing-md) 60px var(--spacing-md) var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg) var(--spacing-md) 60px;
   border: 2px solid var(--gray-300);
   border-radius: var(--radius-md);
   font-size: var(--font-large);
@@ -109,7 +109,7 @@
 
 .currency-symbol {
   position: absolute;
-  right: var(--spacing-lg);
+  left: var(--spacing-lg);
   color: var(--color-green);
   font-weight: 600;
   font-size: var(--font-large);
@@ -157,7 +157,7 @@
 .form-section {
   background: white;
   border-radius: var(--radius-md);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xl);
   box-shadow: var(--shadow-sm);
   border-right: 4px solid var(--color-blue);
 }
@@ -180,14 +180,14 @@
 .option-group {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-lg);
 }
 
 .option-item {
   display: flex;
   align-items: flex-start;
-  gap: var(--spacing-md);
-  padding: var(--spacing-lg);
+  gap: var(--spacing-lg);
+  padding: var(--spacing-xl);
   border: 2px solid var(--gray-300);
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -223,7 +223,7 @@
 .option-content {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-sm);
   flex: 1;
 }
 
@@ -288,14 +288,14 @@
   background: linear-gradient(135deg, #e3f2fd 0%, #f0f8ff 100%);
   border: 2px solid #bbdefb;
   border-radius: var(--radius-md);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xl);
   border-right: 4px solid #2196f3;
 }
 
 .info-item {
   display: flex;
   align-items: flex-start;
-  gap: var(--spacing-md);
+  gap: var(--spacing-lg);
   font-size: var(--font-small);
   color: #1565c0;
   line-height: 1.6;
@@ -313,7 +313,7 @@
 .monthly-goal-modal .modal-footer {
   background: white;
   border-top: 1px solid var(--gray-200);
-  padding: var(--spacing-lg) var(--spacing-xl);
+  padding: var(--spacing-xl) var(--spacing-xxl);
   display: flex;
   gap: var(--spacing-md);
   justify-content: center;
@@ -430,11 +430,11 @@
   
   .form-input {
     font-size: var(--font-medium);
-    padding: var(--spacing-sm) 50px var(--spacing-sm) var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) 50px;
   }
   
   .currency-symbol {
-    right: var(--spacing-md);
+    left: var(--spacing-md);
     font-size: var(--font-medium);
   }
   

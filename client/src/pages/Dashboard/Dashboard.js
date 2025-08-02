@@ -411,6 +411,15 @@ const Dashboard = () => {
     });
   };
 
+  // Format month for mobile display (Hebrew month name only)
+  const formatMonth = (date) => {
+    const months = [
+      'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
+      'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
+    ];
+    return months[date.getMonth()];
+  };
+
   const calculateSummary = () => {
     if (!dashboardData || !dashboardData.summary) {
       return { income: 0, expenses: 0, net: 0 };
@@ -516,6 +525,75 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard">
+      {/* Mobile Only Controls */}
+      <div className="mobile-dashboard-controls">
+        {/* בחירת חודש ותזרים Button */}
+        <button className={`mobile-control-btn month-select-btn ${showMonthPicker ? 'expanded' : ''}`} onClick={() => setShowMonthPicker(!showMonthPicker)}>
+          <div className="btn-content">
+            <span className="btn-icon">📅</span>
+            <span className="btn-text">בחירת חודש ותזרים</span>
+            <span className={`btn-arrow ${showMonthPicker ? 'rotated' : ''}`}>▼</span>
+          </div>
+        </button>
+      </div>
+
+      {/* Mobile Month & Flow Selector Panel */}
+      {showMonthPicker && (
+        <div className="month-selector-panel show">
+          {/* Cash Flow Selection */}
+          <div className="mobile-flow-selector">
+            <label className="flow-selector-label">בחירת תזרים:</label>
+            <select
+              className="mobile-flow-select"
+              value={selectedCashFlow?.id || ''}
+              onChange={(e) => {
+                const cashFlow = (dashboardData?.cash_flows || cashFlows)?.find(cf => cf.id === e.target.value);
+                setSelectedCashFlow(cashFlow);
+              }}
+            >
+              {(dashboardData?.cash_flows || cashFlows || []).map(cashFlow => (
+                <option key={cashFlow.id} value={cashFlow.id}>
+                  {cashFlow.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Month Navigation */}
+          <div className="mobile-month-navigation">
+            <button className="mobile-nav-arrow next" onClick={() => navigateMonth(1)}>→</button>
+            <div className="mobile-current-month">
+              <span className="mobile-month-name">{formatMonth(currentDate)}</span>
+              <span className="mobile-year-name">{currentDate.getFullYear()}</span>
+            </div>
+            <button className="mobile-nav-arrow prev" onClick={() => navigateMonth(-1)}>←</button>
+          </div>
+
+          {/* View Type Selection */}
+          <div className="mobile-view-tabs">
+            <button 
+              className={`mobile-tab-btn ${activeTab === 'monthly' ? 'active' : ''}`} 
+              onClick={() => setActiveTab('monthly')}
+            >
+              חודשי
+            </button>
+            <button 
+              className={`mobile-tab-btn ${activeTab === 'cumulative' ? 'active' : ''}`} 
+              onClick={() => setActiveTab('cumulative')}
+            >
+              מצטבר
+            </button>
+          </div>
+
+          {/* Monthly Goal Display */}
+          {dashboardData?.monthly_goal && (
+            <div className="mobile-goal-display" onClick={() => setShowGoalModal(true)}>
+              <span className="goal-label">יעד חודשי:</span>
+              <span className="goal-value">{formatCurrency(dashboardData.monthly_goal.amount || 0)} ₪</span>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="dashboard-controls">
         <select
@@ -696,86 +774,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Recent Transactions */}
-        <div className="dashboard-section">
-          <div className="card recent-transactions-card">
-            <div className="card-header">
-              <div className="header-content">
-                <h3><i className="fas fa-history"></i> תנועות אחרונות</h3>
-                <span className="transactions-count">
-                  {Object.values(dashboardData?.categories || {})
-                    .flatMap(category => category.transactions || []).length} תנועות החודש
-                </span>
-              </div>
-              <a href="/transactions" className="btn btn-primary view-all-btn">
-                <i className="fas fa-list"></i>
-                צפה בכל התנועות
-              </a>
-            </div>
-            <div className="card-body">
-              {dashboardData?.categories && Object.keys(dashboardData.categories).length > 0 ? (
-                <div className="recent-transactions-list">
-                  {/* Show recent transactions from all categories */}
-                  {Object.values(dashboardData.categories)
-                    .flatMap(category => category.transactions || [])
-                    .sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date))
-                    .slice(0, 6)
-                    .map(transaction => (
-                      <div 
-                        key={transaction.id} 
-                        className="recent-transaction-item"
-                        onClick={() => window.location.href = `/transaction/${transaction.id}`}
-                      >
-                        <div className="transaction-icon">
-                          <div className={`icon-circle ${parseFloat(transaction.amount) >= 0 ? 'income' : 'expense'}`}>
-                            <i className={`fas ${parseFloat(transaction.amount) >= 0 ? 'fa-arrow-down' : 'fa-arrow-up'}`}></i>
-                          </div>
-                        </div>
-                        <div className="transaction-details">
-                          <div className="transaction-business">
-                            {transaction.business_name || transaction.description || 'ללא שם'}
-                          </div>
-                          <div className="transaction-meta">
-                            <span className="transaction-date">
-                              <i className="fas fa-calendar-alt"></i>
-                              {formatDate(transaction.payment_date)}
-                            </span>
-                            {transaction.category_name && (
-                              <span className="transaction-category-tag">
-                                <i className="fas fa-tag"></i>
-                                {transaction.category_name}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="transaction-amount-section">
-                          <div className={`transaction-amount ${parseFloat(transaction.amount) >= 0 ? 'positive' : 'negative'}`}>
-                            {parseFloat(transaction.amount) >= 0 ? '+' : '-'}
-                            {formatCurrency(Math.abs(parseFloat(transaction.amount || 0)), transaction.currency)}
-                          </div>
-                          <div className="view-details">
-                            <i className="fas fa-chevron-left"></i>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  }
-                </div>
-              ) : (
-                <div className="empty-state">
-                  <div className="empty-icon">
-                    <i className="fas fa-receipt"></i>
-                  </div>
-                  <h4>אין תנועות לחודש זה</h4>
-                  <p>התנועות שלך יוצגו כאן לאחר הוספתן</p>
-                  <a href="/transactions" className="btn btn-primary">
-                    הוסף תנועה חדשה
-                  </a>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
 
         {/* Debug Info */}
         {process.env.NODE_ENV === 'development' && dashboardData && (
