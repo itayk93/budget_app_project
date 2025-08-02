@@ -19,15 +19,15 @@ const TransactionReviewModal = ({
 
   // Fetch categories for dropdown
   const { data: categoriesData = [], isLoading: categoriesLoading } = useQuery(
-    ['categories', cashFlowId],
-    () => categoriesAPI.getByCashFlow(cashFlowId),
+    ['categories'],
+    () => categoriesAPI.getAll(),
     {
-      enabled: isOpen && !!cashFlowId
+      enabled: isOpen
     }
   );
 
   // Add type grouping to categories based on name patterns
-  const categories = categoriesData.map(category => {
+  const categories = (categoriesData || []).map(category => {
     const name = category.name.toLowerCase();
     let type = 'אחר';
 
@@ -71,6 +71,8 @@ const TransactionReviewModal = ({
     if (isOpen && transactions.length > 0) {
       console.log('🔍 [MODAL DEBUG] Received transactions:', transactions);
       console.log('🔍 [MODAL DEBUG] First transaction sample:', transactions[0]);
+      console.log('🔍 [MODAL DEBUG] Categories:', categoriesData);
+      console.log('🔍 [MODAL DEBUG] Categories loading:', categoriesLoading);
       setEditedTransactions(transactions.map((tx, index) => ({
         ...tx,
         tempId: `temp_${index}`,
