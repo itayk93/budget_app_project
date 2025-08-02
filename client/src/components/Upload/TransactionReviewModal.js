@@ -28,6 +28,8 @@ const TransactionReviewModal = ({
   // Initialize edited transactions when modal opens
   useEffect(() => {
     if (isOpen && transactions.length > 0) {
+      console.log('🔍 [MODAL DEBUG] Received transactions:', transactions);
+      console.log('🔍 [MODAL DEBUG] First transaction sample:', transactions[0]);
       setEditedTransactions(transactions.map((tx, index) => ({
         ...tx,
         tempId: `temp_${index}`,
@@ -131,6 +133,7 @@ const TransactionReviewModal = ({
               </div>
 
               <div className="transactions-table-container">
+                {/* Desktop Table View */}
                 <table className="transactions-table">
                   <thead>
                     <tr>
@@ -147,10 +150,10 @@ const TransactionReviewModal = ({
                         <td>
                           <input
                             type="date"
-                            value={transaction.transaction_date?.split('T')[0] || ''}
+                            value={transaction.payment_date?.split('T')[0] || transaction.transaction_date?.split('T')[0] || ''}
                             onChange={(e) => handleTransactionChange(
                               transaction.tempId, 
-                              'transaction_date', 
+                              'payment_date', 
                               e.target.value
                             )}
                             className="date-input"
@@ -174,7 +177,7 @@ const TransactionReviewModal = ({
                             <input
                               type="number"
                               step="0.01"
-                              value={transaction.amount || 0}
+                              value={Math.abs(transaction.amount || 0)}
                               onChange={(e) => handleTransactionChange(
                                 transaction.tempId, 
                                 'amount', 
@@ -214,6 +217,83 @@ const TransactionReviewModal = ({
                     ))}
                   </tbody>
                 </table>
+
+                {/* Mobile Card View */}
+                <div className="transactions-mobile">
+                  {editedTransactions.map((transaction) => (
+                    <div key={transaction.tempId} className="transaction-card">
+                      <div className="card-header">
+                        <div className="card-title">{transaction.business_name || 'שם העסק'}</div>
+                        <div className={`card-amount ${transaction.amount >= 0 ? 'positive' : 'negative'}`}>
+                          {formatAmount(transaction.amount || 0)}
+                        </div>
+                        <button
+                          onClick={() => handleDeleteTransaction(transaction.tempId)}
+                          className="delete-button"
+                          title="מחק עסקה"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+
+                      <div className="card-field">
+                        <label>תאריך</label>
+                        <input
+                          type="date"
+                          value={transaction.payment_date?.split('T')[0] || transaction.transaction_date?.split('T')[0] || ''}
+                          onChange={(e) => handleTransactionChange(
+                            transaction.tempId, 
+                            'payment_date', 
+                            e.target.value
+                          )}
+                        />
+                      </div>
+
+                      <div className="card-field">
+                        <label>שם העסק</label>
+                        <input
+                          type="text"
+                          value={transaction.business_name || ''}
+                          onChange={(e) => handleTransactionChange(
+                            transaction.tempId, 
+                            'business_name', 
+                            e.target.value
+                          )}
+                          placeholder="שם העסק"
+                        />
+                      </div>
+
+                      <div className="card-field">
+                        <label>סכום</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={Math.abs(transaction.amount || 0)}
+                          onChange={(e) => handleTransactionChange(
+                            transaction.tempId, 
+                            'amount', 
+                            parseFloat(e.target.value) || 0
+                          )}
+                        />
+                      </div>
+
+                      <div className="card-field">
+                        <label>קטגוריה</label>
+                        <select
+                          value={transaction.category_id || ''}
+                          onChange={(e) => handleCategoryChange(transaction.tempId, e.target.value)}
+                        >
+                          <option value="">בחר קטגוריה...</option>
+                          {categories.map(category => (
+                            <option key={category.id} value={category.id}>
+                              {category.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {editedTransactions.length === 0 && (
