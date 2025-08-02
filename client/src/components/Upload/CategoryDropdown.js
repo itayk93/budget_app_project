@@ -1,33 +1,156 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './CategoryDropdown.css';
 
-const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "בחר קטגוריה..." }) => {
+const CategoryDropdown = ({ value, onChange, placeholder = "בחר קטגוריה..." }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
 
-  // Group categories by type
-  const groupedCategories = categories.reduce((groups, category) => {
-    const group = category.type || 'אחר';
-    if (!groups[group]) {
-      groups[group] = [];
+  // Predefined category groups (same as CategoryTransferModal)
+  const categoryGroups = {
+    'הכנסות': {
+      icon: '💰',
+      categories: [
+        'הכנסות קבועות',
+        'הכנסות משתנות', 
+        'משכורת',
+        'עבודה נוספת',
+        'השקעות',
+        'מתנות',
+        'החזרי מס',
+        'אחר (הכנסות)'
+      ]
+    },
+    'דיור': {
+      icon: '🏠',
+      categories: [
+        'תשלום משכנתא',
+        'שכר דירה',
+        'ארנונה',
+        'חשמל',
+        'גז',
+        'מים',
+        'אינטרנט',
+        'טלפון',
+        'ביטוח דירה',
+        'ועד בית',
+        'תיקונים ותחזוקה'
+      ]
+    },
+    'הוצאות משתנות': {
+      icon: '🛒',
+      categories: [
+        'הוצאות משתנות',
+        'סופר',
+        'אוכל בחוץ',
+        'בגדים ונעליים',
+        'קניות',
+        'קוסמטיקה'
+      ]
+    },
+    'תחבורה': {
+      icon: '🚗',
+      categories: [
+        'תחבורה',
+        'דלק',
+        'ביטוח רכב',
+        'תחזוקת רכב',
+        'חנייה',
+        'תחבורה ציבורית',
+        'רכב ותחבורה ציבורית'
+      ]
+    },
+    'בריאות': {
+      icon: '🏥',
+      categories: [
+        'בריאות',
+        'רופא',
+        'רופא שיניים',
+        'תרופות',
+        'פארמה',
+        'ביטוח בריאות'
+      ]
+    },
+    'פנאי ובידור': {
+      icon: '🎭',
+      categories: [
+        'פנאי ובידור',
+        'קולנוע',
+        'מסעדות',
+        'ספורט',
+        'חופשות',
+        'טיסות לחו״ל',
+        'נופש'
+      ]
+    },
+    'דיגיטל': {
+      icon: '💻',
+      categories: [
+        'דיגיטל',
+        'נטפליקס',
+        'ספוטיפיי',
+        'משחקים',
+        'אפליקציות'
+      ]
+    },
+    'חינוך': {
+      icon: '🎓',
+      categories: [
+        'חינוך',
+        'לימודים',
+        'ספרים',
+        'קורסים'
+      ]
+    },
+    'חסכון והשקעות': {
+      icon: '💎',
+      categories: [
+        'חסכון קבוע',
+        'חסכון חד פעמי',
+        'השקעות',
+        'קרן פנסיה',
+        'ביטוח חיים'
+      ]
+    },
+    'אחר': {
+      icon: '📝',
+      categories: [
+        'מתנות',
+        'צדקה',
+        'עמלות',
+        'עמלות בנק',
+        'עמלות כרטיס אשראי',
+        'שונות',
+        'הוצאות לא תזרימיות',
+        'אחר'
+      ]
     }
-    groups[group].push(category);
-    return groups;
+  };
+
+  // Filter categories based on search term
+  const filteredGroups = Object.entries(categoryGroups).reduce((filtered, [groupName, groupData]) => {
+    const matchingCategories = groupData.categories.filter(categoryName => 
+      categoryName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    if (matchingCategories.length > 0) {
+      filtered[groupName] = {
+        ...groupData,
+        categories: matchingCategories
+      };
+    }
+    return filtered;
   }, {});
 
-  // Category group icons
-  const groupIcons = {
-    'הכנסות': '💰',
-    'דיור': '🏠',
-    'הוצאות משתנות': '🛒',
-    'תחבורה': '🚗',
-    'בריאות': '🏥',
-    'פנאי ובידור': '🎭',
-    'דיגיטל': '💻',
-    'חינוך': '🎓',
-    'חסכון והשקעות': '💎',
-    'אחר': '📝'
+  // Get display value
+  const getDisplayValue = () => {
+    if (!value) return placeholder;
+    
+    // Find the category name by value
+    for (const groupData of Object.values(categoryGroups)) {
+      const category = groupData.categories.find(cat => cat === value);
+      if (category) return category;
+    }
+    return value; // fallback to raw value
   };
 
   // Close dropdown when clicking outside
@@ -35,6 +158,7 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
+        setSearchTerm('');
       }
     };
 
@@ -42,20 +166,8 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const selectedCategory = categories.find(cat => cat.id === value);
-
-  const filteredGroups = Object.entries(groupedCategories).reduce((filtered, [groupName, groupCategories]) => {
-    const filteredCategories = groupCategories.filter(category =>
-      category.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    if (filteredCategories.length > 0) {
-      filtered[groupName] = filteredCategories;
-    }
-    return filtered;
-  }, {});
-
-  const handleCategorySelect = (categoryId) => {
-    onChange(categoryId);
+  const handleCategorySelect = (categoryName) => {
+    onChange(categoryName);
     setIsOpen(false);
     setSearchTerm('');
   };
@@ -63,11 +175,11 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
   return (
     <div className="category-dropdown" ref={dropdownRef}>
       <div 
-        className={`dropdown-trigger ${isOpen ? 'open' : ''}`}
+        className="dropdown-trigger"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className="selected-value">
-          {selectedCategory ? selectedCategory.name : placeholder}
+        <span className={`dropdown-value ${!value ? 'placeholder' : ''}`}>
+          {getDisplayValue()}
         </span>
         <span className={`dropdown-arrow ${isOpen ? 'open' : ''}`}>▼</span>
       </div>
@@ -77,51 +189,39 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
           <div className="dropdown-search">
             <input
               type="text"
+              placeholder="חפש קטגוריה..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="חפש קטגוריה..."
-              className="search-input"
               autoFocus
             />
           </div>
 
           <div className="dropdown-options">
-            {Object.entries(filteredGroups).map(([groupName, groupCategories]) => (
+            {Object.entries(filteredGroups).map(([groupName, groupData]) => (
               <div key={groupName} className="category-group">
                 <div className="group-header">
-                  <span className="group-icon">{groupIcons[groupName] || '📝'}</span>
+                  <span className="group-icon">{groupData.icon}</span>
                   <span className="group-name">{groupName}</span>
                 </div>
-                <div className="group-options">
-                  {groupCategories.map(category => (
+                <div className="group-categories">
+                  {groupData.categories.map((categoryName) => (
                     <div
-                      key={category.id}
-                      className={`dropdown-option ${value === category.id ? 'selected' : ''}`}
-                      onClick={() => handleCategorySelect(category.id)}
+                      key={categoryName}
+                      className={`category-option ${value === categoryName ? 'selected' : ''}`}
+                      onClick={() => handleCategorySelect(categoryName)}
                     >
-                      {category.name}
+                      {categoryName}
                     </div>
                   ))}
                 </div>
               </div>
             ))}
-
+            
             {Object.keys(filteredGroups).length === 0 && (
-              <div className="no-results">
-                לא נמצאו קטגוריות מתאימות
-              </div>
+              <div className="no-results">לא נמצאו קטגוריות</div>
             )}
-          </div>
 
-          <div className="dropdown-footer">
-            <div
-              className="add-new-category"
-              onClick={() => {
-                // TODO: Handle new category creation
-                console.log('Add new category');
-                setIsOpen(false);
-              }}
-            >
+            <div className="new-category-option" onClick={() => handleCategorySelect('__new_category__')}>
               ➕ הוסף קטגוריה חדשה
             </div>
           </div>
