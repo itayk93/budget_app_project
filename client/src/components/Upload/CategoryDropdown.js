@@ -8,6 +8,9 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
 
   // Function to categorize a category name into groups
   const getCategoryGroup = (categoryName) => {
+    if (!categoryName || typeof categoryName !== 'string') {
+      return { name: 'אחר', icon: '📝' };
+    }
     const name = categoryName.toLowerCase();
     
     if (name.includes('הכנסה') || name.includes('משכורת') || name.includes('עבודה') || name.includes('פנסיה')) {
@@ -45,7 +48,12 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
   };
 
   // Group categories by type
-  const groupedCategories = categories.reduce((groups, category) => {
+  const groupedCategories = categories && categories.length > 0 ? categories.reduce((groups, category) => {
+    // Make sure category exists and has category_name
+    if (!category || !category.category_name) {
+      return groups;
+    }
+    
     const group = getCategoryGroup(category.category_name);
     const groupName = group.name;
     
@@ -57,7 +65,7 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
     }
     groups[groupName].categories.push(category);
     return groups;
-  }, {});
+  }, {}) : {};
 
   // Predefined category groups as fallback (if no categories from API)
   const categoryGroups = {
