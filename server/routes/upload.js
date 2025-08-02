@@ -704,6 +704,11 @@ async function processUploadAsync(uploadId) {
       );
     } else {
       // Initialize working Excel service for non-Blink files
+      console.log('🔧 [UPLOAD ROUTE] Initializing WorkingExcelService for non-Blink file:', {
+        fileSource: session.fileSource,
+        forceImport: session.forceImport,
+        uploadId
+      });
       const excelService = new WorkingExcelService();
 
       logger.uploadProgress(uploadId, 'file_processing', 10, {
@@ -713,6 +718,7 @@ async function processUploadAsync(uploadId) {
       });
 
       // Process the file with working service
+      console.log('🔧 [UPLOAD ROUTE] About to call processFinancialFileMultiStep');
       result = await excelService.processFinancialFileMultiStep(
         session.filePath,
         session.userId,
@@ -730,6 +736,14 @@ async function processUploadAsync(uploadId) {
         }
       );
     }
+
+    console.log('🔧 [UPLOAD ROUTE] processFinancialFileMultiStep completed with result:', {
+      success: result.success,
+      has_duplicates: result.has_duplicates,
+      needs_transaction_review: result.needs_transaction_review,
+      transactions_count: result.transactions?.length || 0,
+      fileFormat: result.fileFormat
+    });
 
     if (!result.success) {
       logger.uploadError(uploadId, 'file_processing', new Error(result.error || result.message), {

@@ -3052,6 +3052,11 @@ class WorkingExcelService {
   // Multi-step processing function optimized for large files
   async processFinancialFileMultiStep(filePath, userId, cashFlowId, fileSource, paymentMethod, paymentIdentifier, progressCallback, forceImport = false, uploadId = null, dateFilterOptions = {}) {
     try {
+      console.log('🚀 [ENTRY POINT] processFinancialFileMultiStep called with:', {
+        fileSource,
+        forceImport,
+        uploadId
+      });
       console.log('🚀 Starting multi-step processing with working logic for large files');
       
       if (progressCallback) {
