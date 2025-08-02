@@ -3153,7 +3153,7 @@ class WorkingExcelService {
           currencyGroups: finalCurrencyGroups,
           transactions: transactions,
           fileFormat: detectedFormat,
-          fileSource: options.fileSource || 'other',
+          fileSource: fileSource || 'other',
           totalRows: conversionResult.totalRows,
           processedTransactions: conversionResult.processedTransactions,
           imported: 0, // Not imported yet, pending review
