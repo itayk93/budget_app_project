@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
 import { categoriesAPI } from '../../services/api';
 import LoadingSpinner from '../Common/LoadingSpinner';
+import CategoryDropdown from './CategoryDropdown';
 import './TransactionReviewModal.css';
 
 const TransactionReviewModal = ({ 
@@ -17,13 +18,53 @@ const TransactionReviewModal = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch categories for dropdown
-  const { data: categories = [], isLoading: categoriesLoading } = useQuery(
+  const { data: categoriesData = [], isLoading: categoriesLoading } = useQuery(
     ['categories', cashFlowId],
     () => categoriesAPI.getByCashFlow(cashFlowId),
     {
       enabled: isOpen && !!cashFlowId
     }
   );
+
+  // Add type grouping to categories based on name patterns
+  const categories = categoriesData.map(category => {
+    const name = category.name.toLowerCase();
+    let type = 'אחר';
+
+    if (name.includes('הכנסה') || name.includes('משכורת') || name.includes('עבודה')) {
+      type = 'הכנסות';
+    } else if (name.includes('משכנתא') || name.includes('שכר דירה') || name.includes('ארנונה') || 
+               name.includes('חשמל') || name.includes('גז') || name.includes('מים') || 
+               name.includes('אינטרנט') || name.includes('טלפון') || name.includes('ביטוח דירה')) {
+      type = 'דיור';
+    } else if (name.includes('סופר') || name.includes('אוכל') || name.includes('מסעדה') || 
+               name.includes('בגדים') || name.includes('קניות') || name.includes('קוסמטיקה')) {
+      type = 'הוצאות משתנות';
+    } else if (name.includes('דלק') || name.includes('תחבורה') || name.includes('ביטוח רכב') || 
+               name.includes('תחזוקת רכב') || name.includes('חנייה')) {
+      type = 'תחבורה';
+    } else if (name.includes('רופא') || name.includes('תרופות') || name.includes('פארמה') || 
+               name.includes('בריאות') || name.includes('רפואה')) {
+      type = 'בריאות';
+    } else if (name.includes('קולנוע') || name.includes('ספורט') || name.includes('חופשות') || 
+               name.includes('טיסות') || name.includes('נופש') || name.includes('פנאי')) {
+      type = 'פנאי ובידור';
+    } else if (name.includes('נטפליקס') || name.includes('ספוטיפיי') || name.includes('משחקים') || 
+               name.includes('אפליקציות') || name.includes('דיגיטל')) {
+      type = 'דיגיטל';
+    } else if (name.includes('לימודים') || name.includes('ספרים') || name.includes('קורסים') || 
+               name.includes('חינוך')) {
+      type = 'חינוך';
+    } else if (name.includes('חסכון') || name.includes('השקעות') || name.includes('קרן פנסיה') || 
+               name.includes('ביטוח חיים')) {
+      type = 'חסכון והשקעות';
+    }
+
+    return {
+      ...category,
+      type
+    };
+  });
 
   // Initialize edited transactions when modal opens
   useEffect(() => {
@@ -191,18 +232,12 @@ const TransactionReviewModal = ({
                           </div>
                         </td>
                         <td>
-                          <select
+                          <CategoryDropdown
                             value={transaction.category_id || ''}
-                            onChange={(e) => handleCategoryChange(transaction.tempId, e.target.value)}
-                            className="category-select"
-                          >
-                            <option value="">בחר קטגוריה...</option>
-                            {categories.map(category => (
-                              <option key={category.id} value={category.id}>
-                                {category.name}
-                              </option>
-                            ))}
-                          </select>
+                            onChange={(categoryId) => handleCategoryChange(transaction.tempId, categoryId)}
+                            categories={categories}
+                            placeholder="בחר קטגוריה..."
+                          />
                         </td>
                         <td>
                           <button
@@ -279,17 +314,12 @@ const TransactionReviewModal = ({
 
                       <div className="card-field">
                         <label>קטגוריה</label>
-                        <select
+                        <CategoryDropdown
                           value={transaction.category_id || ''}
-                          onChange={(e) => handleCategoryChange(transaction.tempId, e.target.value)}
-                        >
-                          <option value="">בחר קטגוריה...</option>
-                          {categories.map(category => (
-                            <option key={category.id} value={category.id}>
-                              {category.name}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(categoryId) => handleCategoryChange(transaction.tempId, categoryId)}
+                          categories={categories}
+                          placeholder="בחר קטגוריה..."
+                        />
                       </div>
                     </div>
                   ))}
