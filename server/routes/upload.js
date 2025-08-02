@@ -280,8 +280,8 @@ router.get('/progress/:uploadId', authenticateToken, (req, res) => {
   };
 
   // Add result or error if completed
-  if (session.status === 'completed' || session.status === 'needs_currency_selection' || session.status === 'needs_duplicates_review') {
-    response.result = session.result;
+  if (session.status === 'completed' || session.status === 'needs_currency_selection' || session.status === 'needs_duplicates_review' || session.status === 'needs_transaction_review') {
+    response.result = session.processedData;
   } else if (session.status === 'error') {
     response.error = session.error;
   }
@@ -821,6 +821,13 @@ async function processUploadAsync(uploadId) {
       });
       
       session.status = 'needs_duplicates_review';
+      session.isProcessing = false; // Mark processing as complete
+      saveSessions();
+    }
+    // Check for transaction review needed (non-BudgetLens files)
+    else if (result.needs_transaction_review) {
+      console.log('🔄 Transaction review needed for non-BudgetLens file');
+      session.status = 'needs_transaction_review';
       session.isProcessing = false; // Mark processing as complete
       saveSessions();
     }
