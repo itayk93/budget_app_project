@@ -16,15 +16,33 @@ const TransactionReviewModal = ({
   const [editedTransactions, setEditedTransactions] = useState([]);
   const [deletedTransactionIds, setDeletedTransactionIds] = useState(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [categories, setCategories] = useState([]);
 
   // Fetch categories for dropdown
-  const { data: categoriesData = [], isLoading: categoriesLoading } = useQuery(
+  const { data: categoriesData = [], isLoading: categoriesLoading, error: categoriesError } = useQuery(
     ['categories'],
-    () => categoriesAPI.getAll(),
+    () => {
+      console.log('🔍 [React Query] Executing categories query...');
+      return categoriesAPI.getAll();
+    },
     {
-      enabled: isOpen
+      enabled: isOpen,
+      onSuccess: (data) => {
+        console.log('🔍 [React Query] Categories query success:', data);
+      },
+      onError: (error) => {
+        console.error('❌ [React Query] Categories query error:', error);
+      }
     }
   );
+
+  // Handle categories data when received
+  useEffect(() => {
+    if (categoriesData && categoriesData.length > 0) {
+      console.log('🔍 [MODAL DEBUG] Setting categories:', categoriesData);
+      setCategories(categoriesData);
+    }
+  }, [categoriesData]);
 
   // Initialize edited transactions when modal opens
   useEffect(() => {
@@ -33,6 +51,8 @@ const TransactionReviewModal = ({
       console.log('🔍 [MODAL DEBUG] First transaction sample:', transactions[0]);
       console.log('🔍 [MODAL DEBUG] Categories:', categoriesData);
       console.log('🔍 [MODAL DEBUG] Categories loading:', categoriesLoading);
+      console.log('🔍 [MODAL DEBUG] Categories error:', categoriesError);
+      console.log('🔍 [MODAL DEBUG] Local categories state:', categories);
       setEditedTransactions(transactions.map((tx, index) => ({
         ...tx,
         tempId: `temp_${index}`,
@@ -40,7 +60,7 @@ const TransactionReviewModal = ({
       })));
       setDeletedTransactionIds(new Set());
     }
-  }, [isOpen, transactions]);
+  }, [isOpen, transactions, categoriesData, categories]);
 
   const handleTransactionChange = (tempId, field, value) => {
     setEditedTransactions(prev => 
@@ -196,7 +216,7 @@ const TransactionReviewModal = ({
                           <CategoryDropdown
                             value={transaction.category_id || ''}
                             onChange={(categoryName) => handleCategoryChange(transaction.tempId, categoryName)}
-                            categories={categoriesData}
+                            categories={categories}
                             placeholder="בחר קטגוריה..."
                           />
                         </td>
@@ -278,7 +298,7 @@ const TransactionReviewModal = ({
                         <CategoryDropdown
                           value={transaction.category_id || ''}
                           onChange={(categoryName) => handleCategoryChange(transaction.tempId, categoryName)}
-                          categories={categoriesData}
+                          categories={categories}
                           placeholder="בחר קטגוריה..."
                         />
                       </div>

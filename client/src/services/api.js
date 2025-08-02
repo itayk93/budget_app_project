@@ -102,7 +102,17 @@ export const usersAPI = {
 
 // Categories API
 export const categoriesAPI = {
-  getAll: () => api.get('/categories'),
+  getAll: async () => {
+    console.log('🔍 [Categories API] Making getAll request...');
+    try {
+      const result = await api.get('/categories');
+      console.log('🔍 [Categories API] getAll response:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ [Categories API] getAll error:', error);
+      throw error;
+    }
+  },
   getByType: (type) => api.get(`/categories/type/${type}`),
   getDefault: () => api.get('/categories/default'),
   create: (data) => api.post('/categories', data),
