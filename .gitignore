@@ -67,3 +67,7 @@ yarn-error.log*
 
 # Yarn Integrity file
 .yarn-integrity
+
+# Project tracking files (keep local only)
+git_commits_log.xlsx
+CLAUDE.md

@@ -118,25 +118,79 @@ git add .
 git commit -m "[Brief description of changes in ENGLISH] - Deploy: $(date '+%Y-%m-%d %H:%M')"
 ```
 
-### Git Commits Tracking
-Maintain detailed Excel log of all Git commits in `git_commits_log.xlsx`:
+### Git Commits Tracking (MANDATORY)
+**CRITICAL**: Maintain detailed Excel log of ALL Git commits in `git_commits_log.xlsx`. This file MUST be updated after EVERY commit.
 
 #### Excel Structure:
 - **Column A**: Date & Time (YYYY-MM-DD HH:MM)
 - **Column B**: Commit Hash (first 7 characters)
-- **Column C**: Commit Message (English description)
+- **Column C**: Commit Message (ENGLISH ONLY - no Hebrew)
 - **Column D**: Files Changed (count)
 - **Column E**: Additions (+)
 - **Column F**: Deletions (-)
 - **Column G**: Session Description (what was accomplished)
 - **Column H**: Status (Pushed/Local)
 
-#### Update Process:
-1. Create Excel file if doesn't exist with headers
-2. After each commit, add new row with all details
-3. Use `git log --oneline -1` for commit info
-4. Use `git show --stat HEAD` for change statistics
-5. Save Excel file after each update
+#### MANDATORY Update Process (After EVERY commit):
+1. **ALWAYS** update `git_commits_log.xlsx` immediately after each commit
+2. Add new row with all commit details using this Python script:
+```python
+import pandas as pd
+from datetime import datetime
+import subprocess
+
+def update_git_log(session_description="Automated commit"):
+    # Get git info
+    hash_result = subprocess.run(['git', 'log', '--oneline', '-1'], capture_output=True, text=True)
+    commit_hash = hash_result.stdout.strip().split()[0] if hash_result.returncode == 0 else 'Unknown'
+    
+    msg_result = subprocess.run(['git', 'log', '--format=%s', '-1'], capture_output=True, text=True)
+    commit_msg = msg_result.stdout.strip() if msg_result.returncode == 0 else 'Unknown'
+    
+    stat_result = subprocess.run(['git', 'show', '--stat', 'HEAD'], capture_output=True, text=True)
+    files_changed = additions = deletions = 0
+    
+    if stat_result.returncode == 0:
+        lines = stat_result.stdout.strip().split('\n')
+        for line in lines:
+            if 'files changed' in line or 'file changed' in line:
+                parts = line.split()
+                for i, part in enumerate(parts):
+                    if 'file' in part and i > 0:
+                        files_changed = int(parts[i-1])
+                    elif 'insertion' in part and i > 0:
+                        additions = int(parts[i-1])
+                    elif 'deletion' in part and i > 0:
+                        deletions = int(parts[i-1])
+    
+    # Read existing log or create new
+    try:
+        df = pd.read_excel('git_commits_log.xlsx')
+    except:
+        df = pd.DataFrame(columns=['Date & Time', 'Commit Hash', 'Commit Message', 'Files Changed', 'Additions (+)', 'Deletions (-)', 'Session Description', 'Status'])
+    
+    # Add new row
+    new_row = {
+        'Date & Time': datetime.now().strftime('%Y-%m-%d %H:%M'),
+        'Commit Hash': commit_hash,
+        'Commit Message': commit_msg,
+        'Files Changed': files_changed,
+        'Additions (+)': additions,
+        'Deletions (-)': deletions,
+        'Session Description': session_description,
+        'Status': 'Pushed'
+    }
+    
+    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+    df.to_excel('git_commits_log.xlsx', index=False)
+    print(f"Updated git_commits_log.xlsx with commit {commit_hash}")
+
+# Call this function after every commit
+update_git_log("Session description here")
+```
+
+3. **NEVER SKIP** this step - it's mandatory for all commits
+4. Use ENGLISH ONLY for all commit messages and descriptions
 
 ### Commit Message Format
 Always use English commit messages with this format:
