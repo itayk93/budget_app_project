@@ -1,12 +1,65 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './CategoryDropdown.css';
 
-const CategoryDropdown = ({ value, onChange, placeholder = "בחר קטגוריה..." }) => {
+const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "בחר קטגוריה..." }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
 
-  // Predefined category groups (same as CategoryTransferModal)
+  // Function to categorize a category name into groups
+  const getCategoryGroup = (categoryName) => {
+    const name = categoryName.toLowerCase();
+    
+    if (name.includes('הכנסה') || name.includes('משכורת') || name.includes('עבודה') || name.includes('פנסיה')) {
+      return { name: 'הכנסות', icon: '💰' };
+    } else if (name.includes('משכנתא') || name.includes('שכר דירה') || name.includes('ארנונה') || 
+               name.includes('חשמל') || name.includes('גז') || name.includes('מים') || 
+               name.includes('אינטרנט') || name.includes('טלפון') || name.includes('ביטוח דירה') ||
+               name.includes('ועד בית') || name.includes('תיקון')) {
+      return { name: 'דיור', icon: '🏠' };
+    } else if (name.includes('סופר') || name.includes('אוכל') || name.includes('מסעדה') || 
+               name.includes('בגדים') || name.includes('קניות') || name.includes('קוסמטיקה')) {
+      return { name: 'הוצאות משתנות', icon: '🛒' };
+    } else if (name.includes('דלק') || name.includes('תחבורה') || name.includes('ביטוח רכב') || 
+               name.includes('תחזוקת רכב') || name.includes('חנייה') || name.includes('רכב')) {
+      return { name: 'תחבורה', icon: '🚗' };
+    } else if (name.includes('רופא') || name.includes('תרופות') || name.includes('פארמה') || 
+               name.includes('בריאות') || name.includes('רפואה')) {
+      return { name: 'בריאות', icon: '🏥' };
+    } else if (name.includes('קולנוע') || name.includes('ספורט') || name.includes('חופשות') || 
+               name.includes('טיסות') || name.includes('נופש') || name.includes('פנאי') || 
+               name.includes('טיסה') || name.includes('ירח דבש')) {
+      return { name: 'פנאי ובידור', icon: '🎭' };
+    } else if (name.includes('נטפליקס') || name.includes('ספוטיפיי') || name.includes('משחקים') || 
+               name.includes('אפליקציות') || name.includes('דיגיטל')) {
+      return { name: 'דיגיטל', icon: '💻' };
+    } else if (name.includes('לימודים') || name.includes('ספרים') || name.includes('קורסים') || 
+               name.includes('חינוך')) {
+      return { name: 'חינוך', icon: '🎓' };
+    } else if (name.includes('חסכון') || name.includes('השקעות') || name.includes('קרן פנסיה') || 
+               name.includes('ביטוח חיים') || name.includes('הפקדות')) {
+      return { name: 'חסכון והשקעות', icon: '💎' };
+    } else {
+      return { name: 'אחר', icon: '📝' };
+    }
+  };
+
+  // Group categories by type
+  const groupedCategories = categories.reduce((groups, category) => {
+    const group = getCategoryGroup(category.category_name);
+    const groupName = group.name;
+    
+    if (!groups[groupName]) {
+      groups[groupName] = {
+        icon: group.icon,
+        categories: []
+      };
+    }
+    groups[groupName].categories.push(category);
+    return groups;
+  }, {});
+
+  // Predefined category groups as fallback (if no categories from API)
   const categoryGroups = {
     'הכנסות': {
       icon: '💰',
@@ -127,11 +180,16 @@ const CategoryDropdown = ({ value, onChange, placeholder = "בחר קטגורי�
     }
   };
 
+  // Use dynamic categories if available, otherwise use predefined ones
+  const finalGroupedCategories = Object.keys(groupedCategories).length > 0 ? groupedCategories : categoryGroups;
+
   // Filter categories based on search term
-  const filteredGroups = Object.entries(categoryGroups).reduce((filtered, [groupName, groupData]) => {
-    const matchingCategories = groupData.categories.filter(categoryName => 
-      categoryName.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  const filteredGroups = Object.entries(finalGroupedCategories).reduce((filtered, [groupName, groupData]) => {
+    const matchingCategories = groupData.categories.filter(category => {
+      // Handle both string categories (predefined) and object categories (from API)
+      const categoryName = typeof category === 'string' ? category : category.category_name;
+      return categoryName.toLowerCase().includes(searchTerm.toLowerCase());
+    });
     if (matchingCategories.length > 0) {
       filtered[groupName] = {
         ...groupData,
@@ -146,9 +204,17 @@ const CategoryDropdown = ({ value, onChange, placeholder = "בחר קטגורי�
     if (!value) return placeholder;
     
     // Find the category name by value
-    for (const groupData of Object.values(categoryGroups)) {
-      const category = groupData.categories.find(cat => cat === value);
-      if (category) return category;
+    for (const groupData of Object.values(finalGroupedCategories)) {
+      const category = groupData.categories.find(cat => {
+        if (typeof cat === 'string') {
+          return cat === value;
+        } else {
+          return cat.category_name === value || cat.id === value;
+        }
+      });
+      if (category) {
+        return typeof category === 'string' ? category : category.category_name;
+      }
     }
     return value; // fallback to raw value
   };
@@ -166,7 +232,9 @@ const CategoryDropdown = ({ value, onChange, placeholder = "בחר קטגורי�
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleCategorySelect = (categoryName) => {
+  const handleCategorySelect = (category) => {
+    // Handle both string categories (predefined) and object categories (from API)
+    const categoryName = typeof category === 'string' ? category : category.category_name;
     onChange(categoryName);
     setIsOpen(false);
     setSearchTerm('');
@@ -204,15 +272,19 @@ const CategoryDropdown = ({ value, onChange, placeholder = "בחר קטגורי�
                   <span className="group-name">{groupName}</span>
                 </div>
                 <div className="group-categories">
-                  {groupData.categories.map((categoryName) => (
-                    <div
-                      key={categoryName}
-                      className={`category-option ${value === categoryName ? 'selected' : ''}`}
-                      onClick={() => handleCategorySelect(categoryName)}
-                    >
-                      {categoryName}
-                    </div>
-                  ))}
+                  {groupData.categories.map((category) => {
+                    const categoryName = typeof category === 'string' ? category : category.category_name;
+                    const categoryKey = typeof category === 'string' ? category : category.id;
+                    return (
+                      <div
+                        key={categoryKey}
+                        className={`category-option ${value === categoryName ? 'selected' : ''}`}
+                        onClick={() => handleCategorySelect(category)}
+                      >
+                        {categoryName}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}

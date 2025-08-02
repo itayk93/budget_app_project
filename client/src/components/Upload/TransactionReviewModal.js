@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useQuery } from 'react-query';
+import { categoriesAPI } from '../../services/api';
 import LoadingSpinner from '../Common/LoadingSpinner';
 import CategoryDropdown from './CategoryDropdown';
 import './TransactionReviewModal.css';
@@ -15,11 +17,22 @@ const TransactionReviewModal = ({
   const [deletedTransactionIds, setDeletedTransactionIds] = useState(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Fetch categories for dropdown
+  const { data: categoriesData = [], isLoading: categoriesLoading } = useQuery(
+    ['categories'],
+    () => categoriesAPI.getAll(),
+    {
+      enabled: isOpen
+    }
+  );
+
   // Initialize edited transactions when modal opens
   useEffect(() => {
     if (isOpen && transactions.length > 0) {
       console.log('🔍 [MODAL DEBUG] Received transactions:', transactions);
       console.log('🔍 [MODAL DEBUG] First transaction sample:', transactions[0]);
+      console.log('🔍 [MODAL DEBUG] Categories:', categoriesData);
+      console.log('🔍 [MODAL DEBUG] Categories loading:', categoriesLoading);
       setEditedTransactions(transactions.map((tx, index) => ({
         ...tx,
         tempId: `temp_${index}`,
@@ -100,7 +113,12 @@ const TransactionReviewModal = ({
         </div>
 
         <div className="modal-body">
-          <>
+          {categoriesLoading ? (
+            <div className="loading-container">
+              <LoadingSpinner size="medium" text="טוען קטגוריות..." />
+            </div>
+          ) : (
+            <>
               <div className="transactions-summary">
                 <div className="summary-item">
                   <span className="label">סה״כ עסקאות:</span>
@@ -178,6 +196,7 @@ const TransactionReviewModal = ({
                           <CategoryDropdown
                             value={transaction.category_id || ''}
                             onChange={(categoryName) => handleCategoryChange(transaction.tempId, categoryName)}
+                            categories={categoriesData}
                             placeholder="בחר קטגוריה..."
                           />
                         </td>
@@ -259,6 +278,7 @@ const TransactionReviewModal = ({
                         <CategoryDropdown
                           value={transaction.category_id || ''}
                           onChange={(categoryName) => handleCategoryChange(transaction.tempId, categoryName)}
+                          categories={categoriesData}
                           placeholder="בחר קטגוריה..."
                         />
                       </div>
@@ -273,6 +293,7 @@ const TransactionReviewModal = ({
                 </div>
               )}
             </>
+          )}
         </div>
 
         <div className="modal-footer">
