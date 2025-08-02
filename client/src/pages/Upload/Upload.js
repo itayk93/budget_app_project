@@ -298,6 +298,10 @@ const Upload = () => {
   
   const handleProgressComplete = (result) => {
     console.log('🔍 handleProgressComplete called with result:', result);
+    console.log('🔍 Current fileSource:', fileSource);
+    console.log('🔍 Result fileSource:', result.fileSource);
+    console.log('🔍 Result needs_transaction_review:', result.needs_transaction_review);
+    console.log('🔍 Result transactions:', result.transactions?.length || 0);
     
     // Prevent duplicate calls using both state and ref
     if (isFinalizingImport || isFinalizingImportRef.current) {

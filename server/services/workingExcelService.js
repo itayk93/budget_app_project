@@ -3144,6 +3144,13 @@ class WorkingExcelService {
       }
       
       // Check if this is a non-BudgetLens file that needs transaction review
+      console.log('🔍 [TRANSACTION REVIEW CHECK]', {
+        detectedFormat,
+        forceImport,
+        transactionsCount: transactions.length,
+        shouldShowReview: detectedFormat && detectedFormat.toLowerCase() !== 'budgetlens' && !forceImport
+      });
+      
       if (detectedFormat && detectedFormat.toLowerCase() !== 'budgetlens' && !forceImport) {
         console.log('🔄 Non-BudgetLens file detected, returning for transaction review');
         return {
