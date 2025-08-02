@@ -3123,6 +3123,16 @@ class WorkingExcelService {
         true // Enable duplicate checking
       );
       
+      // Debug all variables before condition checks
+      console.log('🔍 [DEBUG FINAL CONDITIONS]', {
+        has_duplicates: processingResult.has_duplicates,
+        duplicates_length: processingResult.duplicates?.length || 0,
+        detectedFormat,
+        forceImport,
+        transactions_count: transactions.length,
+        should_check_transaction_review: detectedFormat && detectedFormat.toLowerCase() !== 'budgetlens' && !forceImport
+      });
+
       // Check if duplicates were found
       if (processingResult.has_duplicates && processingResult.duplicates.length > 0) {
         console.log(`⚠️ Found ${processingResult.duplicates.length} duplicates!`);
