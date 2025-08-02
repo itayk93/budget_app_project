@@ -47,11 +47,10 @@ const TransactionReviewModal = ({
     }
   };
 
-  const handleCategoryChange = (tempId, categoryId) => {
-    const category = categories.find(cat => cat.id === parseInt(categoryId));
-    if (category) {
-      handleTransactionChange(tempId, 'category_name', category.name);
-      handleTransactionChange(tempId, 'category_id', category.id);
+  const handleCategoryChange = (tempId, categoryName) => {
+    if (categoryName && categoryName !== '__new_category__') {
+      handleTransactionChange(tempId, 'category_name', categoryName);
+      handleTransactionChange(tempId, 'category_id', categoryName); // Using name as ID for now
     }
   };
 
@@ -101,12 +100,7 @@ const TransactionReviewModal = ({
         </div>
 
         <div className="modal-body">
-          {categoriesLoading ? (
-            <div className="loading-container">
-              <LoadingSpinner size="medium" text="טוען קטגוריות..." />
-            </div>
-          ) : (
-            <>
+          <>
               <div className="transactions-summary">
                 <div className="summary-item">
                   <span className="label">סה״כ עסקאות:</span>
@@ -279,7 +273,6 @@ const TransactionReviewModal = ({
                 </div>
               )}
             </>
-          )}
         </div>
 
         <div className="modal-footer">
