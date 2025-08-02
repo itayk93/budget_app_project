@@ -163,7 +163,17 @@ export const transactionsAPI = {
   
   // Additional API endpoints for frontend compatibility
   recordAsIncome: (data) => api.post('/transactions/api/transactions/record-as-income', data),
-  getUniqueCategories: () => api.get('/transactions/api/transactions/unique_categories'),
+  getUniqueCategories: async () => {
+    console.log('🔍 [Transactions API] Making getUniqueCategories request...');
+    try {
+      const result = await api.get('/transactions/api/transactions/unique_categories');
+      console.log('🔍 [Transactions API] getUniqueCategories response:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ [Transactions API] getUniqueCategories error:', error);
+      throw error;
+    }
+  },
   batchCategorize: (data) => api.post('/transactions/api/transactions/batch_categorize', data),
   deleteAllByCashFlow: (data) => api.post('/transactions/api/transactions/delete_by_cash_flow', data),
 };

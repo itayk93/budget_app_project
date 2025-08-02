@@ -3,15 +3,19 @@ import './CategoryDropdown.css';
 
 const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "בחר קטגוריה..." }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
+  const searchInputRef = useRef(null);
 
-  console.log('🔍 [CategoryDropdown] Rendered with categories:', categories);
-  console.log('🔍 [CategoryDropdown] Categories length:', categories.length);
-  console.log('🔍 [CategoryDropdown] First category sample:', categories[0]);
+  // Debug: Log categories received only when they change
+  useEffect(() => {
+    console.log('🔍 [CategoryDropdown] Categories updated:', categories, 'Length:', categories?.length);
+  }, [categories]);
 
   // Function to categorize categories into groups
   const getCategoryGroup = (category) => {
-    const categoryName = (category.category_name || category.name || '').toLowerCase();
+    // Handle both object format and string format
+    const categoryName = (typeof category === 'string' ? category : (category.category_name || category.name || '')).toLowerCase();
     
     if (categoryName.includes('הכנסה') || categoryName.includes('משכורת') || categoryName.includes('עבודה') || categoryName.includes('פנסיה')) {
       return { name: 'הכנסות', icon: '💰', order: 1 };
@@ -59,26 +63,51 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
         categories: []
       };
     }
-    groups[groupName].categories.push(category);
+    
+    // Convert string categories to object format for consistency
+    const categoryObj = typeof category === 'string' 
+      ? { name: category, category_name: category, id: null }
+      : category;
+    
+    groups[groupName].categories.push(categoryObj);
     return groups;
   }, {});
 
-  // Sort groups by order and categories within groups alphabetically
+  // Filter categories based on search term
+  const filterCategories = (categories, searchTerm) => {
+    if (!searchTerm.trim()) return categories;
+    
+    return categories.filter(category => {
+      const categoryName = (category.category_name || category.name || '').toLowerCase();
+      const search = searchTerm.toLowerCase();
+      
+      // Check if category name contains search term or starts with it
+      return categoryName.includes(search) || 
+             categoryName.split(' ').some(word => word.startsWith(search));
+    });
+  };
+
+  // Sort groups by order and filter categories based on search
   const sortedGroups = Object.entries(groupedCategories)
     .sort(([, a], [, b]) => a.order - b.order)
     .map(([groupName, groupData]) => ({
       name: groupName,
       ...groupData,
-      categories: groupData.categories.sort((a, b) => 
-        (a.category_name || a.name).localeCompare(b.category_name || b.name, 'he')
+      categories: filterCategories(
+        groupData.categories.sort((a, b) => 
+          (a.category_name || a.name).localeCompare(b.category_name || b.name, 'he')
+        ),
+        searchTerm
       )
-    }));
+    }))
+    .filter(group => group.categories.length > 0); // Only show groups with matching categories
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
+        setSearchTerm('');
       }
     };
 
@@ -86,27 +115,71 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Focus search input when dropdown opens
+  useEffect(() => {
+    if (isOpen && searchInputRef.current) {
+      setTimeout(() => {
+        searchInputRef.current.focus();
+      }, 100);
+    }
+  }, [isOpen]);
+
   const handleCategorySelect = (category) => {
     console.log('🔍 [CategoryDropdown] Selected category:', category);
-    onChange(category.category_name || category.name);
+    // Since we're now using unique categories from transactions (strings), 
+    // we pass just the category name without ID
+    const categoryName = category.category_name || category.name;
+    onChange(categoryName);
     setIsOpen(false);
+    setSearchTerm('');
   };
 
   const toggleDropdown = () => {
     console.log('🔍 [CategoryDropdown] Toggle dropdown, current isOpen:', isOpen);
     setIsOpen(!isOpen);
+    if (!isOpen) {
+      setSearchTerm('');
+    }
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  // Handle keyboard navigation
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      setIsOpen(false);
+      setSearchTerm('');
+    } else if (e.key === 'Enter' && sortedGroups.length > 0) {
+      // Auto-select first result on Enter
+      const firstGroup = sortedGroups[0];
+      if (firstGroup.categories.length > 0) {
+        handleCategorySelect(firstGroup.categories[0]);
+      }
+    }
+  };
+
+  // Highlight matching text in category names
+  const highlightMatch = (text, searchTerm) => {
+    if (!searchTerm.trim()) return text;
+    
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    const parts = text.split(regex);
+    
+    return parts.map((part, index) => 
+      regex.test(part) ? 
+        <span key={index} className="highlight-match-simple">{part}</span> : 
+        part
+    );
   };
 
   // Get display value
   const getDisplayValue = () => {
     if (!value) return placeholder;
     
-    // Find the category by value
-    const category = categories.find(cat => 
-      cat.category_name === value || cat.name === value || cat.id === value
-    );
-    
-    return category ? (category.category_name || category.name) : value;
+    // Since we're now using category names directly, just return the value
+    return value;
   };
 
   return (
@@ -123,6 +196,18 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
 
       {isOpen && (
         <div className="dropdown-menu-simple">
+          <div className="dropdown-search-simple">
+            <input
+              ref={searchInputRef}
+              type="text"
+              className="search-input-simple"
+              placeholder="חפש קטגוריה..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              onKeyDown={handleKeyDown}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
           <div className="dropdown-options-simple">
             {sortedGroups.length > 0 ? (
               sortedGroups.map((group) => (
@@ -138,14 +223,16 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
                         className={`dropdown-option-simple ${value === (category.category_name || category.name) ? 'selected' : ''}`}
                         onClick={() => handleCategorySelect(category)}
                       >
-                        {category.category_name || category.name}
+                        {highlightMatch(category.category_name || category.name, searchTerm)}
                       </div>
                     ))}
                   </div>
                 </div>
               ))
             ) : (
-              <div className="no-categories-simple">אין קטגוריות זמינות</div>
+              <div className="no-categories-simple">
+                {searchTerm ? `לא נמצאו קטגוריות עבור "${searchTerm}"` : 'אין קטגוריות זמינות'}
+              </div>
             )}
           </div>
         </div>

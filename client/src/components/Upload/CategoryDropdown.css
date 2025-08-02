@@ -54,13 +54,40 @@
   border-radius: 8px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   z-index: 1000;
-  max-height: 300px;
+  max-height: 350px;
   overflow: hidden;
   margin-top: 4px;
 }
 
+.dropdown-search-simple {
+  padding: 12px;
+  border-bottom: 1px solid #f3f4f6;
+  background: white;
+}
+
+.search-input-simple {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: right;
+  direction: rtl;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.search-input-simple:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.search-input-simple::placeholder {
+  color: #9ca3af;
+}
+
 .dropdown-options-simple {
-  max-height: 280px;
+  max-height: 250px;
   overflow-y: auto;
 }
 
@@ -135,6 +162,14 @@
   color: #6b7280;
   font-size: 14px;
   direction: rtl;
+}
+
+.highlight-match-simple {
+  background-color: #fef3c7;
+  color: #92400e;
+  font-weight: 600;
+  padding: 1px 2px;
+  border-radius: 2px;
 }
 
 /* Scrollbar styling */

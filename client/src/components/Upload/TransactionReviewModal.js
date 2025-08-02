@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
-import { categoriesAPI } from '../../services/api';
+import { categoriesAPI, transactionsAPI } from '../../services/api';
 import LoadingSpinner from '../Common/LoadingSpinner';
 import CategoryDropdown from './CategoryDropdown';
 import './TransactionReviewModal.css';
@@ -18,7 +18,7 @@ const TransactionReviewModal = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState([]);
 
-  // Fetch categories for dropdown
+  // Fetch categories for dropdown - using regular categories API for now
   const { data: categoriesData = [], isLoading: categoriesLoading, error: categoriesError } = useQuery(
     ['categories'],
     () => {
@@ -38,9 +38,14 @@ const TransactionReviewModal = ({
 
   // Handle categories data when received
   useEffect(() => {
-    if (categoriesData && categoriesData.length > 0) {
-      console.log('🔍 [MODAL DEBUG] Setting categories:', categoriesData);
-      setCategories(categoriesData);
+    if (categoriesData && Array.isArray(categoriesData) && categoriesData.length > 0) {
+      console.log('🔍 [MODAL DEBUG] Setting categories from API:', categoriesData);
+      // For regular categories API, just extract category names
+      const categoryNames = categoriesData
+        .map(cat => cat.category_name || cat.name)
+        .filter(name => name !== null && name !== undefined && name !== '');
+      console.log('🔍 [MODAL DEBUG] Extracted category names:', categoryNames);
+      setCategories(categoryNames);
     }
   }, [categoriesData]);
 
@@ -49,10 +54,6 @@ const TransactionReviewModal = ({
     if (isOpen && transactions.length > 0) {
       console.log('🔍 [MODAL DEBUG] Received transactions:', transactions);
       console.log('🔍 [MODAL DEBUG] First transaction sample:', transactions[0]);
-      console.log('🔍 [MODAL DEBUG] Categories:', categoriesData);
-      console.log('🔍 [MODAL DEBUG] Categories loading:', categoriesLoading);
-      console.log('🔍 [MODAL DEBUG] Categories error:', categoriesError);
-      console.log('🔍 [MODAL DEBUG] Local categories state:', categories);
       setEditedTransactions(transactions.map((tx, index) => ({
         ...tx,
         tempId: `temp_${index}`,
@@ -60,7 +61,7 @@ const TransactionReviewModal = ({
       })));
       setDeletedTransactionIds(new Set());
     }
-  }, [isOpen, transactions, categoriesData, categories]);
+  }, [isOpen, transactions]);
 
   const handleTransactionChange = (tempId, field, value) => {
     setEditedTransactions(prev => 
@@ -80,10 +81,17 @@ const TransactionReviewModal = ({
     }
   };
 
-  const handleCategoryChange = (tempId, categoryName) => {
-    if (categoryName && categoryName !== '__new_category__') {
-      handleTransactionChange(tempId, 'category_name', categoryName);
-      handleTransactionChange(tempId, 'category_id', categoryName); // Using name as ID for now
+  const handleCategoryChange = (tempId, categoryData) => {
+    console.log('🔍 [TransactionReviewModal] Category change:', categoryData);
+    
+    // Since we're now using unique categories from transactions (just names),
+    // we only store the category name and set category_id to null
+    if (categoryData && typeof categoryData === 'string' && categoryData !== '__new_category__') {
+      handleTransactionChange(tempId, 'category_name', categoryData);
+      handleTransactionChange(tempId, 'category_id', null); // No ID needed since we use existing category names
+      console.log('✅ [TransactionReviewModal] Set category name:', categoryData);
+    } else {
+      console.warn('⚠️ Invalid category data:', categoryData);
     }
   };
 
@@ -163,6 +171,7 @@ const TransactionReviewModal = ({
                       <th>שם העסק</th>
                       <th>סכום</th>
                       <th>קטגוריה</th>
+                      <th>הערות</th>
                       <th>פעולות</th>
                     </tr>
                   </thead>
@@ -214,10 +223,23 @@ const TransactionReviewModal = ({
                         </td>
                         <td>
                           <CategoryDropdown
-                            value={transaction.category_id || ''}
-                            onChange={(categoryName) => handleCategoryChange(transaction.tempId, categoryName)}
+                            value={transaction.category_name || ''}
+                            onChange={(categoryData) => handleCategoryChange(transaction.tempId, categoryData)}
                             categories={categories}
                             placeholder="בחר קטגוריה..."
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            value={transaction.notes || ''}
+                            onChange={(e) => handleTransactionChange(
+                              transaction.tempId, 
+                              'notes', 
+                              e.target.value
+                            )}
+                            className="notes-input"
+                            placeholder="הערות..."
                           />
                         </td>
                         <td>
@@ -296,10 +318,24 @@ const TransactionReviewModal = ({
                       <div className="card-field">
                         <label>קטגוריה</label>
                         <CategoryDropdown
-                          value={transaction.category_id || ''}
-                          onChange={(categoryName) => handleCategoryChange(transaction.tempId, categoryName)}
+                          value={transaction.category_name || ''}
+                          onChange={(categoryData) => handleCategoryChange(transaction.tempId, categoryData)}
                           categories={categories}
                           placeholder="בחר קטגוריה..."
+                        />
+                      </div>
+
+                      <div className="card-field">
+                        <label>הערות</label>
+                        <input
+                          type="text"
+                          value={transaction.notes || ''}
+                          onChange={(e) => handleTransactionChange(
+                            transaction.tempId, 
+                            'notes', 
+                            e.target.value
+                          )}
+                          placeholder="הערות..."
                         />
                       </div>
                     </div>
