@@ -818,8 +818,7 @@ const Upload = () => {
                     >
                       <option value="other">כללי</option>
                       <option value="isracard">ישראכרט</option>
-                      <option value="leumi">בנק לאומי</option>
-                      <option value="hapoalim">בנק הפועלים</option>
+                      <option value="bank_yahav">בנק יהב</option>
                       <option value="budgetlens">BudgetLens</option>
                       <option value="cal">כאל</option>
                       <option value="max">מקס</option>
@@ -1191,18 +1190,9 @@ const Upload = () => {
                   <div className="format-item">
                     <div className="format-icon">🏦</div>
                     <div className="format-info">
-                      <h4>בנק לאומי</h4>
-                      <p>קבצי אקסל מחשבון הבנק</p>
-                      <small>עמודות נדרשות: תאריך, תיאור, זכות/חובה</small>
-                    </div>
-                  </div>
-                  
-                  <div className="format-item">
-                    <div className="format-icon">🏦</div>
-                    <div className="format-info">
-                      <h4>בנק הפועלים</h4>
-                      <p>קבצי אקסל מחשבון הבנק</p>
-                      <small>עמודות נדרשות: תאריך ביצוע, פירוט נוסף, סכום</small>
+                      <h4>בנק יהב</h4>
+                      <p>קבצי אקסל (.xls/.xlsx) מחשבון הבנק</p>
+                      <small>עמודות נדרשות: תאריך, אסמכתא, תיאור פעולה, חובה/זכות</small>
                     </div>
                   </div>
                   

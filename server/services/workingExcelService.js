@@ -223,6 +223,17 @@ class WorkingExcelService {
         transactionTypeColumn: 'סוג עסקה',
         executionMethodColumn: 'אופן ביצוע ההעסקה',
         notesColumn: 'הערות'
+      },
+      bank_yahav: {
+        requiredColumns: ['תאריך', 'אסמכתא', 'תיאור פעולה', 'חובה(₪)', 'זכות(₪)'],
+        alternativeColumns: ['שם הפעולה', 'תאריך ערך', 'יתרה משוערכת(₪)'],
+        keywords: ['יהב', 'yahav', 'תנועות עו"ש', 'תנועות זמניות'],
+        amountColumns: ['חובה(₪)', 'זכות(₪)', 'חובה', 'זכות'],
+        dateColumn: 'תאריך',
+        chargeDateColumn: 'תאריך ערך',
+        descriptionColumn: 'תיאור פעולה',
+        paymentIdentifierColumn: 'אסמכתא',
+        balanceColumn: 'יתרה משוערכת(₪)'
       }
     };
   }
@@ -1114,7 +1125,7 @@ class WorkingExcelService {
     // Store format detection for use in date parsing
     this.currentFormatDetection = formatDetection;
     const df = {};
-    df.source_type = 'creditCard';
+    df.source_type = formatDetection.format && formatDetection.format.toLowerCase() === 'bank_yahav' ? 'BankAccount' : 'creditCard';
 
     const looks_like_date = (val) => {
         if (!val) return false;
@@ -1268,6 +1279,54 @@ class WorkingExcelService {
             }
             df.business_name = val;
             continue;
+        }
+
+        // Handle Bank Yahav specific columns
+        if (lc.includes('תיאור פעולה') || lc.includes('שם הפעולה')) {
+            if (process.env.DEBUG === 'true') {
+                console.log(`🏦 Found Bank Yahav business name column: "${col}" with value: "${val}"`);
+            }
+            df.business_name = val;
+            // Clean up business name - replace '/' with space as per Python code
+            if (df.business_name) {
+                df.business_name = df.business_name.replace(/\//g, ' ');
+            }
+            continue;
+        }
+
+        if (lc.includes('אסמכתא')) {
+            if (process.env.DEBUG === 'true') {
+                console.log(`🏦 Found Bank Yahav reference column: "${col}" with value: "${val}"`);
+            }
+            df.original_identifier = val;
+            continue;
+        }
+
+        // Handle Bank Yahav debit/credit columns
+        if (formatDetection.format && formatDetection.format.toLowerCase() === 'bank_yahav') {
+            if (lc.includes('חובה')) {
+                if (process.env.DEBUG === 'true') {
+                    console.log(`🏦 Found Bank Yahav debit column: "${col}" with value: "${val}"`);
+                }
+                const debitAmount = this.parseAmount(val);
+                if (debitAmount && debitAmount > 0) {
+                    df.amount = -debitAmount; // Debit amounts are negative
+                    console.log(`💰 Set Bank Yahav debit amount: ${df.amount}`);
+                }
+                continue;
+            }
+            
+            if (lc.includes('זכות')) {
+                if (process.env.DEBUG === 'true') {
+                    console.log(`🏦 Found Bank Yahav credit column: "${col}" with value: "${val}"`);
+                }
+                const creditAmount = this.parseAmount(val);
+                if (creditAmount && creditAmount > 0) {
+                    df.amount = creditAmount; // Credit amounts are positive
+                    console.log(`💰 Set Bank Yahav credit amount: ${df.amount}`);
+                }
+                continue;
+            }
         }
 
         if (lc.includes('אמצעי') && lc.includes('תשלום')) {
@@ -1454,6 +1513,13 @@ class WorkingExcelService {
             }
         } else if (formatDetection.format.toLowerCase() === 'cal') {
             // For Cal files, use auto-categorization based on business name with 90% confidence
+            if (df.business_name) {
+                df.category_name = await this.getCategoryByBusinessName(df.business_name, df.amount, formatDetection.format) || 'הוצאות משתנות';
+            } else {
+                df.category_name = 'הוצאות משתנות';
+            }
+        } else if (formatDetection.format.toLowerCase() === 'bank_yahav') {
+            // For Bank Yahav files, use auto-categorization based on business name
             if (df.business_name) {
                 df.category_name = await this.getCategoryByBusinessName(df.business_name, df.amount, formatDetection.format) || 'הוצאות משתנות';
             } else {
