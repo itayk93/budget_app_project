@@ -3567,7 +3567,22 @@ class WorkingExcelService {
           key === '' // Empty column names are common in Max files
         );
         
+        // Check for Bank Yahav indicators
+        const hasBankYahavIndicators = firstRowKeys.some(key => 
+          key.includes('תנועות עו"ש') ||
+          key.includes('תנועות זמניות') ||
+          key.includes('Bank Yahav') ||
+          key.includes('יהב') ||
+          key.includes('בנק יהב')
+        ) || 
+        // Check if first row doesn't contain proper Bank Yahav headers (indicating header is later)
+        (firstRowKeys.length > 0 && !firstRowKeys.some(key => 
+          key.includes('תאריך') || key.includes('אסמכתא') || key.includes('תיאור פעולה') || key.includes('חובה') || key.includes('זכות')
+        )) ||
+        firstRowKeys.length < 4; // If too few columns, likely not the header row
+        
         console.log(`🔍 Has Isracard indicators:`, hasIsracardIndicators);
+        console.log(`🔍 Has Bank Yahav indicators:`, hasBankYahavIndicators);
         console.log(`🔍 Specific checks:`, {
           hasEmpty: firstRowKeys.some(key => key.includes('__EMPTY')),
           hasUsers: firstRowKeys.some(key => key.includes('כל המשתמשים')),
@@ -3575,21 +3590,23 @@ class WorkingExcelService {
           firstRowKeys: firstRowKeys
         });
         
-        if (hasIsracardIndicators) {
-          console.log('🏦 Detected Isracard file structure, attempting enhanced parsing...');
+        if (hasIsracardIndicators || hasBankYahavIndicators) {
+          console.log('🏦 Detected special file structure (Isracard/Max/Bank Yahav), attempting enhanced parsing...');
           
           // Try to read the raw data including all rows and find the actual header
           const rawSheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
           console.log(`📋 Raw sheet data: ${rawSheetData.length} rows`);
           
-          // Define expected Cal/Isracard/Max headers for better detection
+          // Define expected Cal/Isracard/Max/Bank Yahav headers for better detection
           const expectedHeaders = [
             // Cal/Isracard headers
             "תאריך עסקה", "שם בית עסק", "סכום עסקה", "סכום חיוב", "סוג עסקה", "ענף", "הערות",
             "תאריך רכישה", "תאריך חיוב בבנק", "שם בית העסק", "מטבע מקור", "מטבע", "מס' שובר",
             // Max bank headers
             "קטגוריה", "4 ספרות אחרונות של כרטיס האשראי", "מטבע חיוב", "סכום עסקה מקורי", 
-            "תאריך חיוב", "אופן ביצוע ההעסקה"
+            "תאריך חיוב", "אופן ביצוע ההעסקה",
+            // Bank Yahav headers
+            "תאריך", "אסמכתא", "תיאור פעולה", "שם הפעולה", "חובה(₪)", "זכות(₪)", "תאריך ערך", "יתרה משוערכת(₪)"
           ];
           
           // Look for the actual header row with transaction data
@@ -3613,22 +3630,49 @@ class WorkingExcelService {
                 row.some(cell => cell && cell.toString().includes(header))
               );
               
+              // Special check for Bank Yahav format - look for key Bank Yahav headers
+              const yahavKeyHeaders = ['תאריך', 'אסמכתא', 'תיאור פעולה', 'שם הפעולה', 'חובה(₪)', 'זכות(₪)', 'חובה', 'זכות'];
+              const yahavHeadersFound = yahavKeyHeaders.filter(header => 
+                row.some(cell => cell && cell.toString().includes(header))
+              );
+              
+              // Enhanced Bank Yahav detection - check for exact matches
+              const yahavExactMatches = row.filter(cell => {
+                if (!cell) return false;
+                const cellStr = cell.toString().trim();
+                return cellStr === 'תאריך' || cellStr === 'אסמכתא' || 
+                       cellStr === 'תיאור פעולה' || cellStr === 'שם הפעולה' ||
+                       cellStr === 'חובה(₪)' || cellStr === 'זכות(₪)' ||
+                       cellStr === 'חובה' || cellStr === 'זכות';
+              });
+              
+              console.log(`🔍 Row ${i} Bank Yahav check:`, {
+                yahavHeadersFound: yahavHeadersFound.length,
+                yahavExactMatches: yahavExactMatches.length,
+                headers: yahavHeadersFound,
+                exactCells: yahavExactMatches
+              });
+              
               // If we found at least 4 out of the expected headers, this is likely the header row
-              if (foundHeaders.length >= 4 || maxHeadersFound.length >= 3) {
+              if (foundHeaders.length >= 4 || maxHeadersFound.length >= 3 || yahavHeadersFound.length >= 3 || yahavExactMatches.length >= 3) {
                 headerRowIndex = i;
                 console.log(`🎯 Found header row at index ${i}:`, row);
                 console.log(`🎯 Matched headers: ${foundHeaders.join(', ')}`);
                 if (maxHeadersFound.length >= 3) {
-                  console.log(`🎯 Max headers found: ${maxHeadersFound.join(', ')}`);
+                  console.log(`🏦 Detected Max format with headers: ${maxHeadersFound.join(', ')}`);
+                } else if (yahavHeadersFound.length >= 3 || yahavExactMatches.length >= 3) {
+                  console.log(`🏦 Detected Bank Yahav format with headers: ${yahavHeadersFound.join(', ')}`);
+                  console.log(`🏦 Bank Yahav exact matches: ${yahavExactMatches.join(', ')}`);
                 }
                 break;
               }
               
-              // Fallback to original detection for partial matches (Cal/Max formats)  
-              const hasDateHeader = rowStr.includes('תאריך עסקה') || rowStr.includes('תאריך רכישה');
-              const hasBusinessHeader = rowStr.includes('שם בית עסק') || rowStr.includes('שם בית העסק');
+              // Fallback to original detection for partial matches (Cal/Max/Bank Yahav formats)  
+              const hasDateHeader = rowStr.includes('תאריך עסקה') || rowStr.includes('תאריך רכישה') || rowStr.includes('תאריך');
+              const hasBusinessHeader = rowStr.includes('שם בית עסק') || rowStr.includes('שם בית העסק') || rowStr.includes('תיאור פעולה');
               const hasAmountHeader = rowStr.includes('סכום עסקה') || rowStr.includes('סכום חיוב');
               const hasMaxSpecific = rowStr.includes('קטגוריה') || rowStr.includes('4 ספרות אחרונות') || rowStr.includes('מטבע חיוב');
+              const hasYahavSpecific = rowStr.includes('אסמכתא') || rowStr.includes('חובה(₪)') || rowStr.includes('זכות(₪)');
               
               if (hasDateHeader || 
                   hasBusinessHeader ||
@@ -3637,6 +3681,7 @@ class WorkingExcelService {
                   rowStr.includes('ענף') ||
                   rowStr.includes('תאריך חיוב בבנק') ||
                   hasMaxSpecific ||
+                  hasYahavSpecific ||
                   rowStr.includes('אופן ביצוע ההעסקה') ||
                   (rowStr.includes('תאריך') && rowStr.includes('סכום')) ||
                   (row.length >= 5 && row.some(cell => cell && cell.toString().includes('תאריך')))) {
