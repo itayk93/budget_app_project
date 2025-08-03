@@ -43,6 +43,11 @@ const menuItems = [
     ]
   },
   {
+    path: '/cash-flow',
+    label: 'דשבורד תזרים',
+    icon: '💰'
+  },
+  {
     path: '/transactions',
     label: 'תנועות',
     icon: '💳'

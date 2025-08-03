@@ -201,7 +201,10 @@ export const cashFlowsAPI = {
   update: (id, data) => api.put(`/cashflows/${id}`, data),
   setDefault: (id) => api.put(`/cashflows/${id}/default`),
   delete: (id) => api.delete(`/cashflows/${id}`),
-  getLatestTransactionDate: (id) => api.get(`/cashflows/${id}/latest-transaction-date`),
+  getLatestTransactionDate: (id, fileSource = null) => {
+    const params = fileSource ? { file_source: fileSource } : {};
+    return api.get(`/cashflows/${id}/latest-transaction-date`, { params });
+  },
 };
 
 // Reports API

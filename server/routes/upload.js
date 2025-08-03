@@ -7,6 +7,7 @@ const { supabase } = require('../config/supabase');
 const ExcelService = require('../services/excelService');
 const ComprehensiveExcelService = require('../services/comprehensiveExcelService');
 const WorkingExcelService = require('../services/workingExcelService');
+const BankYahavService = require('../services/bankYahavService');
 const blinkProcessor = require('../services/blinkProcessor');
 const { authenticateToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
@@ -2807,6 +2808,252 @@ router.get('/distinct-payment-methods', authenticateToken, async (req, res) => {
     console.error('Error fetching distinct payment methods:', error);
     res.status(500).json({
       error: 'Failed to fetch payment methods',
+      details: error.message
+    });
+  }
+});
+
+// ===== BANK YAHAV SPECIFIC ENDPOINTS =====
+
+// Process Bank Yahav file with multi-step processing (currency groups, duplicates, user approval)
+router.post('/bank-yahav/process', authenticateToken, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const { cash_flow_id } = req.body;
+    const userId = req.user.id;
+    const uploadId = Date.now() + '-' + Math.round(Math.random() * 1E9);
+
+    console.log('🏦 Processing Bank Yahav file:', {
+      uploadId,
+      filename: req.file.filename,
+      originalname: req.file.originalname,
+      size: req.file.size,
+      userId: userId,
+      cashFlowId: cash_flow_id
+    });
+
+    // Validate cash flow ID
+    if (!cash_flow_id) {
+      return res.status(400).json({ error: 'Cash flow ID is required' });
+    }
+
+    // Verify cash flow belongs to user
+    const cashFlow = await SupabaseService.getCashFlow(cash_flow_id);
+    if (!cashFlow || cashFlow.user_id !== userId) {
+      return res.status(404).json({ error: 'Cash flow not found' });
+    }
+
+    // Process the Bank Yahav file
+    const result = await BankYahavService.processYahavFile(req.file.path, userId, cash_flow_id);
+    
+    if (!result.success) {
+      return res.status(500).json({ 
+        error: 'Failed to process Bank Yahav file',
+        details: result.error 
+      });
+    }
+
+    // Store processing results for the multi-step flow
+    uploadSessions.set(uploadId, {
+      userId,
+      cashFlowId: cash_flow_id,
+      filePath: req.file.path,
+      filename: req.file.originalname,
+      fileFormat: 'bank_yahav',
+      result: result,
+      transactions: result.transactions,
+      currencyGroups: result.currencyGroups,
+      duplicates: result.duplicates,
+      createdAt: new Date().toISOString()
+    });
+
+    // Cleanup uploaded file
+    if (fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+
+    return res.json({
+      success: true,
+      uploadId: uploadId,
+      fileFormat: 'bank_yahav',
+      totalTransactions: result.totalTransactions,
+      currencyGroups: result.currencyGroups,
+      duplicates: result.duplicates,
+      message: 'Bank Yahav file processed successfully. Please review currency groups and duplicates.'
+    });
+
+  } catch (error) {
+    console.error('❌ Error processing Bank Yahav file:', error);
+    
+    // Cleanup file on error
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    
+    return res.status(500).json({
+      error: 'Failed to process Bank Yahav file',
+      details: error.message
+    });
+  }
+});
+
+// Get Bank Yahav currency groups for user review
+router.get('/bank-yahav/currency-groups/:uploadId', authenticateToken, async (req, res) => {
+  try {
+    const { uploadId } = req.params;
+    const userId = req.user.id;
+
+    const session = uploadSessions.get(uploadId);
+    if (!session || session.userId !== userId) {
+      return res.status(404).json({ error: 'Upload session not found' });
+    }
+
+    if (session.fileFormat !== 'bank_yahav') {
+      return res.status(400).json({ error: 'Not a Bank Yahav file session' });
+    }
+
+    return res.json({
+      success: true,
+      uploadId: uploadId,
+      currencyGroups: session.currencyGroups,
+      totalTransactions: session.transactions.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting Bank Yahav currency groups:', error);
+    return res.status(500).json({
+      error: 'Failed to get currency groups',
+      details: error.message
+    });
+  }
+});
+
+// Handle Bank Yahav currency group selections and check duplicates
+router.post('/bank-yahav/select-currencies', authenticateToken, async (req, res) => {
+  try {
+    const { uploadId, selectedCurrencies } = req.body;
+    const userId = req.user.id;
+
+    const session = uploadSessions.get(uploadId);
+    if (!session || session.userId !== userId) {
+      return res.status(404).json({ error: 'Upload session not found' });
+    }
+
+    if (session.fileFormat !== 'bank_yahav') {
+      return res.status(400).json({ error: 'Not a Bank Yahav file session' });
+    }
+
+    // Filter transactions based on selected currencies
+    const selectedTransactions = [];
+    for (const currency of selectedCurrencies) {
+      if (session.currencyGroups[currency]) {
+        selectedTransactions.push(...session.currencyGroups[currency].transactions);
+      }
+    }
+
+    console.log(`🏦 Selected ${selectedTransactions.length} transactions from currencies: ${selectedCurrencies.join(', ')}`);
+
+    // Update session with selected transactions
+    session.selectedTransactions = selectedTransactions;
+    session.selectedCurrencies = selectedCurrencies;
+
+    // Re-check duplicates for selected transactions only
+    const duplicates = await BankYahavService.checkDuplicates(selectedTransactions, userId, session.cashFlowId);
+
+    session.duplicates = duplicates;
+    uploadSessions.set(uploadId, session);
+
+    return res.json({
+      success: true,
+      uploadId: uploadId,
+      selectedTransactions: selectedTransactions.length,
+      duplicates: duplicates,
+      needsDuplicateReview: Object.keys(duplicates).length > 0
+    });
+
+  } catch (error) {
+    console.error('❌ Error handling Bank Yahav currency selection:', error);
+    return res.status(500).json({
+      error: 'Failed to process currency selection',
+      details: error.message
+    });
+  }
+});
+
+// Get Bank Yahav duplicates for user review
+router.get('/bank-yahav/duplicates/:uploadId', authenticateToken, async (req, res) => {
+  try {
+    const { uploadId } = req.params;
+    const userId = req.user.id;
+
+    const session = uploadSessions.get(uploadId);
+    if (!session || session.userId !== userId) {
+      return res.status(404).json({ error: 'Upload session not found' });
+    }
+
+    if (session.fileFormat !== 'bank_yahav') {
+      return res.status(400).json({ error: 'Not a Bank Yahav file session' });
+    }
+
+    return res.json({
+      success: true,
+      uploadId: uploadId,
+      duplicates: session.duplicates || {},
+      selectedTransactions: session.selectedTransactions ? session.selectedTransactions.length : 0
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting Bank Yahav duplicates:', error);
+    return res.status(500).json({
+      error: 'Failed to get duplicates',
+      details: error.message
+    });
+  }
+});
+
+// Import selected Bank Yahav transactions with user choices
+router.post('/bank-yahav/import', authenticateToken, async (req, res) => {
+  try {
+    const { uploadId, duplicateResolutions } = req.body;
+    const userId = req.user.id;
+
+    const session = uploadSessions.get(uploadId);
+    if (!session || session.userId !== userId) {
+      return res.status(404).json({ error: 'Upload session not found' });
+    }
+
+    if (session.fileFormat !== 'bank_yahav') {
+      return res.status(400).json({ error: 'Not a Bank Yahav file session' });
+    }
+
+    const transactionsToImport = session.selectedTransactions || session.transactions;
+    
+    console.log(`🏦 Importing ${transactionsToImport.length} Bank Yahav transactions with user selections`);
+
+    // Import transactions with user selections
+    const importResults = await BankYahavService.importSelectedTransactions(
+      transactionsToImport, 
+      duplicateResolutions || {}
+    );
+
+    // Cleanup session
+    uploadSessions.delete(uploadId);
+
+    console.log(`✅ Bank Yahav import completed: ${importResults.success} success, ${importResults.duplicates} duplicates, ${importResults.errors} errors, ${importResults.skipped} skipped`);
+
+    return res.json({
+      success: true,
+      results: importResults,
+      message: `Successfully imported ${importResults.success} Bank Yahav transactions`
+    });
+
+  } catch (error) {
+    console.error('❌ Error importing Bank Yahav transactions:', error);
+    return res.status(500).json({
+      error: 'Failed to import Bank Yahav transactions',
       details: error.message
     });
   }

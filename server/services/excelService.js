@@ -1,5 +1,6 @@
 const XLSX = require('xlsx');
 const SupabaseService = require('./supabaseService');
+const BankYahavService = require('./bankYahavService');
 
 class ExcelService {
   // ===== FILE PROCESSING =====
@@ -31,6 +32,9 @@ class ExcelService {
       // Process based on detected format
       let transactions = [];
       switch (fileFormat) {
+        case 'bank_yahav':
+          // Use the dedicated Bank Yahav service for multi-step processing
+          return await BankYahavService.processYahavFile(filePath, userId, cashFlowId, options);
         case 'isracard':
           transactions = await this.processIsracardData(jsonData, userId, cashFlowId);
           break;
@@ -71,6 +75,12 @@ class ExcelService {
   
   static detectFileFormat(headers) {
     const headerString = headers.join('|').toLowerCase();
+    
+    // Bank Yahav detection - check for specific Hebrew headers
+    if (headerString.includes('תאריך') && headerString.includes('אסמכתא') && 
+        (headerString.includes('תיאור פעולה') || headerString.includes('שם הפעולה'))) {
+      return 'bank_yahav';
+    }
     
     // Israeli bank detection patterns
     if (headerString.includes('עסקה') && headerString.includes('סכום') && headerString.includes('תאריך עסקה')) {

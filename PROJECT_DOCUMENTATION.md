@@ -514,6 +514,36 @@ All API endpoints are prefixed with `/api/` and most require authentication via 
   - Body: FormData with Blink file
   - Returns: Stock transaction processing results
 
+#### Bank Yahav Specific Processing
+- **POST** `/api/upload/bank-yahav/process`
+  - Initiates Bank Yahav file processing with multi-step workflow
+  - Requires: Authentication
+  - Body: FormData with Bank Yahav .xls/.xlsx file and cash_flow_id
+  - Returns: Upload session ID, currency groups, and duplicate detection results
+  - Features: Dynamic header detection, multi-sheet processing, Hebrew text support
+
+- **GET** `/api/upload/bank-yahav/currency-groups/:uploadId`
+  - Retrieves Bank Yahav currency groups for user review
+  - Requires: Authentication
+  - Returns: Currency groups with transaction counts, date ranges, and sample transactions
+
+- **POST** `/api/upload/bank-yahav/select-currencies`
+  - Processes user currency selection and re-checks duplicates
+  - Requires: Authentication
+  - Body: { uploadId, selectedCurrencies: ["ILS", "USD"] }
+  - Returns: Selected transaction count and duplicate detection results
+
+- **GET** `/api/upload/bank-yahav/duplicates/:uploadId`
+  - Retrieves Bank Yahav duplicate transactions for user review
+  - Requires: Authentication
+  - Returns: Duplicate groups with existing and new transaction details
+
+- **POST** `/api/upload/bank-yahav/import`
+  - Finalizes Bank Yahav import with user duplicate resolutions
+  - Requires: Authentication
+  - Body: { uploadId, duplicateResolutions: { "hash": "import|skip|replace" } }
+  - Returns: Import results with success, duplicate, error, and skipped counts
+
 #### File Formats & Templates
 - **GET** `/api/upload/formats`
   - Retrieves list of supported file formats and their specifications

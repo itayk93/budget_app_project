@@ -21,6 +21,7 @@ import Alerts from './pages/Stocks/Alerts';
 import CategoryOrder from './pages/CategoryOrder/CategoryOrder';
 import CategoryMappings from './pages/CategoryMappings/CategoryMappings';
 import Subscriptions from './pages/Subscriptions/Subscriptions';
+import CashFlowDashboard from './pages/CashFlow/CashFlowDashboard';
 import './styles/stocks.css';
 import LoadingSpinner from './components/Common/LoadingSpinner';
 
@@ -56,6 +57,7 @@ function App() {
       }>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
+        <Route path="cash-flow" element={<CashFlowDashboard />} />
         <Route path="transactions" element={<Transactions />} />
         <Route path="transaction/:id" element={<TransactionDetails />} />
         <Route path="upload" element={<Upload />} />

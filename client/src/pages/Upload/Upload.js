@@ -133,7 +133,7 @@ const Upload = () => {
   }, []);
 
   // Fetch latest transaction date when cash flow is selected
-  const fetchLatestTransactionDate = async (cashFlowId) => {
+  const fetchLatestTransactionDate = async (cashFlowId, sourceType = null) => {
     if (!cashFlowId) {
       setLatestTransactionInfo(null);
       return;
@@ -141,7 +141,9 @@ const Upload = () => {
     
     setLoadingLatestDate(true);
     try {
-      const result = await cashFlowsAPI.getLatestTransactionDate(cashFlowId);
+      // Use general transaction date for BudgetLens, otherwise use file source specific
+      const effectiveSource = sourceType === 'budgetlens' ? null : sourceType;
+      const result = await cashFlowsAPI.getLatestTransactionDate(cashFlowId, effectiveSource);
       setLatestTransactionInfo(result);
     } catch (error) {
       console.error('Error fetching latest transaction date:', error);
@@ -154,11 +156,32 @@ const Upload = () => {
   // Watch for cash flow selection changes
   useEffect(() => {
     if (selectedCashFlow) {
-      fetchLatestTransactionDate(selectedCashFlow);
+      fetchLatestTransactionDate(selectedCashFlow, fileSource);
     } else {
       setLatestTransactionInfo(null);
     }
-  }, [selectedCashFlow]);
+  }, [selectedCashFlow, fileSource]);
+
+  // Watch for file source changes to auto-detect payment identifier
+  useEffect(() => {
+    if (fileSource === 'cal' && selectedFile) {
+      const fileName = selectedFile.name;
+      // Look for patterns like "7209" in Cal file names
+      const match = fileName.match(/(\d{4})/);
+      if (match && match[1]) {
+        setPaymentIdentifier(match[1]);
+      }
+    } else if (fileSource !== 'cal') {
+      // Clear auto-detected payment identifier for non-CAL files
+      if (paymentIdentifier && selectedFile) {
+        const fileName = selectedFile.name;
+        const match = fileName.match(/(\d{4})/);
+        if (match && match[1] === paymentIdentifier) {
+          setPaymentIdentifier('');
+        }
+      }
+    }
+  }, [fileSource, selectedFile]);
 
   // Helper functions for date manipulation
   const formatDateForInput = (dateString) => {
@@ -244,6 +267,17 @@ const Upload = () => {
     if (file && (file.type.includes('excel') || file.type.includes('sheet') || file.name.endsWith('.csv'))) {
       setSelectedFile(file);
       setUploadResult(null);
+      
+      // Auto-detect payment identifier for CAL files
+      if (fileSource === 'cal') {
+        const fileName = file.name;
+        // Look for patterns like "7209" in Cal file names
+        // Example: פירוט חיובים לכרטיס דיינרס מסטרקארד 7209 - 02.08.25.xlsx
+        const match = fileName.match(/(\d{4})/);
+        if (match && match[1]) {
+          setPaymentIdentifier(match[1]);
+        }
+      }
     } else {
       alert('אנא בחר קובץ Excel או CSV');
     }

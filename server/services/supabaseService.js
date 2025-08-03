@@ -2928,12 +2928,19 @@ class SupabaseService {
 
   // ===== TRANSACTION DATE QUERIES =====
   
-  static async getLatestTransactionDate(cashFlowId) {
+  static async getLatestTransactionDate(cashFlowId, fileSource = null) {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('transactions')
         .select('payment_date')
-        .eq('cash_flow_id', cashFlowId)
+        .eq('cash_flow_id', cashFlowId);
+
+      // Add file source filter if provided
+      if (fileSource) {
+        query = query.eq('file_source', fileSource);
+      }
+
+      const { data, error } = await query
         .order('payment_date', { ascending: false })
         .limit(1)
         .single();

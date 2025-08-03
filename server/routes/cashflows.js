@@ -95,6 +95,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 router.get('/:id/latest-transaction-date', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
+    const { file_source } = req.query;
     
     // Verify cash flow exists and belongs to user
     const existingCashFlow = await SupabaseService.getCashFlow(id);
@@ -102,12 +103,13 @@ router.get('/:id/latest-transaction-date', authenticateToken, async (req, res) =
       return res.status(404).json({ error: 'Cash flow not found' });
     }
 
-    const latestDate = await SupabaseService.getLatestTransactionDate(id);
+    const latestDate = await SupabaseService.getLatestTransactionDate(id, file_source);
     
     res.json({ 
       cashFlowId: id,
       cashFlowName: existingCashFlow.name,
-      latestTransactionDate: latestDate
+      latestTransactionDate: latestDate,
+      fileSource: file_source
     });
   } catch (error) {
     console.error('Get latest transaction date error:', error);
@@ -137,6 +139,109 @@ router.put('/:id/default', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Set default cash flow error:', error);
     res.status(500).json({ error: 'Failed to set default cash flow' });
+  }
+});
+
+// Get cash flow analytics
+router.get('/:id/analytics', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { start_date, end_date } = req.query;
+    
+    // Verify cash flow exists and belongs to user
+    const existingCashFlow = await SupabaseService.getCashFlow(id);
+    if (!existingCashFlow || existingCashFlow.user_id !== req.user.id) {
+      return res.status(404).json({ error: 'Cash flow not found' });
+    }
+
+    // Get transactions for the specified period
+    const transactions = await SupabaseService.getTransactionsByCashFlow(
+      id, 
+      start_date, 
+      end_date,
+      1000 // limit
+    );
+
+    // Calculate analytics
+    const analytics = {
+      totalTransactions: transactions.length,
+      totalIncome: 0,
+      totalExpenses: 0,
+      netFlow: 0,
+      monthlyBreakdown: {},
+      categoryBreakdown: {},
+      averageMonthlyFlow: 0
+    };
+
+    // Process transactions
+    transactions.forEach(transaction => {
+      const amount = parseFloat(transaction.amount);
+      const date = new Date(transaction.date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const category = transaction.category_name || 'אחר';
+
+      // Update totals
+      analytics.netFlow += amount;
+      if (amount > 0) {
+        analytics.totalIncome += amount;
+      } else {
+        analytics.totalExpenses += Math.abs(amount);
+      }
+
+      // Monthly breakdown
+      if (!analytics.monthlyBreakdown[monthKey]) {
+        analytics.monthlyBreakdown[monthKey] = {
+          income: 0,
+          expenses: 0,
+          net: 0,
+          transactions: 0
+        };
+      }
+      
+      analytics.monthlyBreakdown[monthKey].transactions++;
+      analytics.monthlyBreakdown[monthKey].net += amount;
+      
+      if (amount > 0) {
+        analytics.monthlyBreakdown[monthKey].income += amount;
+      } else {
+        analytics.monthlyBreakdown[monthKey].expenses += Math.abs(amount);
+      }
+
+      // Category breakdown
+      if (!analytics.categoryBreakdown[category]) {
+        analytics.categoryBreakdown[category] = {
+          income: 0,
+          expenses: 0,
+          transactions: 0
+        };
+      }
+      
+      analytics.categoryBreakdown[category].transactions++;
+      
+      if (amount > 0) {
+        analytics.categoryBreakdown[category].income += amount;
+      } else {
+        analytics.categoryBreakdown[category].expenses += Math.abs(amount);
+      }
+    });
+
+    // Calculate average monthly flow
+    const monthCount = Object.keys(analytics.monthlyBreakdown).length;
+    if (monthCount > 0) {
+      analytics.averageMonthlyFlow = analytics.netFlow / monthCount;
+    }
+
+    res.json({
+      cashFlow: existingCashFlow,
+      analytics,
+      period: {
+        start_date,
+        end_date
+      }
+    });
+  } catch (error) {
+    console.error('Get cash flow analytics error:', error);
+    res.status(500).json({ error: 'Failed to fetch cash flow analytics' });
   }
 });
 
