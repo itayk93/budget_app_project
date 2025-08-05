@@ -1548,8 +1548,7 @@ router.post('/split', authenticateToken, async (req, res) => {
           payment_method: originalTransaction.payment_method || 'generic',
           payment_number: originalTransaction.payment_number || 1,
           total_payments: originalTransaction.total_payments || 1,
-          description: split.description || '',
-          notes: `פוצל מעסקה מקורית: ${originalTransaction.business_name} (מזהה: ${originalTransactionId})`
+          notes: `[SPLIT] פוצל מעסקה מקורית: ${originalTransaction.business_name} | מזהה מקורי: ${originalTransactionId} | הסבר: ${split.description || 'ללא הסבר'}`
         };
 
         console.log('🔄 Creating transaction:', newTransaction);
