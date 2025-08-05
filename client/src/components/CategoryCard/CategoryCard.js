@@ -36,6 +36,61 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
   const [useSharedTarget, setUseSharedTarget] = useState(categoryData?.use_shared_target !== false);
   const dropdownRef = useRef(null);
 
+  // Helper function to check if transaction is a split transaction
+  const isSplitTransaction = (transaction) => {
+    return transaction.notes && transaction.notes.includes('[SPLIT]');
+  };
+
+  // Helper function to extract split info from transaction notes
+  const getSplitInfo = (transaction) => {
+    if (!isSplitTransaction(transaction)) return null;
+    
+    const notes = transaction.notes;
+    const originalIdMatch = notes.match(/מזהה מקורי: ([a-f0-9-]+)/);
+    
+    if (originalIdMatch) {
+      const originalId = originalIdMatch[1];
+      
+      // Find all transactions with the same original ID to count total splits
+      const allTransactions = getAllTransactionsFromCategory();
+      const splitTransactions = allTransactions.filter(t => 
+        t.notes && t.notes.includes(`מזהה מקורי: ${originalId}`)
+      );
+      
+      const currentIndex = splitTransactions.findIndex(t => t.id === transaction.id);
+      
+      return {
+        originalId,
+        currentPart: currentIndex + 1,
+        totalParts: splitTransactions.length,
+        splitTransactions
+      };
+    }
+    
+    return null;
+  };
+
+  // Helper function to get all transactions from current category
+  const getAllTransactionsFromCategory = () => {
+    const allTransactions = [];
+    
+    // Add main category transactions
+    if (categoryData.transactions) {
+      allTransactions.push(...categoryData.transactions);
+    }
+    
+    // Add subcategory transactions
+    if (categoryData.subCategories) {
+      Object.values(categoryData.subCategories).forEach(subCat => {
+        if (subCat.transactions) {
+          allTransactions.push(...subCat.transactions);
+        }
+      });
+    }
+    
+    return allTransactions;
+  };
+
   // Update monthly target when categoryData changes
   useEffect(() => {
     setMonthlyTarget(categoryData?.monthly_target || null);
@@ -862,6 +917,11 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                                     style={{ color: 'inherit', textDecoration: 'none' }}
                                   >
                                     {transaction.business_name || transaction.description || 'תנועה ללא שם'}
+                                    {isSplitTransaction(transaction) && (
+                                      <span className="split-indicator">
+                                        ✂️ {getSplitInfo(transaction)?.currentPart}/{getSplitInfo(transaction)?.totalParts}
+                                      </span>
+                                    )}
                                   </a>
                                 </div>
                                 <div className="transaction-date">
@@ -940,6 +1000,11 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                           style={{ color: 'inherit', textDecoration: 'none' }}
                         >
                           {transaction.business_name || transaction.description || 'תנועה ללא שם'}
+                          {isSplitTransaction(transaction) && (
+                            <span className="split-indicator">
+                              ✂️ {getSplitInfo(transaction)?.currentPart}/{getSplitInfo(transaction)?.totalParts}
+                            </span>
+                          )}
                         </a>
                       </div>
                       <div className="transaction-date">

@@ -87,6 +87,30 @@ const TransactionDetails = () => {
     }
   };
 
+  // Helper function to check if transaction is a split transaction
+  const isSplitTransaction = (transaction) => {
+    return transaction?.notes && transaction.notes.includes('[SPLIT]');
+  };
+
+  // Helper function to extract split info from transaction notes
+  const getSplitInfo = (transaction) => {
+    if (!isSplitTransaction(transaction)) return null;
+    
+    const notes = transaction.notes;
+    const originalIdMatch = notes.match(/מזהה מקורי: ([a-f0-9-]+)/);
+    
+    if (originalIdMatch) {
+      return {
+        originalId: originalIdMatch[1],
+        // For now, we'll show a basic indication - could be enhanced later
+        currentPart: 1,
+        totalParts: '?'
+      };
+    }
+    
+    return null;
+  };
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('he-IL', {
@@ -227,7 +251,14 @@ const TransactionDetails = () => {
               {isNonCashflow && <div className="non-cashflow-indicator">לא תזרימי</div>}
             </div>
             <div className="transaction-main-info">
-              <h2 className="business-name">{transaction.business_name || transaction.description || 'עסקה ללא שם'}</h2>
+              <h2 className="business-name">
+                {transaction.business_name || transaction.description || 'עסקה ללא שם'}
+                {isSplitTransaction(transaction) && (
+                  <span className="split-indicator-page">
+                    ✂️ חלק מעסקה מפוצלת
+                  </span>
+                )}
+              </h2>
               <div className={`amount ${isIncome ? 'income' : 'expense'} ${isNonCashflow ? 'non-cashflow' : ''}`}>
                 {formatCurrency(amount, transaction.currency)}
                 {isNonCashflow && <span className="non-cashflow-label">לא תזרימי</span>}
@@ -316,6 +347,36 @@ const TransactionDetails = () => {
               </div>
             </div>
           </div>
+
+          {/* Split Transaction Details */}
+          {isSplitTransaction(transaction) && (
+            <div className="detail-card split-info-card">
+              <div className="card-header">
+                <i className="fas fa-cut"></i>
+                <h3>פרטי פיצול</h3>
+              </div>
+              <div className="card-content">
+                <div className="detail-row">
+                  <span className="label">סטטוס</span>
+                  <span className="value split-status">
+                    ✂️ חלק מעסקה מפוצלת
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <span className="label">מזהה עסקה מקורית</span>
+                  <span className="value original-id">
+                    {getSplitInfo(transaction)?.originalId.substring(0, 8)}...
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <span className="label">הערות פיצול</span>
+                  <span className="value split-notes">
+                    {transaction.notes.replace('[SPLIT] ', '')}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Business Details */}
           {businessDetails && businessDetails.found && businessDetails.business_details && (

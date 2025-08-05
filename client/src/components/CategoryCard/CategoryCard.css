@@ -1,3 +1,39 @@
+/* Split Transaction Indicator */
+.split-indicator {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 2px 6px;
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(255, 152, 0, 0.3);
+  position: relative;
+  top: -1px;
+}
+
+.split-indicator::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, #ff9800, #f57c00);
+  border-radius: 10px;
+  z-index: -1;
+  opacity: 0.3;
+}
+
+@media (max-width: 768px) {
+  .split-indicator {
+    font-size: 0.7rem;
+    padding: 1px 4px;
+    margin-right: 6px;
+  }
+}
+
 .category-card.modal-open {
   overflow: visible;
   z-index: 999; /* Ensure it's below the modal backdrop */

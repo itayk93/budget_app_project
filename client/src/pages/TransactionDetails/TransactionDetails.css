@@ -1,3 +1,108 @@
+/* Split Transaction Indicator for Transaction Details Page */
+.split-indicator-page {
+  display: inline-block;
+  margin-right: 12px;
+  padding: 4px 8px;
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(255, 152, 0, 0.3);
+  position: relative;
+  top: -2px;
+}
+
+.split-indicator-page::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  background: linear-gradient(135deg, #ff9800, #f57c00);
+  border-radius: 15px;
+  z-index: -1;
+  opacity: 0.2;
+}
+
+@media (max-width: 768px) {
+  .split-indicator-page {
+    font-size: 0.75rem;
+    padding: 3px 6px;
+    margin-right: 8px;
+  }
+}
+
+/* Split Info Card Styles */
+.split-info-card {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  border: 2px solid #ffcc02;
+  position: relative;
+  overflow: visible;
+}
+
+.split-info-card::before {
+  content: '✂️';
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+  z-index: 1;
+}
+
+.split-info-card .card-header {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  color: white;
+}
+
+.split-info-card .card-header i {
+  color: white;
+}
+
+.split-status {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.original-id {
+  font-family: 'Courier New', monospace;
+  background: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.split-notes {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #444;
+}
+
+@media (max-width: 768px) {
+  .split-info-card::before {
+    width: 25px;
+    height: 25px;
+    font-size: 10px;
+    top: -8px;
+    right: -8px;
+  }
+}
+
 .transaction-details {
   padding: var(--spacing-lg);
   max-width: 1200px;
