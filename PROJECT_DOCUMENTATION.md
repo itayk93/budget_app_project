@@ -215,6 +215,56 @@ All API endpoints are prefixed with `/api/` and most require authentication via 
   - Requires: Authentication
   - Returns: Array of potential duplicates
 
+#### Transaction Splitting Operations
+- **POST** `/api/transactions/split`
+  - Splits a single transaction into multiple transactions with different amounts, categories, and months
+  - Requires: Authentication
+  - Body: 
+    ```json
+    {
+      "originalTransactionId": "uuid-string",
+      "splits": [
+        {
+          "amount": -300.5,
+          "category": "טיסות לחו״ל",
+          "business_name": "ארקיע קווי תעופה ישראליים בע\"מ",
+          "flow_month": "2025-06",
+          "payment_date": "2025-06-22",
+          "currency": "ILS",
+          "description": "חלק ראשון של הטיסה"
+        },
+        {
+          "amount": -297.7,
+          "category": "פנאי ובילויים",
+          "business_name": "ארקיע קווי תעופה ישראליים בע\"מ",
+          "flow_month": "2025-07",
+          "payment_date": "2025-06-22",
+          "currency": "ILS",
+          "description": "חלק שני של הטיסה"
+        }
+      ]
+    }
+    ```
+  - Validation: Total split amounts must equal original transaction amount
+  - Process: Creates new transactions with `[SPLIT]` identifier in notes, then deletes original transaction
+  - Returns: Success message and array of created transactions
+  - Rollback: If any split creation fails, all created splits are deleted and original transaction is preserved
+
+- **POST** `/api/transactions/unsplit`
+  - Cancels transaction split by deleting all split transactions
+  - Requires: Authentication
+  - Body: `{ "originalTransactionId": "uuid-string" }`
+  - Process: Finds all transactions with `[SPLIT]` marker and matching original transaction ID, then deletes them
+  - Returns: Success message with count of deleted split transactions
+  - Note: Does not restore original transaction (which was deleted during split)
+
+#### Split Transaction Identification
+Split transactions are identified by:
+- **Notes field**: Contains `[SPLIT]` marker at the beginning
+- **Format**: `[SPLIT] פוצל מעסקה מקורית: {original_business_name} | מזהה מקורי: {original_transaction_id} | הסבר: {user_description}`
+- **Visual indicators**: UI shows ✂️ symbol with part numbers (e.g., "✂️ 1/2")
+- **Special styling**: Orange-colored indicators throughout the application
+
 #### Legacy API Compatibility
 - **POST** `/api/transactions/api/transactions/record-as-income`
   - Records transaction as income in different cash flow
