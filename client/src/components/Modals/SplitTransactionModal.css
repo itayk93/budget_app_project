@@ -1,0 +1,549 @@
+/* Split Transaction Modal Specific Styles */
+.split-modal {
+  max-width: 800px !important;
+  width: 95vw !important;
+  max-height: 90vh !important;
+  border-radius: 20px !important;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+/* Modal Header */
+.split-modal .modal-header {
+  background: linear-gradient(135deg, #FF9800 0%, #FF6F00 100%);
+  color: white;
+  padding: 24px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 16px rgba(255, 152, 0, 0.3);
+  border-bottom: none;
+}
+
+.split-modal .modal-title {
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.split-modal .modal-title::before {
+  content: "✂️";
+  font-size: 1.8rem;
+}
+
+.split-modal .modal-close {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+}
+
+.split-modal .modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+/* Modal Body */
+.split-modal-content {
+  padding: 32px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-height: calc(90vh - 120px);
+  overflow-y: auto;
+}
+
+/* Transaction Info Section */
+.transaction-info {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 2px solid #e1e5e9;
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.transaction-info > div {
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.transaction-info > div:last-child {
+  margin-bottom: 0;
+}
+
+.transaction-info strong {
+  color: #495057;
+  font-weight: 600;
+}
+
+/* Splits Container */
+.splits-container h4 {
+  color: #343a40;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.splits-container h4::before {
+  content: "📊";
+  font-size: 1.1rem;
+}
+
+/* Split Item */
+.split-item {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border: 2px solid #e1e5e9;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.split-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: #2196F3;
+}
+
+.split-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.split-item h5 {
+  color: #343a40;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.split-item h5::before {
+  content: "🔢";
+  font-size: 1rem;
+}
+
+.remove-split-btn {
+  background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+}
+
+.remove-split-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+}
+
+/* Split Fields Grid */
+.split-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Full width field for notes */
+.split-field[style*="gridColumn"] {
+  margin-top: 8px;
+}
+
+.split-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.split-field label {
+  color: #495057;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.input-field {
+  padding: 12px 16px;
+  border: 2px solid #e1e5e9;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  background: #ffffff;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #2196F3;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+  transform: translateY(-1px);
+}
+
+.input-field::placeholder {
+  color: #adb5bd;
+}
+
+/* Add Split Button */
+.add-split-btn {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+}
+
+.add-split-btn::before {
+  content: "➕";
+  font-size: 0.9rem;
+}
+
+.add-split-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+}
+
+/* Totals Summary */
+.totals-summary {
+  background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin: 24px 0;
+  border: 2px solid #c3e6cb;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.1);
+}
+
+.totals-summary.warning {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  border-color: #ffeaa7;
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.1);
+}
+
+.totals-summary > div {
+  margin-bottom: 8px;
+  font-size: 1rem;
+}
+
+.totals-summary > div:last-child {
+  margin-bottom: 0;
+  font-size: 1.1rem;
+}
+
+.totals-summary strong {
+  font-weight: 600;
+}
+
+/* Error Message */
+.error-message {
+  background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+  color: #d32f2f;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 2px solid #ffcdd2;
+  font-weight: 500;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.1);
+}
+
+/* Modal Actions */
+.modal-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 2px solid #e1e5e9;
+}
+
+.btn-secondary {
+  flex: 1;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(108, 117, 125, 0.4);
+}
+
+.btn-primary {
+  flex: 1;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #FF9800 0%, #FF6F00 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 152, 0, 0.4);
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .split-modal {
+    width: 95vw !important;
+    max-height: 95vh !important;
+    border-radius: 16px !important;
+  }
+
+  .split-modal .modal-header {
+    padding: 20px 24px;
+  }
+
+  .split-modal .modal-title {
+    font-size: 1.3rem;
+  }
+
+  .split-modal-content {
+    padding: 24px 20px;
+    gap: 20px;
+    max-height: calc(95vh - 100px);
+  }
+
+  .split-fields {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .split-item {
+    padding: 20px 16px;
+    margin-bottom: 16px;
+  }
+
+  .split-item-header h5 {
+    font-size: 1rem;
+  }
+
+  .input-field {
+    padding: 14px 16px;
+    font-size: 1rem;
+    min-height: 48px; /* מגע נוח בטלפון */
+  }
+
+  .modal-actions {
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 24px;
+    padding-top: 20px;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    padding: 16px 20px;
+    font-size: 1.1rem;
+    min-height: 56px; /* גובה נוח ללחיצה בטלפון */
+  }
+
+  .add-split-btn {
+    padding: 14px 24px;
+    font-size: 1.1rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .remove-split-btn {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+  }
+
+  .totals-summary {
+    padding: 20px;
+    font-size: 1rem;
+  }
+
+  .transaction-info {
+    padding: 20px;
+    font-size: 1rem;
+  }
+
+  .splits-container h4 {
+    font-size: 1.2rem;
+    margin-bottom: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .split-modal {
+    width: 98vw !important;
+    max-height: 98vh !important;
+    border-radius: 12px !important;
+  }
+
+  .split-modal .modal-header {
+    padding: 16px 20px;
+  }
+
+  .split-modal .modal-title {
+    font-size: 1.2rem;
+  }
+
+  .split-modal-content {
+    padding: 20px 16px;
+    gap: 16px;
+    max-height: calc(98vh - 80px);
+  }
+
+  .split-item {
+    padding: 16px 12px;
+    margin-bottom: 12px;
+  }
+
+  .split-item-header {
+    margin-bottom: 12px;
+  }
+
+  .split-item-header h5 {
+    font-size: 0.95rem;
+  }
+
+  .split-fields {
+    gap: 12px;
+  }
+
+  .input-field {
+    padding: 16px 14px;
+    font-size: 1rem;
+    min-height: 50px;
+  }
+
+  .transaction-info {
+    padding: 16px;
+    font-size: 0.95rem;
+  }
+
+  .transaction-info > div {
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+
+  .totals-summary {
+    padding: 16px;
+    font-size: 0.95rem;
+  }
+
+  .totals-summary > div {
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    padding: 18px 20px;
+    font-size: 1.1rem;
+    min-height: 60px;
+  }
+
+  .add-split-btn {
+    padding: 16px 20px;
+    font-size: 1.05rem;
+    min-height: 54px;
+  }
+
+  .remove-split-btn {
+    padding: 12px 14px;
+    font-size: 0.85rem;
+    min-height: 40px;
+  }
+
+  .modal-actions {
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 16px;
+  }
+
+  .splits-container h4 {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+  }
+
+  .error-message {
+    padding: 14px 16px;
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+}
+
+/* עיצוב מיוחד לטלפונים קטנים מאוד */
+@media (max-width: 360px) {
+  .split-modal .modal-header {
+    padding: 12px 16px;
+  }
+
+  .split-modal .modal-title {
+    font-size: 1.1rem;
+  }
+
+  .split-modal-content {
+    padding: 16px 12px;
+  }
+
+  .split-item {
+    padding: 12px 8px;
+  }
+
+  .input-field {
+    padding: 14px 12px;
+    font-size: 0.95rem;
+  }
+
+  .transaction-info,
+  .totals-summary {
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+}

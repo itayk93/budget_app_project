@@ -1,7 +1,7 @@
 .sidebar {
   position: fixed;
   top: 80px; /* Below header */
-  right: 0;
+  right: -300px; /* Hidden by default */
   width: 300px;
   height: calc(100vh - 80px);
   background: white;
@@ -13,15 +13,23 @@
   flex-direction: column;
 }
 
-/* On desktop, sidebar is always visible */
+.sidebar.sidebar-open {
+  right: 0; /* Show when open */
+}
+
+/* On desktop, sidebar can be toggled */
 @media (min-width: 769px) {
   .sidebar {
     top: 80px;
     height: calc(100vh - 80px);
     width: 300px;
-    right: 0 !important;
+    right: -300px; /* Hidden by default */
     background: white;
     z-index: 1000;
+  }
+  
+  .sidebar.sidebar-open {
+    right: 0; /* Show when open */
   }
 }
 

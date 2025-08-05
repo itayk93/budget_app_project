@@ -85,11 +85,23 @@ const CashFlowDashboard = () => {
           startDate.setMonth(endDate.getMonth() - 6);
       }
 
-      console.log('Fetching transactions with params:', {
-        cash_flow_id: selectedCashFlow.id,
-        show_all: 'true'
+      // Use the same dashboard endpoint for consistency
+      console.log('Fetching dashboard data with params:', {
+        cash_flow: selectedCashFlow.id,
+        all_time: '1' // Get all time data for chart processing
       });
 
+      const dashboardResponse = await api.get('/dashboard', {
+        params: {
+          cash_flow: selectedCashFlow.id,
+          all_time: '1',
+          format: 'json'
+        }
+      });
+
+      console.log('Dashboard API Response:', dashboardResponse);
+      
+      // Get transactions from the dashboard data or fetch separately if needed
       const response = await api.get('/transactions', {
         params: {
           cash_flow_id: selectedCashFlow.id,
@@ -98,16 +110,28 @@ const CashFlowDashboard = () => {
         }
       });
 
-      console.log('API Response:', response);
+      console.log('Transactions API Response:', response);
       const allTransactions = response.transactions || response.data || response || [];
       console.log('Total transactions found:', allTransactions.length);
       
-      // Filter transactions by date range on client side
+      // Filter transactions by date range and use same exclusion logic as dashboard
       const filteredTransactions = allTransactions.filter(transaction => {
         const dateField = transaction.payment_date || transaction.date;
         if (!dateField) return false;
         const transactionDate = new Date(dateField);
-        return transactionDate >= startDate && transactionDate <= endDate;
+        
+        // Date range filter
+        const inRange = transactionDate >= startDate && transactionDate <= endDate;
+        if (!inRange) return false;
+        
+        // Use same non-cash-flow exclusion logic as dashboard
+        const isNonCashflow = (
+          transaction.excluded_from_flow === true ||
+          (transaction.category_name && transaction.category_name.includes('לא תזרימיות')) ||
+          (transaction.category && transaction.category.includes('לא תזרימיות'))
+        );
+        
+        return !isNonCashflow;
       });
       
       console.log('Filtered transactions:', filteredTransactions.length);
@@ -156,17 +180,8 @@ const CashFlowDashboard = () => {
     transactionData.forEach(transaction => {
       console.log('Processing transaction:', transaction);
       
-      // Skip non-cash-flow transactions - same logic as main dashboard
-      const isNonCashflow = (
-        transaction.excluded_from_flow === true ||
-        (transaction.category_name && transaction.category_name.includes('לא תזרימיות')) ||
-        (transaction.category && transaction.category.includes('לא תזרימיות'))
-      );
-      
-      if (isNonCashflow) {
-        console.log('Skipping non-cash-flow transaction:', transaction.category_name || transaction.category);
-        return;
-      }
+      // Non-cash-flow transactions are already filtered out in fetchCashFlowData
+      // This ensures consistency with dashboard calculations
       
       // Handle different date formats
       let date;
@@ -680,8 +695,33 @@ const CashFlowDashboard = () => {
                 notation: isMobile ? 'compact' : 'standard'
               }).format(
                 transactions
-                  .filter(t => parseFloat(t.amount) > 0)
-                  .reduce((sum, t) => sum + parseFloat(t.amount), 0)
+                  .filter(t => {
+                    // Use same income detection logic as generateChartData
+                    const amount = parseFloat(t.amount || t.Amount || t.sum || t.Sum || 0);
+                    let isIncome = false;
+                    
+                    if (t.category && t.category.category_type) {
+                      isIncome = t.category.category_type.toLowerCase() === 'income' || 
+                                 t.category.category_type.toLowerCase() === 'הכנסה';
+                    } else if (t.category_type) {
+                      isIncome = t.category_type.toLowerCase() === 'income' || 
+                                 t.category_type.toLowerCase() === 'הכנסה';
+                    } else if (t.type) {
+                      isIncome = t.type.toLowerCase() === 'income' || 
+                                 t.type.toLowerCase() === 'הכנסה';
+                    } else if (t.transaction_type) {
+                      isIncome = t.transaction_type.toLowerCase() === 'income' || 
+                                 t.transaction_type.toLowerCase() === 'הכנסה';
+                    } else {
+                      isIncome = amount > 0;
+                    }
+                    
+                    return isIncome;
+                  })
+                  .reduce((sum, t) => {
+                    const amount = parseFloat(t.amount || t.Amount || t.sum || t.Sum || 0);
+                    return sum + Math.abs(amount);
+                  }, 0)
               )}</p>
             </div>
 
@@ -693,8 +733,33 @@ const CashFlowDashboard = () => {
                 notation: isMobile ? 'compact' : 'standard'
               }).format(
                 transactions
-                  .filter(t => parseFloat(t.amount) < 0)
-                  .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0)
+                  .filter(t => {
+                    // Use same expense detection logic as generateChartData
+                    const amount = parseFloat(t.amount || t.Amount || t.sum || t.Sum || 0);
+                    let isIncome = false;
+                    
+                    if (t.category && t.category.category_type) {
+                      isIncome = t.category.category_type.toLowerCase() === 'income' || 
+                                 t.category.category_type.toLowerCase() === 'הכנסה';
+                    } else if (t.category_type) {
+                      isIncome = t.category_type.toLowerCase() === 'income' || 
+                                 t.category_type.toLowerCase() === 'הכנסה';
+                    } else if (t.type) {
+                      isIncome = t.type.toLowerCase() === 'income' || 
+                                 t.type.toLowerCase() === 'הכנסה';
+                    } else if (t.transaction_type) {
+                      isIncome = t.transaction_type.toLowerCase() === 'income' || 
+                                 t.transaction_type.toLowerCase() === 'הכנסה';
+                    } else {
+                      isIncome = amount > 0;
+                    }
+                    
+                    return !isIncome;
+                  })
+                  .reduce((sum, t) => {
+                    const amount = parseFloat(t.amount || t.Amount || t.sum || t.Sum || 0);
+                    return sum + Math.abs(amount);
+                  }, 0)
               )}</p>
             </div>
 
@@ -705,7 +770,29 @@ const CashFlowDashboard = () => {
                 currency: selectedCashFlow.currency || 'ILS',
                 notation: isMobile ? 'compact' : 'standard'
               }).format(
-                transactions.reduce((sum, t) => sum + parseFloat(t.amount), 0)
+                transactions.reduce((sum, t) => {
+                  const amount = parseFloat(t.amount || t.Amount || t.sum || t.Sum || 0);
+                  let isIncome = false;
+                  
+                  if (t.category && t.category.category_type) {
+                    isIncome = t.category.category_type.toLowerCase() === 'income' || 
+                               t.category.category_type.toLowerCase() === 'הכנסה';
+                  } else if (t.category_type) {
+                    isIncome = t.category_type.toLowerCase() === 'income' || 
+                               t.category_type.toLowerCase() === 'הכנסה';
+                  } else if (t.type) {
+                    isIncome = t.type.toLowerCase() === 'income' || 
+                               t.type.toLowerCase() === 'הכנסה';
+                  } else if (t.transaction_type) {
+                    isIncome = t.transaction_type.toLowerCase() === 'income' || 
+                               t.transaction_type.toLowerCase() === 'הכנסה';
+                  } else {
+                    isIncome = amount > 0;
+                  }
+                  
+                  const absAmount = Math.abs(amount);
+                  return isIncome ? sum + absAmount : sum - absAmount;
+                }, 0)
               )}</p>
             </div>
 

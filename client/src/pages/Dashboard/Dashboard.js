@@ -153,17 +153,22 @@ const Dashboard = () => {
     }
   }, [selectedCashFlow, refetchDashboard]);
 
-  // Close month picker when pressing escape
+  // Close modals when pressing escape
   useEffect(() => {
     const handleEscape = (event) => {
-      if (event.key === 'Escape' && showMonthPicker) {
-        setShowMonthPicker(false);
+      if (event.key === 'Escape') {
+        if (showMonthPicker) {
+          setShowMonthPicker(false);
+        }
+        if (showChartModal) {
+          setShowChartModal(false);
+        }
       }
     };
 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [showMonthPicker]);
+  }, [showMonthPicker, showChartModal]);
 
   // Create chart when modal opens
   useEffect(() => {
@@ -523,8 +528,21 @@ const Dashboard = () => {
     );
   }
 
+  const closeAllModals = () => {
+    setShowMonthPicker(false);
+    setShowChartModal(false);
+  };
+
   return (
-    <div className="dashboard">
+    <div className={`dashboard ${(showMonthPicker || showChartModal) ? 'modal-open' : ''}`}>
+      {/* Emergency close button for stuck modals */}
+      <button 
+        className="emergency-close-btn" 
+        onClick={closeAllModals}
+        title="סגור הכל"
+      >
+        ✕
+      </button>
       {/* Mobile Only Controls */}
       <div className="mobile-dashboard-controls">
         {/* בחירת חודש ותזרים Button */}

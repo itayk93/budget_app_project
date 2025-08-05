@@ -20,8 +20,10 @@ import StockTransactions from './pages/Stocks/StockTransactions';
 import Alerts from './pages/Stocks/Alerts';
 import CategoryOrder from './pages/CategoryOrder/CategoryOrder';
 import CategoryMappings from './pages/CategoryMappings/CategoryMappings';
+import BusinessCategoryIntelligence from './pages/BusinessCategoryIntelligence/BusinessCategoryIntelligence';
 import Subscriptions from './pages/Subscriptions/Subscriptions';
 import CashFlowDashboard from './pages/CashFlow/CashFlowDashboard';
+import BudgetLensComparison from './pages/BudgetLensComparison/BudgetLensComparison';
 import './styles/stocks.css';
 import LoadingSpinner from './components/Common/LoadingSpinner';
 
@@ -70,7 +72,9 @@ function App() {
         <Route path="stocks/alerts" element={<Alerts />} />
         <Route path="category-order" element={<CategoryOrder />} />
         <Route path="category-mappings" element={<CategoryMappings />} />
+        <Route path="business-category-intelligence" element={<BusinessCategoryIntelligence />} />
         <Route path="subscriptions" element={<Subscriptions />} />
+        <Route path="budgetlens-comparison" element={<BudgetLensComparison />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

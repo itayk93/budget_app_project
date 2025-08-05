@@ -238,6 +238,124 @@ All API endpoints are prefixed with `/api/` and most require authentication via 
   - Body: `{ cashFlowId }`
   - Returns: Success message
 
+#### Business Category Intelligence
+- **GET** `/api/transactions/businesses/variable-expenses`
+  - Retrieves businesses with "הוצאות משתנות" category for intelligent categorization
+  - Requires: Authentication
+  - Returns: Array of businesses with transaction counts and summary data
+  - Example response:
+    ```json
+    {
+      "success": true,
+      "businesses": [
+        {
+          "business_name": "GDBURGER",
+          "current_category": "הוצאות משתנות",
+          "transaction_count": 5,
+          "total_amount": 1140,
+          "currency": "ILS",
+          "latest_transaction_date": "2025-06-02",
+          "sample_transactions": [...]
+        }
+      ],
+      "total_businesses": 15,
+      "total_transactions": 87
+    }
+    ```
+
+- **POST** `/api/transactions/businesses/suggest-categories`
+  - Gets Perplexity AI category suggestions for businesses
+  - Requires: Authentication
+  - Body: `{ businesses: ["BUSINESS_NAME1", "BUSINESS_NAME2"], debug: false }`
+  - Returns: Category suggestions with confidence scores
+  - Uses Perplexity's 'sonar' model with web search capabilities
+  - Includes fallback categorization if Perplexity API is unavailable
+  - Debug mode (debug: true) returns detailed business information and raw Perplexity JSON response
+  - Example response (Standard mode):
+    ```json
+    {
+      "success": true,
+      "suggestions": [
+        {
+          "business_name": "GDBURGER",
+          "suggested_category": "מזון ומשקאות",
+          "confidence": 0.8,
+          "reasoning": "Perplexity AI categorization"
+        }
+      ]
+    }
+    ```
+  - Example response (Debug mode):
+    ```json
+    {
+      "success": true,
+      "suggestions": [
+        {
+          "business_name": "GDBURGER",
+          "suggested_category": "אוכל בחוץ",
+          "confidence": 0.8,
+          "reasoning": "Perplexity AI categorization with detailed research",
+          "business_info": {
+            "name": "GDBURGER",
+            "type": "Fast food restaurant",
+            "location": "Tel Aviv",
+            "country": "Israel",
+            "address": "Main Street 123, Tel Aviv",
+            "phone": "03-1234567",
+            "website": "https://gdburger.co.il",
+            "opening_hours": "Sunday-Thursday 10:00-23:00",
+            "social_links": ["https://facebook.com/gdburger"],
+            "branch_info": "Part of GD Restaurant Chain",
+            "description": "Burger restaurant chain specializing in gourmet burgers"
+          },
+          "debug_info": {
+            "raw_response": { /* Full Perplexity API response */ },
+            "perplexity_content": "{ JSON response from Perplexity }"
+          }
+        }
+      ]
+    }
+    ```
+  - Example response (Fallback):
+    ```json
+    {
+      "success": true,
+      "suggestions": [
+        {
+          "business_name": "קניון שבעת כוכבים",
+          "suggested_category": "קניות",
+          "confidence": 0.5,
+          "reasoning": "Fallback categorization - Perplexity API unavailable"
+        }
+      ]
+    }
+    ```
+
+- **POST** `/api/transactions/businesses/update-categories`
+  - Updates business categories in bulk based on suggestions
+  - Requires: Authentication
+  - Body: 
+    ```json
+    {
+      "category_updates": [
+        {
+          "business_name": "GDBURGER",
+          "new_category": "מזון ומשקאות",
+          "exclude_transaction_ids": ["optional-array-of-ids"]
+        }
+      ]
+    }
+    ```
+  - Returns: Update results with success/failure counts
+
+- **GET** `/api/transactions/businesses/:businessName/transactions`
+  - Retrieves all transactions for specific business
+  - Requires: Authentication
+  - URL parameter: `businessName` (URL-encoded business name)
+  - Query parameter: `category_name` (optional filter)
+  - Returns: Array of transactions for the business
+  - Example: `/api/transactions/businesses/GDBURGER/transactions?category_name=הוצאות משתנות`
+
 ### 4. Category Routes (`/api/categories`)
 
 #### Basic Operations

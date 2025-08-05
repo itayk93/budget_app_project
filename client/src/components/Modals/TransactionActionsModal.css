@@ -5,21 +5,18 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 10000;
+  z-index: 1005;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .transaction-actions-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  position: relative;
   background: white;
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  z-index: 10001;
+  z-index: 1006;
   min-width: 320px;
   max-width: 400px;
   width: 90vw;

@@ -77,6 +77,11 @@ const menuItems = [
         path: '/category-mappings',
         label: 'ניהול קטגוריות חברות',
         icon: '🏢'
+      },
+      {
+        path: '/business-category-intelligence',
+        label: 'אינטליגנציה לקטגוריות',
+        icon: '🧠'
       }
     ]
   },
@@ -84,6 +89,11 @@ const menuItems = [
     path: '/subscriptions',
     label: 'מנויים',
     icon: '🔄'
+  },
+  {
+    path: '/budgetlens-comparison',
+    label: 'השוואת BudgetLens',
+    icon: '🔍'
   },
   {
     path: '/profile',

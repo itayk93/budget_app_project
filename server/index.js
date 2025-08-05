@@ -89,6 +89,7 @@ const stockRoutes = require('./routes/stocks');
 const alertRoutes = require('./routes/alerts');
 const dashboardRoutes = require('./routes/dashboard');
 const monthlyGoalsRoutes = require('./routes/monthlyGoals');
+const budgetlensRoutes = require('./routes/budgetlens');
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -103,6 +104,7 @@ app.use('/api/stocks', stockRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/monthly-goals', monthlyGoalsRoutes);
+app.use('/api/budgetlens', budgetlensRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -6,6 +6,7 @@ import CopyTransactionModal from '../Modals/CopyTransactionModal';
 import ChangeMonthModal from '../Modals/ChangeMonthModal';
 import EditTransactionModal from '../Modals/EditTransactionModal';
 import DeleteTransactionModal from '../Modals/DeleteTransactionModal';
+import SplitTransactionModal from '../Modals/SplitTransactionModal';
 import MonthlyTargetModal from '../Modals/MonthlyTargetModal';
 import TransactionActionsModal from '../Modals/TransactionActionsModal';
 import WeeklyBreakdown from '../WeeklyBreakdown/WeeklyBreakdown';
@@ -22,6 +23,7 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
   const [showChangeMonthModal, setShowChangeMonthModal] = useState(false);
   const [showEditTransactionModal, setShowEditTransactionModal] = useState(false);
   const [showDeleteTransactionModal, setShowDeleteTransactionModal] = useState(false);
+  const [showSplitTransactionModal, setShowSplitTransactionModal] = useState(false);
   const [showMonthlyTargetModal, setShowMonthlyTargetModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -252,6 +254,9 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
       case 'copy':
         showCopyTransactionDialog(transaction.id, transaction.amount, transaction.business_name);
         break;
+      case 'split':
+        showSplitTransactionDialog(transaction.id, transaction.business_name, transaction.amount);
+        break;
       case 'month':
         showChangeMonthDialog(transaction.id, transaction.business_name, transaction.flow_month);
         break;
@@ -306,6 +311,13 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
     const transaction = findTransaction(transactionId);
     setSelectedTransaction(transaction);
     setShowChangeMonthModal(true);
+    setIsModalOpen(true);
+  };
+
+  const showSplitTransactionDialog = (transactionId, businessName, amount) => {
+    const transaction = findTransaction(transactionId);
+    setSelectedTransaction(transaction);
+    setShowSplitTransactionModal(true);
     setIsModalOpen(true);
   };
 
@@ -390,6 +402,18 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
       }
     } catch (error) {
       console.error('Error deleting transaction:', error);
+      throw error;
+    }
+  };
+
+  const handleSplitTransaction = async (splitData) => {
+    try {
+      await transactionsAPI.split(splitData);
+      if (onDataChange) {
+        onDataChange();
+      }
+    } catch (error) {
+      console.error('Error splitting transaction:', error);
       throw error;
     }
   };
@@ -834,7 +858,7 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                               <div className="transaction-info-section">
                                 <div className="ri-body">
                                   <a 
-                                    href={`/transactions/details/${transaction.id}`}
+                                    href={`/transaction/${transaction.id}`}
                                     style={{ color: 'inherit', textDecoration: 'none' }}
                                   >
                                     {transaction.business_name || transaction.description || 'תנועה ללא שם'}
@@ -912,7 +936,7 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                     <div className="transaction-info-section">
                       <div className="ri-body">
                         <a 
-                          href={`/transactions/details/${transaction.id}`}
+                          href={`/transaction/${transaction.id}`}
                           style={{ color: 'inherit', textDecoration: 'none' }}
                         >
                           {transaction.business_name || transaction.description || 'תנועה ללא שם'}
@@ -1057,6 +1081,16 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
           transaction={selectedTransaction}
           categoryName={categoryName}
           onAction={handleTransactionAction}
+        />,
+        document.body
+      )}
+
+      {showSplitTransactionModal && createPortal(
+        <SplitTransactionModal
+          isOpen={showSplitTransactionModal}
+          onClose={() => { setShowSplitTransactionModal(false); setIsModalOpen(false); }}
+          transaction={selectedTransaction}
+          onSplit={handleSplitTransaction}
         />,
         document.body
       )}

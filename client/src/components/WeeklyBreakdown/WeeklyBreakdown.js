@@ -151,7 +151,7 @@ const WeeklyBreakdown = ({
                               <div className="transaction-info-section">
                                 <div className="ri-body">
                                   <a 
-                                    href={`/transactions/details/${transaction.id}`}
+                                    href={`/transaction/${transaction.id}`}
                                     style={{ color: 'inherit', textDecoration: 'none' }}
                                   >
                                     {transaction.business_name || transaction.description || 'תנועה ללא שם'}

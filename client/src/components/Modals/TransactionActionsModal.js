@@ -10,9 +10,8 @@ const TransactionActionsModal = ({ isOpen, onClose, transaction, categoryName, o
   };
 
   return (
-    <>
-      <div className="modal-backdrop" onClick={onClose}></div>
-      <div className="transaction-actions-modal">
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="transaction-actions-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>פעולות עבור: {transaction.business_name || transaction.description || 'עסקה ללא שם'}</h3>
           <button className="close-btn" onClick={onClose}>
@@ -56,6 +55,14 @@ const TransactionActionsModal = ({ isOpen, onClose, transaction, categoryName, o
             
             <button 
               className="action-item"
+              onClick={() => handleAction('split')}
+            >
+              <i className="fas fa-cut"></i>
+              <span>פיצול עסקה</span>
+            </button>
+            
+            <button 
+              className="action-item"
               onClick={() => handleAction('month')}
             >
               <i className="fas fa-calendar-alt"></i>
@@ -84,7 +91,7 @@ const TransactionActionsModal = ({ isOpen, onClose, transaction, categoryName, o
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

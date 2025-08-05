@@ -29,7 +29,7 @@ const Layout = () => {
   };
 
   return (
-    <div className="layout">
+    <div className={`layout ${sidebarOpen ? 'sidebar-open' : ''}`}>
       <Header onToggleSidebar={toggleSidebar} />
       <Sidebar 
         isOpen={sidebarOpen} 

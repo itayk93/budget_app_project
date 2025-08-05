@@ -8,24 +8,65 @@ import EditTransactionModal from '../../components/Modals/EditTransactionModal';
 import DeleteTransactionModal from '../../components/Modals/DeleteTransactionModal';
 import ChangeMonthModal from '../../components/Modals/ChangeMonthModal';
 import CopyTransactionModal from '../../components/Modals/CopyTransactionModal';
+import SplitTransactionModal from '../../components/Modals/SplitTransactionModal';
 import './TransactionDetails.css';
 
 const TransactionDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  
+  console.log('TransactionDetails component loaded with ID:', id);
+  
+  // Add debugging for page refresh or redirect
+  React.useEffect(() => {
+    console.log('TransactionDetails component mounted with ID:', id);
+    if (!id) {
+      console.warn('No transaction ID provided');
+    }
+  }, [id]);
   const [isActionsModalOpen, setIsActionsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
   const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
+  const [isSplitModalOpen, setIsSplitModalOpen] = useState(false);
 
   // Fetch transaction details
   const { data: transaction, isLoading, error } = useQuery(
     ['transaction', id],
-    () => transactionsAPI.getById(id),
+    () => {
+      console.log('Fetching transaction with ID:', id);
+      return transactionsAPI.getById(id);
+    },
     {
       retry: 1,
-      refetchOnWindowFocus: false
+      refetchOnWindowFocus: false,
+      onError: (error) => {
+        console.error('Error fetching transaction:', error);
+      },
+      onSuccess: (data) => {
+        console.log('Transaction data loaded:', data);
+      }
+    }
+  );
+
+  // Fetch business details for the transaction
+  const { data: businessDetails, isLoading: isBusinessLoading } = useQuery(
+    ['transaction-business', id],
+    () => {
+      console.log('Fetching business details for transaction ID:', id);
+      return transactionsAPI.getBusinessDetails(id);
+    },
+    {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      enabled: !!id,
+      onError: (error) => {
+        console.error('Error fetching business details:', error);
+      },
+      onSuccess: (data) => {
+        console.log('Business details loaded:', data);
+      }
     }
   );
 
@@ -94,6 +135,9 @@ const TransactionDetails = () => {
       case 'copy':
         setIsCopyModalOpen(true);
         break;
+      case 'split':
+        setIsSplitModalOpen(true);
+        break;
       case 'month':
         setIsMoveModalOpen(true);
         break;
@@ -108,6 +152,17 @@ const TransactionDetails = () => {
   const handleModalSuccess = () => {
     // Refetch transaction data after any update
     window.location.reload();
+  };
+
+  const handleSplitTransaction = async (splitData) => {
+    try {
+      await transactionsAPI.split(splitData);
+      // Navigate back to dashboard after successful split
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error splitting transaction:', error);
+      throw error;
+    }
   };
 
   if (isLoading) {
@@ -127,7 +182,7 @@ const TransactionDetails = () => {
           </div>
           <h2>שגיאה בטעינת התנועה</h2>
           <p>לא ניתן למצוא את התנועה המבוקשת</p>
-          <button className="btn btn-primary" onClick={handleGoBack}>
+          <button className="btn txn-primary-btn" onClick={handleGoBack}>
             חזור
           </button>
         </div>
@@ -142,14 +197,14 @@ const TransactionDetails = () => {
 
   return (
     <div className="transaction-details">
-      <div className="transaction-details-header">
-        <button className="back-button" onClick={handleGoBack}>
+      <div className="txn-details-page-header">
+        <button className="txn-back-btn" onClick={handleGoBack}>
           <i className="fas fa-arrow-right"></i>
           חזור
         </button>
         <h1>פרטי עסקה</h1>
         <button 
-          className="actions-button"
+          className="txn-actions-btn"
           onClick={() => setIsActionsModalOpen(true)}
         >
           <i className="fas fa-ellipsis-v"></i>
@@ -261,6 +316,88 @@ const TransactionDetails = () => {
               </div>
             </div>
           </div>
+
+          {/* Business Details */}
+          {businessDetails && businessDetails.found && businessDetails.business_details && (
+            <div className="detail-card">
+              <div className="card-header">
+                <i className="fas fa-store"></i>
+                <h3>פרטי בית העסק</h3>
+              </div>
+              <div className="card-content">
+                {businessDetails.business_details.business_info?.name && (
+                  <div className="detail-row">
+                    <span className="label">שם רשמי</span>
+                    <span className="value">{businessDetails.business_details.business_info.name}</span>
+                  </div>
+                )}
+                {businessDetails.business_details.business_info?.type && (
+                  <div className="detail-row">
+                    <span className="label">סוג עסק</span>
+                    <span className="value">{businessDetails.business_details.business_info.type}</span>
+                  </div>
+                )}
+                {businessDetails.business_details.business_info?.location && (
+                  <div className="detail-row">
+                    <span className="label">מיקום</span>
+                    <span className="value">{businessDetails.business_details.business_info.location}</span>
+                  </div>
+                )}
+                {businessDetails.business_details.business_info?.address && (
+                  <div className="detail-row">
+                    <span className="label">כתובת</span>
+                    <span className="value">{businessDetails.business_details.business_info.address}</span>
+                  </div>
+                )}
+                {businessDetails.business_details.business_info?.phone && (
+                  <div className="detail-row">
+                    <span className="label">טלפון</span>
+                    <span className="value">
+                      <a href={`tel:${businessDetails.business_details.business_info.phone}`}>
+                        {businessDetails.business_details.business_info.phone}
+                      </a>
+                    </span>
+                  </div>
+                )}
+                {businessDetails.business_details.business_info?.website && (
+                  <div className="detail-row">
+                    <span className="label">אתר אינטרנט</span>
+                    <span className="value">
+                      <a href={businessDetails.business_details.business_info.website} target="_blank" rel="noopener noreferrer">
+                        {businessDetails.business_details.business_info.website}
+                      </a>
+                    </span>
+                  </div>
+                )}
+                {businessDetails.business_details.business_info?.opening_hours && (
+                  <div className="detail-row">
+                    <span className="label">שעות פעילות</span>
+                    <span className="value">{businessDetails.business_details.business_info.opening_hours}</span>
+                  </div>
+                )}
+                {businessDetails.business_details.business_info?.services && (
+                  <div className="detail-row">
+                    <span className="label">שירותים</span>
+                    <span className="value">{businessDetails.business_details.business_info.services}</span>
+                  </div>
+                )}
+                {businessDetails.business_details.business_info?.description && (
+                  <div className="detail-row">
+                    <span className="label">תיאור</span>
+                    <span className="value description-text">{businessDetails.business_details.business_info.description}</span>
+                  </div>
+                )}
+                {businessDetails.business_details.analysis_date && (
+                  <div className="detail-row">
+                    <span className="label">תאריך ניתוח</span>
+                    <span className="value">
+                      {new Date(businessDetails.business_details.analysis_date).toLocaleDateString('he-IL')}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Description */}
           {transaction.description && (
@@ -384,6 +521,14 @@ const TransactionDetails = () => {
         onClose={() => setIsMoveModalOpen(false)}
         transaction={transaction}
         onSuccess={handleModalSuccess}
+      />
+
+      {/* Split Transaction Modal */}
+      <SplitTransactionModal
+        isOpen={isSplitModalOpen}
+        onClose={() => setIsSplitModalOpen(false)}
+        transaction={transaction}
+        onSplit={handleSplitTransaction}
       />
     </div>
   );

@@ -49,6 +49,7 @@ This is a comprehensive full-stack budget management application built with Node
 3. **API Documentation**: Always update `PROJECT_DOCUMENTATION.md` with any endpoint changes
 4. **Git Tracking**: Maintain detailed commit logs and auto-commit at session end
 5. **Dependency Management**: Update package.json when adding new dependencies
+6. **Design Consistency**: **CRITICAL** - All UI/UX changes must follow design guidelines in `dashboard_design_analysis.md`
 
 ### When Adding New Features
 
@@ -74,7 +75,8 @@ This is a comprehensive full-stack budget management application built with Node
 2. **Frontend Development**:
    - Create/update React components in `/client/src/components/`
    - Update API calls in `/client/src/utils/api.js`
-   - Follow existing component patterns and styling
+   - **MANDATORY**: Follow design guidelines in `dashboard_design_analysis.md`
+   - Use consistent color palette, spacing, and animation patterns
    - Implement proper state management
 
 3. **Testing & Validation**:
@@ -326,6 +328,7 @@ Examples:
 
 ### Documentation Files
 - `PROJECT_DOCUMENTATION.md` - **SINGLE SOURCE OF TRUTH** for API documentation
+- `dashboard_design_analysis.md` - **DESIGN SYSTEM GUIDELINES** - Must follow for all UI changes
 - `FEATURES.md` - Feature specifications and status
 - `project_structure.md` - Complete file structure overview
 - `/new_features/` - Feature specification templates
@@ -351,12 +354,13 @@ Examples:
 
 ### ALWAYS Required Actions:
 1. **Update `PROJECT_DOCUMENTATION.md`** when adding/modifying endpoints
-2. **Use English comments** in all code
-3. **Use Supabase only** - never SQLite
-4. **Update package.json** when adding dependencies
-5. **Auto-commit at session end** with English commit message
-6. **Update git_commits_log.xlsx** with commit details
-7. **Create feature documentation** before implementing new features
+2. **Follow `dashboard_design_analysis.md`** for all UI/UX changes - NO EXCEPTIONS
+3. **Use English comments** in all code
+4. **Use Supabase only** - never SQLite
+5. **Update package.json** when adding dependencies
+6. **Auto-commit at session end** with English commit message
+7. **Update git_commits_log.xlsx** with commit details
+8. **Create feature documentation** before implementing new features
 
 ### NEVER Do:
 - Use SQLite database (project uses Supabase exclusively)

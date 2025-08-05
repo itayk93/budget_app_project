@@ -30,7 +30,7 @@
 }
 
 .sidebar-toggle {
-  display: none; /* Hidden on desktop */
+  display: flex; /* Show on all devices */
   flex-direction: column;
   justify-content: center;
   width: 40px;
@@ -127,7 +127,7 @@
   }
   
   .sidebar-toggle {
-    display: flex !important; /* Show on mobile */
+    display: flex; /* Already visible */
   }
   
   .user-name {

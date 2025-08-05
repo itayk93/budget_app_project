@@ -161,6 +161,9 @@ export const transactionsAPI = {
   getStats: (params) => api.get('/transactions/analytics/stats', { params }),
   getDuplicates: (params) => api.get('/transactions/duplicates', { params }),
   
+  // Business details for specific transaction
+  getBusinessDetails: (id) => api.get(`/transactions/${id}/business-details`),
+  
   // Additional API endpoints for frontend compatibility
   recordAsIncome: (data) => api.post('/transactions/api/transactions/record-as-income', data),
   getUniqueCategories: async () => {
@@ -176,6 +179,10 @@ export const transactionsAPI = {
   },
   batchCategorize: (data) => api.post('/transactions/api/transactions/batch_categorize', data),
   deleteAllByCashFlow: (data) => api.post('/transactions/api/transactions/delete_by_cash_flow', data),
+  
+  // Split transaction
+  split: (data) => api.post('/transactions/split', data),
+  unsplit: (data) => api.post('/transactions/unsplit', data),
 };
 
 // Budgets API

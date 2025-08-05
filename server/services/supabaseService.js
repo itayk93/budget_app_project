@@ -157,6 +157,20 @@ class SupabaseService {
 
   static async getUserById(id) {
     try {
+      // Validate UUID format
+      if (!id || typeof id !== 'string') {
+        console.error(`❌ Invalid user ID format: ${id} (type: ${typeof id})`);
+        return null;
+      }
+      
+      // Basic UUID format check (36 characters with hyphens)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(id)) {
+        console.error(`❌ Invalid UUID format for user ID: ${id}`);
+        return null;
+      }
+
+      console.log(`🔍 Looking up user with valid UUID: ${id}`);
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -164,9 +178,10 @@ class SupabaseService {
         .maybeSingle();
 
       if (error) throw error;
+      console.log(`👤 User lookup result:`, data ? 'Found' : 'Not found');
       return data;
     } catch (error) {
-      console.error(`Error fetching user by ID ${id}:`, error);
+      console.error(`❌ Error fetching user by ID ${id}:`, error);
       return null;
     }
   }

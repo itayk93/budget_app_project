@@ -11,9 +11,15 @@
   overflow-y: auto;
 }
 
-/* On desktop, add space for sidebar */
+/* On desktop, no default margin for sidebar since it's hidden by default */
 @media (min-width: 769px) {
   .main-content {
+    margin-right: 0; /* No default margin since sidebar is hidden */
+    transition: margin-right 0.3s ease;
+  }
+  
+  /* Add margin when sidebar is open */
+  .sidebar-open .main-content {
     margin-right: 300px; /* Width of sidebar */
   }
 }

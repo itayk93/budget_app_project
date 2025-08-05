@@ -1626,4 +1626,75 @@ router.post('/split', authenticateToken, async (req, res) => {
   }
 });
 
+// Endpoint to unsplit transactions (merge split transactions back)
+router.post('/unsplit', authenticateToken, async (req, res) => {
+  try {
+    const { originalTransactionId } = req.body;
+
+    if (!originalTransactionId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Original transaction ID is required' 
+      });
+    }
+
+    // Find all split transactions that reference this original transaction
+    const { transactions } = await SupabaseService.getTransactions(req.user.id, { show_all: true });
+    const splitTransactions = transactions.filter(t => 
+      t.notes && t.notes.includes(`[SPLIT]`) && t.notes.includes(`מזהה מקורי: ${originalTransactionId}`)
+    );
+
+    if (splitTransactions.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'No split transactions found for this original transaction ID' 
+      });
+    }
+
+    // Verify ownership of all split transactions
+    for (const transaction of splitTransactions) {
+      if (transaction.user_id !== req.user.id) {
+        return res.status(403).json({ 
+          success: false, 
+          error: 'Unauthorized access to split transactions' 
+        });
+      }
+    }
+
+    // Delete all split transactions
+    let deletedCount = 0;
+    const errors = [];
+    
+    for (const transaction of splitTransactions) {
+      try {
+        const success = await SupabaseService.deleteTransaction(transaction.id);
+        if (success) {
+          deletedCount++;
+          console.log(`✅ Deleted split transaction: ${transaction.id}`);
+        } else {
+          errors.push(`Failed to delete transaction ${transaction.id}`);
+        }
+      } catch (error) {
+        console.error(`❌ Error deleting split transaction ${transaction.id}:`, error);
+        errors.push(`Error deleting transaction ${transaction.id}: ${error.message}`);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Successfully deleted ${deletedCount} split transactions`,
+      deleted_count: deletedCount,
+      total_split_transactions: splitTransactions.length,
+      errors: errors
+    });
+
+  } catch (error) {
+    console.error('Error unspitting transactions:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to unsplit transactions: ' + error.message 
+    });
+  }
+});
+
 module.exports = router;
