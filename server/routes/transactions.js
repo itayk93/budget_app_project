@@ -1544,7 +1544,7 @@ router.post('/split', authenticateToken, async (req, res) => {
           payment_date: split.payment_date || originalTransaction.payment_date,
           flow_month: split.flow_month,
           currency: split.currency || originalTransaction.currency || 'ILS',
-          category: split.category,
+          category_name: split.category,
           payment_method: originalTransaction.payment_method || 'generic',
           payment_number: originalTransaction.payment_number || 1,
           total_payments: originalTransaction.total_payments || 1,
