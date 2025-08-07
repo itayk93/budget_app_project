@@ -358,8 +358,8 @@ Examples:
 3. **Use English comments** in all code
 4. **Use Supabase only** - never SQLite
 5. **Update package.json** when adding dependencies
-6. **Auto-commit at session end** with English commit message
-7. **Update git_commits_log.xlsx** with commit details
+6. **Auto-commit every 10 messages** with English commit message and timestamp
+7. **Update git_commits_log.xlsx** automatically after each commit
 8. **Create feature documentation** before implementing new features
 
 ### NEVER Do:
@@ -370,12 +370,26 @@ Examples:
 - Modify authentication middleware without thorough testing
 - Expose sensitive keys in frontend code
 
-## Session End Checklist
+## Session Management Checklist
+
+### Auto-Commit Process (Every 10 Messages)
+1. ✅ Stage all changes with `git add .`
+2. ✅ Commit with descriptive English message and timestamp
+3. ✅ Auto-update `git_commits_log.xlsx` with commit details including:
+   - Date & Time
+   - Commit Hash
+   - Commit Message  
+   - Files Changed count
+   - Additions/Deletions
+   - Session Description
+   - Status (Local/Pushed)
+
+### Session End Checklist
 1. ✅ Test all modified functionality
 2. ✅ Update `PROJECT_DOCUMENTATION.md` if endpoints changed
 3. ✅ Update package.json if dependencies added
-4. ✅ Commit changes with English message and timestamp
-5. ✅ Update `git_commits_log.xlsx` with commit details
+4. ✅ Final commit with English message and timestamp
+5. ✅ Update `git_commits_log.xlsx` with final commit details
 6. ✅ Verify Supabase connection is working
 7. ✅ Clean up any temporary files or logs
 
