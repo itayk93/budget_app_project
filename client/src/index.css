@@ -511,6 +511,66 @@ a:hover {
   padding: 0 var(--spacing-md);
 }
 
+/* GLOBAL PARENTHESES REMOVAL FOR BUSINESS NAMES */
+/* Ensure no auto-generated parentheses appear around business names */
+.business-name,
+.sample-transaction,
+.transaction-description,
+[data-business-name] {
+  list-style: none !important;
+  list-style-type: none !important;
+}
+
+.business-name::before,
+.business-name::after,
+.sample-transaction::before,
+.sample-transaction::after,
+.transaction-description::before,
+.transaction-description::after,
+[data-business-name]::before,
+[data-business-name]::after {
+  content: none !important;
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Remove ordered list styling that might add parentheses */
+ol {
+  list-style-type: none !important;
+}
+
+ol li::marker {
+  content: none !important;
+  display: none !important;
+}
+
+/* REMOVE RTL CONTROL CHARACTERS (PARENTHESES) */
+/* Fix for RTL marks that appear as parentheses in transaction displays */
+.transaction-item,
+.transaction-item *,
+.ri-body,
+.ri-body * {
+  /* Remove RTL control characters that show as parentheses */
+  text-decoration: none !important;
+}
+
+/* Specific fix for RTL marks in links and text */
+a[href*="/transaction/"]::before,
+a[href*="/transaction/"]::after,
+.ri-body a::before,
+.ri-body a::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Clean text rendering without control characters */
+.transaction-item .ri-body a,
+.transaction-item .ri-body {
+  unicode-bidi: isolate;
+  direction: rtl;
+  text-align: right;
+}
+
 .grid {
   display: grid;
   gap: var(--spacing-md);

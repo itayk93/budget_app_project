@@ -8,6 +8,7 @@ const glob = require('glob');
 const crypto = require('crypto');
 const ExcelService = require('./excelService');
 const SupabaseService = require('./supabaseService');
+const AmericanExpressService = require('./americanExpressService');
 const logger = require('../utils/logger');
 
 class WorkingExcelService {
@@ -214,15 +215,29 @@ class WorkingExcelService {
         keywords: ['max', 'מקס', 'transaction-details_export'],
         amountColumn: 'סכום חיוב',
         originalAmountColumn: 'סכום עסקה מקורי',
+        originalCurrencyColumn: 'מטבע עסקה מקורי',
+        currencyColumn: 'מטבע חיוב',
         dateColumn: 'תאריך עסקה',
         chargeDateColumn: 'תאריך חיוב',
         descriptionColumn: 'שם בית העסק',
-        currencyColumn: 'מטבע חיוב',
-        paymentIdentifierColumn: '4 ספרות אחרונות של כרטיס האשראי',
-        sourceCategoryColumn: 'קטגוריה',
+        categoryColumn: 'קטגוריה',
+        cardColumn: '4 ספרות אחרונות של כרטיס האשראי',
         transactionTypeColumn: 'סוג עסקה',
         executionMethodColumn: 'אופן ביצוע ההעסקה',
         notesColumn: 'הערות'
+      },
+      americanexpress: {
+        requiredColumns: ['תאריך רכישה', 'שם בית עסק'],
+        alternativeColumns: ['סכום עסקה', 'מטבע עסקה', 'סכום חיוב', 'מטבע חיוב', 'מס\' שובר', 'פירוט נוסף'],
+        keywords: ['american express', 'amex', 'אמריקן אקספרס'],
+        amountColumn: 'סכום חיוב',
+        originalAmountColumn: 'סכום עסקה',
+        originalCurrencyColumn: 'מטבע עסקה',
+        currencyColumn: 'מטבע חיוב',
+        dateColumn: 'תאריך רכישה',
+        descriptionColumn: 'שם בית עסק',
+        voucherColumn: 'מס\' שובר',
+        notesColumn: 'פירוט נוסף'
       },
       bank_yahav: {
         requiredColumns: ['תאריך', 'אסמכתא', 'תיאור פעולה', 'חובה(₪)', 'זכות(₪)'],
@@ -807,6 +822,15 @@ class WorkingExcelService {
       mapped.payment_method = mapped.payment_method || (fileSource === 'cal' ? 'cal' : 'isracard');
       
       // Cal/Isracard amounts are usually positive but represent expenses
+      if (mapped.amount > 0) {
+        mapped.amount = -Math.abs(mapped.amount);
+      }
+    } else if (fileSource === 'americanexpress') {
+      mapped.category_name = mapped.category_name || 'הוצאות תזרימיות';
+      mapped.payment_method = mapped.payment_method || 'americanexpress';
+      mapped.source_type = 'creditCard';
+      
+      // American Express amounts are usually positive but represent expenses
       if (mapped.amount > 0) {
         mapped.amount = -Math.abs(mapped.amount);
       }
@@ -3290,6 +3314,55 @@ class WorkingExcelService {
   async convert_file_to_df_large(filePath, fileSource = 'other', paymentMethod = null, paymentIdentifier = null, progressCallback = null, uploadId = null, dateFilterOptions = {}) {
     try {
       console.log('🔄 Starting large file conversion...', { filePath, fileSource });
+      
+      // Special handling for American Express files
+      if (fileSource === 'americanexpress') {
+        console.log('🇺🇸 Using dedicated American Express service...');
+        if (progressCallback) {
+          progressCallback('reading', { progress: 15, status: 'קורא קובץ American Express...' });
+        }
+        
+        const amexResult = await AmericanExpressService.parseAmericanExpressExcel(filePath);
+        
+        if (!amexResult.success) {
+          throw new Error(amexResult.error);
+        }
+        
+        if (progressCallback) {
+          progressCallback('processing', { progress: 60, status: 'מעבד נתונים American Express...' });
+        }
+        
+        let processedData = amexResult.data;
+        
+        // Apply date filtering if enabled
+        if (dateFilterOptions.dateFilterEnabled && dateFilterOptions.startDate) {
+          const startDate = moment(dateFilterOptions.startDate);
+          const endDate = dateFilterOptions.endDate ? moment(dateFilterOptions.endDate) : null;
+          
+          processedData = processedData.filter(transaction => {
+            const transactionDate = moment(transaction.payment_date);
+            const afterStart = transactionDate.isSameOrAfter(startDate, 'day');
+            const beforeEnd = !endDate || transactionDate.isSameOrBefore(endDate, 'day');
+            return afterStart && beforeEnd;
+          });
+        }
+        
+        // Group by currency
+        const currencyGroups = this.groupByCurrency(processedData);
+        
+        if (progressCallback) {
+          progressCallback('grouping', { progress: 90, status: 'מסיים עיבוד American Express...' });
+        }
+        
+        return {
+          success: true,
+          data: processedData,
+          currencyGroups: currencyGroups,
+          detectedFormat: 'americanexpress',
+          totalRows: amexResult.data.length,
+          processedTransactions: processedData.length
+        };
+      }
       
       if (progressCallback) {
         progressCallback('reading', { progress: 10, status: 'קורא קובץ...' });

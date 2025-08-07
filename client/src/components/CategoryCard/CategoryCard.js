@@ -916,7 +916,8 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                                     href={`/transaction/${transaction.id}`}
                                     style={{ color: 'inherit', textDecoration: 'none' }}
                                   >
-                                    {transaction.business_name || transaction.description || 'תנועה ללא שם'}
+                                    {(transaction.business_name || transaction.description || 'תנועה ללא שם')
+                                      .replace(/[\u200E\u200F\u202A\u202B\u202C\u202D\u202E]/g, '')}
                                     {isSplitTransaction(transaction) && (
                                       <span className="split-indicator">
                                         ✂️ {getSplitInfo(transaction)?.currentPart}/{getSplitInfo(transaction)?.totalParts}
@@ -999,7 +1000,8 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                           href={`/transaction/${transaction.id}`}
                           style={{ color: 'inherit', textDecoration: 'none' }}
                         >
-                          {transaction.business_name || transaction.description || 'תנועה ללא שם'}
+                          {(transaction.business_name || transaction.description || 'תנועה ללא שם')
+                            .replace(/[\u200E\u200F\u202A\u202B\u202C\u202D\u202E]/g, '')}
                           {isSplitTransaction(transaction) && (
                             <span className="split-indicator">
                               ✂️ {getSplitInfo(transaction)?.currentPart}/{getSplitInfo(transaction)?.totalParts}

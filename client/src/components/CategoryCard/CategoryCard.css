@@ -728,6 +728,173 @@
   content: '' !important;
 }
 
+/* COMPREHENSIVE PARENTHESES REMOVAL */
+/* Remove all parentheses from business names and transaction displays */
+.transaction-item,
+.transaction-item *,
+.category-card *,
+.business-name,
+.sample-transaction,
+.sample-transaction *,
+.transaction-description,
+.transaction-description *,
+ol li,
+ol li *,
+ul li,
+ul li *,
+[data-business-name],
+[data-business-name] * {
+  list-style: none !important;
+  list-style-type: none !important;
+}
+
+/* Remove any auto-generated content that adds parentheses */
+.transaction-item::before,
+.transaction-item::after,
+.business-name::before,
+.business-name::after,
+.sample-transaction::before,
+.sample-transaction::after,
+.transaction-description::before,
+.transaction-description::after,
+ol li::before,
+ol li::after,
+ul li::before,
+ul li::after,
+[data-business-name]::before,
+[data-business-name]::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Override any parent element that might add parentheses */
+ol {
+  list-style-type: none !important;
+  counter-reset: none !important;
+}
+
+ol li {
+  counter-increment: none !important;
+}
+
+ol li::marker {
+  content: none !important;
+  display: none !important;
+}
+
+/* Ensure no numbering appears on business names */
+.business-name,
+.sample-transaction span,
+.transaction-description {
+  position: relative;
+  display: inline-block;
+}
+
+.business-name::before,
+.sample-transaction span::before,
+.transaction-description::before {
+  display: none !important;
+  content: '' !important;
+}
+
+/* SPECIFIC FIX FOR TRANSACTION ITEMS */
+/* Remove RTL mark and parentheses from transaction displays */
+.transaction-item,
+.transaction-item * {
+  unicode-bidi: isolate !important;
+  direction: ltr !important;
+}
+
+.transaction-item .ri-body,
+.transaction-item .ri-body a {
+  unicode-bidi: isolate !important;
+  direction: rtl !important;
+  display: block !important;
+  text-align: right !important;
+}
+
+/* Remove RTL control characters that show as parentheses */
+.transaction-item .ri-body a::before,
+.transaction-item .ri-body a::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Ensure single line layout for all screen sizes */
+.transaction-item {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: nowrap !important;
+  min-height: 60px !important;
+}
+
+.transaction-info-section {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 16px !important;
+  flex: 1 !important;
+  overflow: hidden !important;
+}
+
+.ri-body {
+  flex: 1 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.transaction-date {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+}
+
+.transaction-right-side {
+  display: flex !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+}
+
+.transaction-actions {
+  display: flex !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+}
+
+/* Mobile specific - ensure single line even on small screens */
+@media (max-width: 768px) {
+  .transaction-item {
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    min-height: 56px !important;
+  }
+  
+  .transaction-info-section {
+    flex-direction: row !important;
+    gap: 12px !important;
+  }
+  
+  .ri-body {
+    font-size: 14px !important;
+  }
+  
+  .transaction-date {
+    font-size: 12px !important;
+    gap: 4px !important;
+  }
+  
+  .transaction-amount {
+    font-size: 14px !important;
+  }
+}
+
 .transaction-actions {
   display: flex !important;
   align-items: center !important;

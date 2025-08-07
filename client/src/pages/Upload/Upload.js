@@ -164,15 +164,15 @@ const Upload = () => {
 
   // Watch for file source changes to auto-detect payment identifier
   useEffect(() => {
-    if (fileSource === 'cal' && selectedFile) {
+    if ((fileSource === 'cal' || fileSource === 'americanexpress') && selectedFile) {
       const fileName = selectedFile.name;
-      // Look for patterns like "7209" in Cal file names
+      // Look for patterns like "7209" or "3079" in file names
       const match = fileName.match(/(\d{4})/);
       if (match && match[1]) {
         setPaymentIdentifier(match[1]);
       }
-    } else if (fileSource !== 'cal') {
-      // Clear auto-detected payment identifier for non-CAL files
+    } else if (fileSource !== 'cal' && fileSource !== 'americanexpress') {
+      // Clear auto-detected payment identifier for non-CAL and non-AmEx files
       if (paymentIdentifier && selectedFile) {
         const fileName = selectedFile.name;
         const match = fileName.match(/(\d{4})/);
@@ -268,11 +268,12 @@ const Upload = () => {
       setSelectedFile(file);
       setUploadResult(null);
       
-      // Auto-detect payment identifier for CAL files
-      if (fileSource === 'cal') {
+      // Auto-detect payment identifier for CAL and American Express files
+      if (fileSource === 'cal' || fileSource === 'americanexpress') {
         const fileName = file.name;
-        // Look for patterns like "7209" in Cal file names
+        // Look for patterns like "7209" in Cal file names or "3079" in AmEx file names
         // Example: פירוט חיובים לכרטיס דיינרס מסטרקארד 7209 - 02.08.25.xlsx
+        // Example: 3079_08_2025.xlsx
         const match = fileName.match(/(\d{4})/);
         if (match && match[1]) {
           setPaymentIdentifier(match[1]);
@@ -395,22 +396,32 @@ const Upload = () => {
   
   const handleCurrencySelect = (currency) => {
     setSelectedCurrency(currency);
-    // Continue processing with selected currency
+    console.log('🌍 Currency selected:', currency, 'for fileSource:', fileSource);
+    
+    // Prepare data for duplicate check or final import
     const data = {
       uploadId,
       selectedCurrency: currency,
-      cashFlowId: selectedCashFlow
+      cashFlowId: selectedCashFlow,
+      fileSource: fileSource
     };
+    
+    console.log('📊 Checking for duplicates with data:', data);
     
     // Check for duplicates with selected currency
     uploadAPI.checkDuplicates(data).then(result => {
+      console.log('🔍 Duplicate check result:', result);
+      
       if (result.duplicates && Object.keys(result.duplicates).length > 0) {
+        console.log('⚠️ Duplicates found, moving to duplicates review');
         setDuplicates(result.duplicates);
         setCurrentStep(3);
       } else {
+        console.log('✅ No duplicates found, proceeding to final import');
         finalizeImport(result);
       }
     }).catch(error => {
+      console.error('❌ Error checking duplicates:', error);
       handleProgressError(error.message);
     });
   };
@@ -822,6 +833,7 @@ const Upload = () => {
                       <option value="budgetlens">BudgetLens</option>
                       <option value="cal">כאל</option>
                       <option value="max">מקס</option>
+                      <option value="americanexpress">American Express</option>
                       <option value="blink">blink</option>
                     </select>
                   </div>
@@ -1202,6 +1214,15 @@ const Upload = () => {
                       <h4>מקס (Max)</h4>
                       <p>קבצי Excel מכרטיס האשראי מקס</p>
                       <small>עמודות נדרשות: תאריך עסקה, שם בית העסק, סכום חיוב</small>
+                    </div>
+                  </div>
+                  
+                  <div className="format-item">
+                    <div className="format-icon">💰</div>
+                    <div className="format-info">
+                      <h4>American Express</h4>
+                      <p>קבצי Excel מכרטיס האשראי American Express</p>
+                      <small>עמודות נדרשות: תאריך רכישה, שם בית עסק, סכום חיוב</small>
                     </div>
                   </div>
                   

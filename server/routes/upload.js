@@ -504,7 +504,7 @@ router.post('/handle-duplicates', authenticateToken, async (req, res) => {
 // Multi-step upload: Step 3 - Check duplicates for selected currency
 router.post('/check-duplicates', authenticateToken, async (req, res) => {
   try {
-    const { uploadId, selectedCurrency, cashFlowId } = req.body;
+    const { uploadId, selectedCurrency, cashFlowId, fileSource } = req.body;
     const session = uploadSessions.get(uploadId);
 
     if (!session || session.userId !== req.user.id) {
@@ -513,21 +513,54 @@ router.post('/check-duplicates', authenticateToken, async (req, res) => {
 
     // Get processed data for selected currency
     const processedData = session.processedData;
-    if (!processedData || !processedData.currencyGroups[selectedCurrency]) {
-      return res.status(400).json({ error: 'Invalid currency selection' });
+    if (!processedData) {
+      return res.status(400).json({ error: 'No processed data found' });
     }
 
-    const transactions = processedData.currencyGroups[selectedCurrency].transactions;
+    console.log('🔍 Checking duplicates for:', { selectedCurrency, fileSource, uploadId });
+    console.log('📊 Available currency groups:', Object.keys(processedData.currencyGroups || {}));
+
+    let transactions = [];
+    
+    // Handle different data structures
+    if (processedData.currencyGroups && processedData.currencyGroups[selectedCurrency]) {
+      if (processedData.currencyGroups[selectedCurrency].transactions) {
+        // New format: currencyGroups[currency].transactions
+        transactions = processedData.currencyGroups[selectedCurrency].transactions;
+      } else if (Array.isArray(processedData.currencyGroups[selectedCurrency])) {
+        // Old format: currencyGroups[currency] is direct array
+        transactions = processedData.currencyGroups[selectedCurrency];
+      }
+    } else if (processedData.data && Array.isArray(processedData.data)) {
+      // Fallback: use all data and filter by currency
+      transactions = processedData.data.filter(t => t.currency === selectedCurrency);
+    }
+
+    if (!transactions || transactions.length === 0) {
+      console.log('⚠️ No transactions found for currency:', selectedCurrency);
+      return res.json({ duplicates: {} });
+    }
+
+    console.log(`📊 Checking ${transactions.length} transactions for duplicates`);
 
     // Check for duplicates
     const duplicates = await ExcelService.checkDuplicates(transactions, req.user.id, cashFlowId);
 
+    console.log('✅ Duplicate check completed:', Object.keys(duplicates || {}).length, 'duplicates found');
+
+    // If no duplicates found, we can proceed directly to finalize
+    if (!duplicates || Object.keys(duplicates).length === 0) {
+      console.log('💫 No duplicates found, can proceed to finalize import');
+    }
+
     res.json({
-      duplicates: duplicates || {}
+      duplicates: duplicates || {},
+      canProceedToFinalize: !duplicates || Object.keys(duplicates).length === 0,
+      transactionCount: transactions.length
     });
 
   } catch (error) {
-    console.error('Duplicate check error:', error);
+    console.error('❌ Duplicate check error:', error);
     res.status(500).json({
       error: 'Failed to check duplicates',
       details: error.message
@@ -575,10 +608,26 @@ router.post('/finalize', authenticateToken, async (req, res) => {
       console.log('🔄 Using reviewed transactions from modal:', reviewedTransactions.length);
       transactions = reviewedTransactions;
     } else if (selectedCurrency && processedData.currencyGroups) {
-      transactions = processedData.currencyGroups[selectedCurrency].transactions;
+      // Handle different currency group structures
+      if (processedData.currencyGroups[selectedCurrency] && processedData.currencyGroups[selectedCurrency].transactions) {
+        // New format: currencyGroups[currency].transactions
+        transactions = processedData.currencyGroups[selectedCurrency].transactions;
+      } else if (Array.isArray(processedData.currencyGroups[selectedCurrency])) {
+        // Old format: currencyGroups[currency] is direct array
+        transactions = processedData.currencyGroups[selectedCurrency];
+      } else {
+        // Fallback: filter from all data
+        transactions = processedData.data ? processedData.data.filter(t => t.currency === selectedCurrency) : [];
+      }
+    } else if (processedData.data) {
+      transactions = processedData.data;
     } else {
-      transactions = processedData.transactions;
+      transactions = processedData.transactions || [];
     }
+    
+    console.log('📊 Final transactions count for import:', transactions ? transactions.length : 0);
+    console.log('🌍 Selected currency:', selectedCurrency);
+    console.log('📁 File source:', fileSource);
 
     // Apply duplicate resolutions (only if not from modal)
     let finalTransactions = transactions;
@@ -586,11 +635,20 @@ router.post('/finalize', authenticateToken, async (req, res) => {
       finalTransactions = ExcelService.applyDuplicateResolutions(transactions, duplicateResolutions);
     }
 
+    // Filter by selected currency if specified (to make sure we only import the chosen currency)
+    if (selectedCurrency && finalTransactions) {
+      const originalCount = finalTransactions.length;
+      finalTransactions = finalTransactions.filter(t => t.currency === selectedCurrency);
+      console.log(`🌍 Currency filter: ${originalCount} -> ${finalTransactions.length} transactions for ${selectedCurrency}`);
+    }
+
     // Ensure all transactions have user_id and cash_flow_id
     finalTransactions = finalTransactions.map(transaction => ({
       ...transaction,
       user_id: session.userId,
-      cash_flow_id: session.cashFlowId
+      cash_flow_id: session.cashFlowId,
+      // Ensure payment_identifier is set from session if not already present
+      payment_identifier: transaction.payment_identifier || session.paymentIdentifier || null
     }));
 
     console.log('🔧 Final transactions before import:', {
