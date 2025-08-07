@@ -1745,7 +1745,7 @@
   
   /* Monthly Balance Card Small Mobile */
   .monthly-balance-card {
-    padding: 16px;
+    padding: 16px 16px 4px 16px;
   }
   
   .balance-question {
@@ -1758,11 +1758,14 @@
   
   .balance-breakdown {
     margin-top: var(--spacing-sm);
+    margin-bottom: 0;
+    padding-bottom: 0;
   }
   
   .balance-detail {
     font-size: var(--font-xs);
     padding: var(--spacing-xs);
+    margin-bottom: 0 !important;
   }
   
   /* Monthly Goal Card Small Mobile */

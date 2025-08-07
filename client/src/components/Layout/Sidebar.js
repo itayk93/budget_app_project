@@ -103,7 +103,7 @@ const menuItems = [
 ];
 
 const Sidebar = ({ isOpen, onClose, onStockAction }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
   const [expandedMenus, setExpandedMenus] = useState({});
 
@@ -131,9 +131,6 @@ const Sidebar = ({ isOpen, onClose, onStockAction }) => {
       <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-top">
-            <button className="sidebar-close" onClick={onClose} aria-label="סגור תפריט">
-              ✕
-            </button>
           </div>
           
           {/* Logo - only visible on mobile */}
@@ -161,7 +158,10 @@ const Sidebar = ({ isOpen, onClose, onStockAction }) => {
                 {user?.firstName} {user?.lastName}
               </div>
               <div className="user-email">
-                {user?.email}
+                <span>{user?.email}</span>
+                <button className="sidebar-close" onClick={onClose} aria-label="סגור תפריט">
+                  ✕
+                </button>
               </div>
             </div>
           </div>
@@ -242,8 +242,19 @@ const Sidebar = ({ isOpen, onClose, onStockAction }) => {
         </nav>
 
         <div className="sidebar-footer">
-          <div className="app-version">
-            BudgetLens v1.0
+          <div className="logo">
+            <img 
+              src="/logo.svg" 
+              alt="BudgetLens" 
+              className="logo-image"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'block';
+              }}
+            />
+            <span className="logo-text" style={{ display: 'none' }}>
+              BudgetLens
+            </span>
           </div>
         </div>
       </aside>

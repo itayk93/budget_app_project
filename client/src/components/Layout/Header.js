@@ -9,20 +9,6 @@ const Header = ({ onToggleSidebar }) => {
     <header className="header">
       <div className="header-content">
         <div className="header-right">
-          <div className="logo">
-            <img 
-              src="/logo.svg" 
-              alt="BudgetLens" 
-              className="logo-image"
-              onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'block';
-              }}
-            />
-            <span className="logo-text" style={{ display: 'none' }}>
-              BudgetLens
-            </span>
-          </div>
           <button 
             className="sidebar-toggle"
             onClick={onToggleSidebar}
