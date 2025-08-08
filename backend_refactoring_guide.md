@@ -38,6 +38,13 @@
 - POST `/unsplit` - ביטול פיצול (מחיקת עסקאות מפוצלות)
 - GET `/split/:originalTransactionId` - הצגת עסקאות מפוצלות
 
+#### `/server/routes/transactions/transactionsBusiness.js` (500 שורות)
+- GET `/businesses/variable-expenses` - עסקים עם קטגורית "הוצאות משתנות"
+- POST `/businesses/suggest-categories` - הצעות קטגוריות באמצעות AI (Perplexity)
+- POST `/businesses/update-categories` - עדכון קטגוריות בצורה קבוצתית
+- GET `/businesses/:businessName/transactions` - עסקאות לפי שם עסק
+- GET `/categories/available` - קטגוריות זמינות למשתמש
+
 #### `/server/routes/transactions/index.js` (40 שורות)
 - Router מרכזי שמחבר את כל המודולים
 
@@ -81,10 +88,10 @@ app.use('/api/transactions-new', require('./routes/transactions_modular'));
 - [x] **transactions Analytics** - 200 שורות → מודול נפרד
 - [x] **transactions FlowMonth** - 40 שורות → מודול נפרד
 - [x] **transactions Split** - 220 שורות → מודול נפרד
+- [x] **transactions Business** - 500 שורות → מודול נפרד (AI Categorization)
 
 ### **בהמתנה ⏳**
-- [ ] **Business Intelligence** (650 שורות) - הכי מורכב
-- [ ] **Legacy API Endpoints** (100 שורות) 
+- [ ] **Legacy API Endpoints** (100 שורות) - הכי פשוט שנותר 
 - [ ] **categories.js** (918 שורות)
 - [ ] **supabaseService.js** (2994 שורות)
 
@@ -124,10 +131,11 @@ ALTER TABLE stock_prices ADD COLUMN adjusted_close DECIMAL(12,4);
 - `workingExcelService.js`: **4,195 שורות** 🚨
 
 ### **אחרי הרפקטור:**
-- **4 מודולים נפרדים** של ~200 שורות כל אחד ✅
+- **6 מודולים נפרדים** של ~200-500 שורות כל אחד ✅
 - **בדיקות יחידה קלות יותר** ✅
 - **עבודת צוות טובה יותר** ✅
 - **תחזוקה קלה יותר** ✅
+- **AI Categorization מופרד ומאורגן** ✅
 
 ---
 

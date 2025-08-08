@@ -7,6 +7,7 @@ const transactionsBatch = require('./transactionsBatch');
 const transactionsAnalytics = require('./transactionsAnalytics');
 const transactionsFlowMonth = require('./transactionsFlowMonth');
 const transactionsSplit = require('./transactionsSplit');
+const transactionsBusiness = require('./transactionsBusiness');
 
 // ===== MODULAR TRANSACTION ROUTES =====
 
@@ -30,8 +31,12 @@ router.use('/', transactionsFlowMonth);
 // POST /split, POST /unsplit, GET /split/:originalTransactionId
 router.use('/', transactionsSplit);
 
+// Business intelligence and AI categorization
+// GET /businesses/variable-expenses, POST /businesses/suggest-categories, POST /businesses/update-categories
+// GET /businesses/:businessName/transactions, GET /categories/available
+router.use('/', transactionsBusiness);
+
 // TODO: Add remaining modules as they are created:
-// router.use('/', require('./transactionsBusiness'));     // Business intelligence
 // router.use('/', require('./transactionsApi'));          // Legacy API endpoints
 
 module.exports = router;
