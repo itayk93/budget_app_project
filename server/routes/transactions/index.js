@@ -8,6 +8,7 @@ const transactionsAnalytics = require('./transactionsAnalytics');
 const transactionsFlowMonth = require('./transactionsFlowMonth');
 const transactionsSplit = require('./transactionsSplit');
 const transactionsBusiness = require('./transactionsBusiness');
+const transactionsApi = require('./transactionsApi');
 
 // ===== MODULAR TRANSACTION ROUTES =====
 
@@ -36,7 +37,9 @@ router.use('/', transactionsSplit);
 // GET /businesses/:businessName/transactions, GET /categories/available
 router.use('/', transactionsBusiness);
 
-// TODO: Add remaining modules as they are created:
-// router.use('/', require('./transactionsApi'));          // Legacy API endpoints
+// Legacy API endpoints for backward compatibility
+// POST /api/transactions/record-as-income, GET /api/transactions/unique_categories
+// POST /api/transactions/delete_by_cash_flow
+router.use('/', transactionsApi);
 
 module.exports = router;

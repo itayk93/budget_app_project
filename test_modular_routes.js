@@ -88,7 +88,8 @@ async function main() {
     'transactionsAnalytics',
     'transactionsFlowMonth',
     'transactionsSplit',
-    'transactionsBusiness'
+    'transactionsBusiness',
+    'transactionsApi'
   ];
   
   let moduleResults = [];
