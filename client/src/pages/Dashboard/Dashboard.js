@@ -545,11 +545,11 @@ const Dashboard = () => {
       </button>
       {/* Mobile Only Controls */}
       <div className="mobile-dashboard-controls">
-        {/* בחירת חודש ותזרים Button */}
+        {/* בחירת חודש ותזרים Button עם החודש הנוכחי */}
         <button className={`mobile-control-btn month-select-btn ${showMonthPicker ? 'expanded' : ''}`} onClick={() => setShowMonthPicker(!showMonthPicker)}>
           <div className="btn-content">
             <span className="btn-icon">📅</span>
-            <span className="btn-text">בחירת חודש ותזרים</span>
+            <span className="btn-text">{formatMonth(currentDate)} {year}</span>
             <span className={`btn-arrow ${showMonthPicker ? 'rotated' : ''}`}>▼</span>
           </div>
         </button>
