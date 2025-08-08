@@ -20,10 +20,10 @@ class MissingMethods {
       const results = [];
       for (const transaction of transactions) {
         try {
-          // Generate hash for each transaction
-          const transactionHash = this.generateTransactionHash ? 
-            this.generateTransactionHash(transaction) : 
-            Date.now().toString();
+          // Generate hash for each transaction - import TransactionService for proper hash generation
+          const TransactionService = require('./TransactionService');
+          const transactionHash = transaction.transaction_hash || 
+            TransactionService.generateTransactionHash(transaction);
             
           const processedTransaction = {
             ...transaction,
@@ -54,10 +54,15 @@ class MissingMethods {
       const successful = results.filter(r => r.success).length;
       const failed = results.filter(r => !r.success).length;
 
-      return SharedUtilities.createSuccessResponse({
-        results,
+      // Return in the original format expected by Excel services
+      return {
+        success: true,
+        imported: successful,
+        duplicates: 0, // Will be calculated elsewhere for duplicate detection
+        errors: failed,
+        results: results,
         summary: { successful, failed, total: transactions.length }
-      });
+      };
     } catch (error) {
       console.error('Error creating transactions batch:', error);
       return SharedUtilities.handleSupabaseError(error, 'create transactions batch');

@@ -128,7 +128,7 @@ class BackwardCompatibleSupabaseService {
   static getBudgetAnalysis = unwrapResponse(BudgetService.getBudgetAnalysis, null);
 
   // ===== MISSING METHODS (unwrap responses) =====
-  static createTransactionsBatch = unwrapResponse(MissingMethods.createTransactionsBatch, null);
+  static createTransactionsBatch = MissingMethods.createTransactionsBatch; // Already returns correct format
   static getTransactionsByHashes = unwrapResponse(MissingMethods.getTransactionsByHashes, []);
   static getTransactionsByHash = unwrapResponse(MissingMethods.getTransactionsByHash, []);
   static processTransactionsByCategory = unwrapResponse(MissingMethods.processTransactionsByCategory, null);

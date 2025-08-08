@@ -51,7 +51,7 @@ class AdditionalMethods {
       (transactions || []).forEach(transaction => {
         const amount = parseFloat(transaction.amount) || 0;
         const categoryName = transaction.category?.name || transaction.category_name || 'Uncategorized';
-        const categoryType = transaction.category?.category_type || this.inferCategoryType(categoryName);
+        const categoryType = transaction.category?.category_type || AdditionalMethods.inferCategoryType(categoryName);
 
         // Update category totals
         if (categoryType === 'income' && amount > 0) {
@@ -540,6 +540,48 @@ class AdditionalMethods {
     } catch (error) {
       console.error('Error calculating shared category targets:', error);
       return SharedUtilities.handleSupabaseError(error, 'calculate shared category targets');
+    }
+  }
+
+  // ===== CATEGORY TYPE INFERENCE =====
+  static inferCategoryType(categoryName) {
+    try {
+      if (!categoryName || typeof categoryName !== 'string') {
+        return 'variable_expense'; // Default fallback
+      }
+
+      const name = categoryName.toLowerCase();
+
+      // Income categories
+      if (name.includes('הכנסות') || name.includes('משכורת') || name.includes('פרמיות') || 
+          name.includes('בונוסים') || name.includes('income') || name.includes('salary') ||
+          name.includes('dividend') || name.includes('interest') || name.includes('פנסיה') ||
+          name.includes('קבלה') || name.includes('מענק') || name.includes('החזר')) {
+        return 'income';
+      }
+
+      // Fixed expenses categories
+      if (name.includes('קבועות') || name.includes('ביטוח') || name.includes('משכנתא') || 
+          name.includes('שכר דירה') || name.includes('אגרות') || name.includes('תשלומים') ||
+          name.includes('קבוע') || name.includes('fixed') || name.includes('recurring') ||
+          name.includes('subscription') || name.includes('מנוי') || name.includes('חשמל') ||
+          name.includes('מים') || name.includes('גז') || name.includes('טלפון') ||
+          name.includes('אינטרנט') || name.includes('נטפליקס') || name.includes('ספוטיפיי')) {
+        return 'fixed_expense';
+      }
+
+      // Savings categories
+      if (name.includes('חיסכון') || name.includes('השקעות') || name.includes('savings') || 
+          name.includes('investment') || name.includes('פנסיה מנהלים') || 
+          name.includes('קופת גמל') || name.includes('תגמולים')) {
+        return 'savings';
+      }
+
+      // Default to variable expense for all other categories
+      return 'variable_expense';
+    } catch (error) {
+      console.error('Error inferring category type:', error);
+      return 'variable_expense'; // Safe fallback
     }
   }
 }

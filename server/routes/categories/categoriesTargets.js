@@ -133,4 +133,60 @@ router.get('/monthly-spending/:categoryName', authenticateToken, async (req, res
   }
 });
 
+// Get category spending history for histogram
+router.get('/spending-history/:categoryName', authenticateToken, async (req, res) => {
+  try {
+    const { categoryName } = req.params;
+    const { months = 12 } = req.query;
+    const userId = req.user.id;
+    
+    const spendingHistory = await SupabaseService.getCategorySpendingHistory(
+      userId, 
+      categoryName, 
+      parseInt(months)
+    );
+    
+    res.json({
+      success: true,
+      spending_history: spendingHistory
+    });
+  } catch (error) {
+    console.error('Get spending history error:', error);
+    res.status(500).json({ error: 'Failed to get spending history' });
+  }
+});
+
+// Check if monthly targets should be refreshed for new month
+router.get('/should-refresh-targets', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const shouldRefresh = await SupabaseService.shouldRefreshMonthlyTargets(userId);
+    
+    res.json({
+      success: true,
+      should_refresh: shouldRefresh
+    });
+  } catch (error) {
+    console.error('Check should refresh targets error:', error);
+    res.status(500).json({ error: 'Failed to check refresh status' });
+  }
+});
+
+// Refresh monthly targets for new month
+router.post('/refresh-monthly-targets', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { force = false } = req.body;
+    const result = await SupabaseService.refreshMonthlyTargetsForNewMonth(userId, force);
+    
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    console.error('Refresh monthly targets error:', error);
+    res.status(500).json({ error: 'Failed to refresh monthly targets' });
+  }
+});
+
 module.exports = router;
