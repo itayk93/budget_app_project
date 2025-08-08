@@ -29,7 +29,16 @@
 - GET `/duplicates` - איתור כפילויות
 - GET `/duplicates/advanced` - איתור מתקדם עם ניקוד דמיון
 
-#### `/server/routes/transactions/index.js` (30 שורות)
+#### `/server/routes/transactions/transactionsFlowMonth.js` (80 שורות)
+- PATCH `/:id/flow-month` - עדכון חודש זרימה
+- POST `/api/transactions/delete_by_cash_flow` - מחיקה לפי זרימת מזומנים
+
+#### `/server/routes/transactions/transactionsSplit.js` (180 שורות)
+- POST `/split` - פיצול עסקה למספר עסקאות
+- POST `/unsplit` - ביטול פיצול (מחיקת עסקאות מפוצלות)
+- GET `/split/:originalTransactionId` - הצגת עסקאות מפוצלות
+
+#### `/server/routes/transactions/index.js` (40 שורות)
 - Router מרכזי שמחבר את כל המודולים
 
 ---
@@ -65,11 +74,17 @@ app.use('/api/transactions-new', require('./routes/transactions_modular'));
 - [x] **transactions Batch** - 180 שורות → מודול נפרד  
 - [x] **transactions Analytics** - 200 שורות → מודול נפרד
 
+### **הושלם ✅**
+- [x] **תיקון stock_prices DB** - נוצר סקריפט SQL + בדיקה ישירה
+- [x] **transactions CRUD** - 256 שורות → מודול נפרד
+- [x] **transactions Batch** - 180 שורות → מודול נפרד  
+- [x] **transactions Analytics** - 200 שורות → מודול נפרד
+- [x] **transactions FlowMonth** - 40 שורות → מודול נפרד
+- [x] **transactions Split** - 220 שורות → מודול נפרד
+
 ### **בהמתנה ⏳**
-- [ ] **Flow Month Operations** (40 שורות)
 - [ ] **Business Intelligence** (650 שורות) - הכי מורכב
-- [ ] **Transaction Splitting** (220 שורות)
-- [ ] **Legacy API Endpoints** (100 שורות)
+- [ ] **Legacy API Endpoints** (100 שורות) 
 - [ ] **categories.js** (918 שורות)
 - [ ] **supabaseService.js** (2994 שורות)
 
