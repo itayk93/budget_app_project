@@ -2,8 +2,8 @@
 // This file now uses the modular Supabase service
 // Original backed up as: supabaseService_original_backup.js
 
-// Import the modular Supabase service with full backward compatibility
-module.exports = require('./supabase-modules/index');
+// Import the backward compatibility wrapper to ensure exact same return formats
+module.exports = require('./supabase-modules/BackwardCompatibilityWrapper');
 
 // Note: All methods remain exactly the same, now organized in modules:
 // - SharedUtilities.js - Common utilities and validation
