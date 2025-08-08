@@ -10,6 +10,8 @@ const TransactionService = require('./TransactionService');
 const CategoryService = require('./CategoryService');
 const CashFlowService = require('./CashFlowService');
 const BudgetService = require('./BudgetService');
+const MissingMethods = require('./MissingMethods');
+const AdditionalMethods = require('./AdditionalMethods');
 
 /**
  * Main SupabaseService class that provides a unified interface
@@ -95,6 +97,30 @@ class SupabaseService {
   static updateCategoryMonthlyTarget = BudgetService.updateCategoryMonthlyTarget;
   static getCategoryMonthlyTarget = BudgetService.getCategoryMonthlyTarget;
   static getBudgetAnalysis = BudgetService.getBudgetAnalysis;
+
+  // ===== MISSING METHODS (ADDED FOR FULL COMPATIBILITY) =====
+  static createTransactionsBatch = MissingMethods.createTransactionsBatch;
+  static getTransactionsByHashes = MissingMethods.getTransactionsByHashes;
+  static getTransactionsByHash = MissingMethods.getTransactionsByHash;
+  static processTransactionsByCategory = MissingMethods.processTransactionsByCategory;
+  static groupCategoriesByShared = MissingMethods.groupCategoriesByShared;
+  static calculateMonthlyAverage = MissingMethods.calculateMonthlyAverage;
+  static getSharedCategoryMonthlySpending = MissingMethods.getSharedCategoryMonthlySpending;
+  static getLatestTransactionDate = MissingMethods.getLatestTransactionDate;
+
+  // ===== ADDITIONAL CRITICAL METHODS =====
+  static getDashboardData = AdditionalMethods.getDashboardData;
+  static getUserPreference = AdditionalMethods.getUserPreference;
+  static setUserPreference = AdditionalMethods.setUserPreference;
+  static getSharedCategoryTarget = AdditionalMethods.getSharedCategoryTarget;
+  static updateSharedCategoryTarget = AdditionalMethods.updateSharedCategoryTarget;
+  static setUseSharedTarget = AdditionalMethods.setUseSharedTarget;
+  static getCategoryMonthlySpending = AdditionalMethods.getCategoryMonthlySpending;
+  static getCategorySpendingHistory = AdditionalMethods.getCategorySpendingHistory;
+  static calculateWeeklyTarget = AdditionalMethods.calculateWeeklyTarget;
+  static shouldRefreshMonthlyTargets = AdditionalMethods.shouldRefreshMonthlyTargets;
+  static refreshMonthlyTargetsForNewMonth = AdditionalMethods.refreshMonthlyTargetsForNewMonth;
+  static calculateAndUpdateSharedCategoryTargets = AdditionalMethods.calculateAndUpdateSharedCategoryTargets;
 
   // ===== SERVICE ACCESS =====
   // Provide direct access to service modules for advanced usage
