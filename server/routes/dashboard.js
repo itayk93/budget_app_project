@@ -99,10 +99,11 @@ router.get('/', authenticateToken, async (req, res) => {
       month: finalMonth
     });
 
-    if (!dashboardResult.success) {
+    // dashboardResult is already unwrapped by BackwardCompatibilityWrapper
+    if (!dashboardResult) {
       return res.status(500).json({ 
         error: 'Failed to fetch dashboard data',
-        details: dashboardResult.error 
+        details: 'No data returned' 
       });
     }
 
@@ -111,7 +112,7 @@ router.get('/', authenticateToken, async (req, res) => {
     
     // Prepare response data
     const responseData = {
-      ...dashboardResult.data,
+      ...dashboardResult,
       cash_flows: cashFlows,
       current_cash_flow_id: cash_flow,
       flow_month: flow_month,
