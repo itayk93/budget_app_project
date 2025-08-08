@@ -1,0 +1,136 @@
+const express = require('express');
+const SupabaseService = require('../../services/supabaseService');
+const { supabase } = require('../../config/supabase');
+const { authenticateToken } = require('../../middleware/auth');
+const router = express.Router();
+
+// ===== CATEGORY MONTHLY TARGETS MANAGEMENT =====
+
+// Calculate monthly target based on historical average
+router.post('/calculate-monthly-target', authenticateToken, async (req, res) => {
+  try {
+    const { categoryName, monthsBack = 6 } = req.body;
+    
+    if (!categoryName) {
+      return res.status(400).json({ error: 'categoryName is required' });
+    }
+
+    // Get historical transactions for this category
+    const { transactions } = await SupabaseService.getTransactions(req.user.id, { 
+      show_all: true 
+    });
+    
+    const categoryTransactions = transactions.filter(t => 
+      t.category_name === categoryName
+    );
+
+    if (categoryTransactions.length === 0) {
+      return res.status(400).json({ error: 'No historical transactions found for this category' });
+    }
+
+    // Group by month and calculate averages
+    const monthlyTotals = new Map();
+    
+    categoryTransactions.forEach(transaction => {
+      const date = new Date(transaction.payment_date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      
+      if (!monthlyTotals.has(monthKey)) {
+        monthlyTotals.set(monthKey, 0);
+      }
+      
+      monthlyTotals.set(monthKey, monthlyTotals.get(monthKey) + Math.abs(parseFloat(transaction.amount || 0)));
+    });
+
+    // Calculate average from recent months
+    const monthlyValues = Array.from(monthlyTotals.values()).slice(-monthsBack);
+    const averageMonthlySpending = monthlyValues.length > 0 
+      ? monthlyValues.reduce((sum, val) => sum + val, 0) / monthlyValues.length
+      : 0;
+
+    const suggestedTarget = Math.round(averageMonthlySpending);
+
+    res.json({
+      success: true,
+      category_name: categoryName,
+      suggested_target: suggestedTarget,
+      historical_data: {
+        months_analyzed: monthlyValues.length,
+        monthly_totals: Array.from(monthlyTotals.entries()).slice(-monthsBack)
+      }
+    });
+  } catch (error) {
+    console.error('Calculate monthly target error:', error);
+    res.status(500).json({ error: 'Failed to calculate monthly target' });
+  }
+});
+
+// Update monthly target manually
+router.post('/update-monthly-target', authenticateToken, async (req, res) => {
+  try {
+    const { categoryName, target } = req.body;
+    
+    if (!categoryName || typeof target !== 'number') {
+      return res.status(400).json({ error: 'categoryName and target are required' });
+    }
+
+    // Update or insert category target
+    const { data, error } = await supabase
+      .from('category_order')
+      .upsert({
+        user_id: req.user.id,
+        category_name: categoryName,
+        monthly_target: target,
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      message: 'Monthly target updated successfully',
+      category: data
+    });
+  } catch (error) {
+    console.error('Update monthly target error:', error);
+    res.status(500).json({ error: 'Failed to update monthly target' });
+  }
+});
+
+// Get current month spending for category
+router.get('/monthly-spending/:categoryName', authenticateToken, async (req, res) => {
+  try {
+    const { categoryName } = req.params;
+    
+    const currentDate = new Date();
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth() + 1;
+
+    const filters = {
+      year,
+      month,
+      category_name: categoryName
+    };
+
+    const { transactions } = await SupabaseService.getTransactions(req.user.id, filters);
+    
+    const totalSpending = transactions.reduce((sum, t) => 
+      sum + Math.abs(parseFloat(t.amount || 0)), 0
+    );
+
+    res.json({
+      success: true,
+      category_name: categoryName,
+      current_month: `${year}-${String(month).padStart(2, '0')}`,
+      total_spending: totalSpending,
+      transaction_count: transactions.length
+    });
+  } catch (error) {
+    console.error('Get monthly spending error:', error);
+    res.status(500).json({ error: 'Failed to get monthly spending' });
+  }
+});
+
+module.exports = router;
