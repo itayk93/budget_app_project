@@ -71,6 +71,14 @@ const TransactionDetails = () => {
   );
 
   const formatCurrency = (amount, currency = 'ILS') => {
+    // Handle null, undefined, or invalid amounts
+    if (amount === null || amount === undefined || isNaN(amount)) {
+      amount = 0;
+    }
+    
+    // Ensure amount is a number
+    const numericAmount = Number(amount);
+    
     const symbols = {
       'ILS': '₪',
       'USD': '$',
@@ -81,9 +89,9 @@ const TransactionDetails = () => {
     const precision = currency === 'ILS' ? 1 : 2;
     
     if (currency === 'ILS') {
-      return `${amount.toFixed(precision)} ${symbol}`;
+      return `${numericAmount.toFixed(precision)} ${symbol}`;
     } else {
-      return `${symbol}${amount.toFixed(precision)}`;
+      return `${symbol}${numericAmount.toFixed(precision)}`;
     }
   };
 

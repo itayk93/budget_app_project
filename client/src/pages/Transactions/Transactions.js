@@ -241,10 +241,18 @@ const Transactions = () => {
   };
 
   const formatCurrency = (amount, currency = 'ILS') => {
-    if (currency === 'ILS') {
-      return `${Math.round(amount)} ₪`;
+    // Handle null, undefined, or invalid amounts
+    if (amount === null || amount === undefined || isNaN(amount)) {
+      amount = 0;
     }
-    return `${amount.toFixed(2)} ${currency}`;
+    
+    // Ensure amount is a number
+    const numericAmount = Number(amount);
+    
+    if (currency === 'ILS') {
+      return `${Math.round(numericAmount)} ₪`;
+    }
+    return `${numericAmount.toFixed(2)} ${currency}`;
   };
 
   const formatDate = (dateString) => {
