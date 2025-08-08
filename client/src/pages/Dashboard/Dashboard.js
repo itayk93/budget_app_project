@@ -382,6 +382,14 @@ const Dashboard = () => {
   };
 
   const formatCurrency = (amount, currency = null) => {
+    // Handle null, undefined, or invalid amounts
+    if (amount === null || amount === undefined || isNaN(amount)) {
+      amount = 0;
+    }
+    
+    // Ensure amount is a number
+    const numericAmount = Number(amount);
+    
     // Use selected cash flow currency if no currency specified
     const currencyToUse = currency || selectedCashFlow?.currency || 'ILS';
     
@@ -395,9 +403,9 @@ const Dashboard = () => {
     const precision = currencyToUse === 'ILS' ? 1 : 2;
     
     if (currencyToUse === 'ILS') {
-      return `${amount.toFixed(precision)} ${symbol}`;
+      return `${numericAmount.toFixed(precision)} ${symbol}`;
     } else {
-      return `${symbol}${amount.toFixed(precision)}`;
+      return `${symbol}${numericAmount.toFixed(precision)}`;
     }
   };
 
