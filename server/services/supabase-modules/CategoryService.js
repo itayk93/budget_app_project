@@ -1,0 +1,478 @@
+/**
+ * Category Service for Supabase Operations
+ * Extracted from supabaseService.js - Category management operations
+ * ~300 lines - Handles all category-related database operations
+ */
+
+const { supabase } = require('../../config/supabase');
+const SharedUtilities = require('./SharedUtilities');
+
+class CategoryService {
+
+  // ===== CATEGORY RETRIEVAL =====
+  
+  static async getCategories(userId = null) {
+    try {
+      // Initialize category order if user is provided
+      if (userId) {
+        await this.initializeCategoryOrder(userId);
+      }
+
+      let query = supabase
+        .from('category')
+        .select('*');
+
+      if (userId) {
+        // Get categories for specific user
+        query = query.eq('user_id', userId);
+      }
+
+      const { data: categories, error } = await query.order('name');
+
+      if (error) throw error;
+
+      // Ensure each category has required fields
+      const processedCategories = categories.map(category => ({
+        ...category,
+        category_type: category.category_type || 'variable_expense',
+        color: category.color || SharedUtilities.getCategoryColor(category.name),
+        is_default: category.is_default || false
+      }));
+
+      // Apply user's preferred category order if user_id is provided
+      if (userId) {
+        const preferredOrder = await this.getUserCategoryOrder(userId);
+        if (preferredOrder && preferredOrder.length > 0) {
+          const categoryMap = {};
+          processedCategories.forEach(cat => {
+            categoryMap[cat.name] = cat;
+          });
+
+          const orderedCategories = [];
+          
+          // Add categories in the preferred order first
+          preferredOrder.forEach(orderItem => {
+            if (categoryMap[orderItem.category_name]) {
+              orderedCategories.push(categoryMap[orderItem.category_name]);
+            }
+          });
+          
+          // Then add any remaining categories
+          processedCategories.forEach(cat => {
+            if (!preferredOrder.some(item => item.category_name === cat.name)) {
+              orderedCategories.push(cat);
+            }
+          });
+          
+          return SharedUtilities.createSuccessResponse(orderedCategories);
+        }
+      }
+
+      return SharedUtilities.createSuccessResponse(processedCategories);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      
+      // Fallback categories if database fetch fails
+      const fallbackCategories = [
+        { id: 'variable_expenses', name: 'הוצאות משתנות', category_type: 'variable_expense', color: '#2196F3' },
+        { id: 'fixed_expenses', name: 'הוצאות קבועות', category_type: 'fixed_expense', color: '#9C27B0' },
+        { id: 'income', name: 'הכנסות', category_type: 'income', color: '#4CAF50' }
+      ];
+      return SharedUtilities.createSuccessResponse(fallbackCategories);
+    }
+  }
+
+  static async getCategoriesByType(userId, categoryType) {
+    try {
+      SharedUtilities.validateUserId(userId);
+
+      const { data, error } = await supabase
+        .from('category')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('category_type', categoryType)
+        .order('name');
+
+      if (error) throw error;
+
+      const processedCategories = data.map(category => ({
+        ...category,
+        color: category.color || SharedUtilities.getCategoryColor(category.name)
+      }));
+
+      return SharedUtilities.createSuccessResponse(processedCategories);
+    } catch (error) {
+      console.error('Error fetching categories by type:', error);
+      return SharedUtilities.handleSupabaseError(error, 'fetch categories by type');
+    }
+  }
+
+  // ===== CATEGORY ORDER MANAGEMENT =====
+
+  static async getUserCategoryOrder(userId) {
+    try {
+      SharedUtilities.validateUserId(userId);
+
+      const { data, error } = await supabase
+        .from('category_order')
+        .select('*')
+        .eq('user_id', userId)
+        .order('display_order');
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error getting category order:', error);
+      return [];
+    }
+  }
+
+  static async initializeCategoryOrder(userId) {
+    try {
+      SharedUtilities.validateUserId(userId);
+
+      // Check if user already has category order
+      const existingOrder = await this.getUserCategoryOrder(userId);
+      if (existingOrder.length > 0) {
+        return SharedUtilities.createSuccessResponse(true, 'Category order already initialized');
+      }
+
+      // Get all available categories
+      const categoriesResult = await this.getCategories();
+      const categories = categoriesResult.success ? categoriesResult.data : [];
+      
+      // Initialize order for each category
+      const orderData = categories.map((category, index) => ({
+        user_id: userId,
+        category_name: category.name,
+        display_order: index + 1,
+        created_at: new Date().toISOString()
+      }));
+
+      if (orderData.length > 0) {
+        const { error } = await supabase
+          .from('category_order')
+          .insert(orderData);
+
+        if (error) throw error;
+      }
+
+      return SharedUtilities.createSuccessResponse(true, 'Category order initialized successfully');
+    } catch (error) {
+      console.error('Error initializing category order:', error);
+      return SharedUtilities.handleSupabaseError(error, 'initialize category order');
+    }
+  }
+
+  static async saveCategoryOrder(userId, categoryOrder) {
+    try {
+      SharedUtilities.validateUserId(userId);
+
+      if (!Array.isArray(categoryOrder)) {
+        return SharedUtilities.createErrorResponse('Category order must be an array');
+      }
+
+      // Delete existing order
+      const { error: deleteError } = await supabase
+        .from('category_order')
+        .delete()
+        .eq('user_id', userId);
+
+      if (deleteError) throw deleteError;
+
+      // Insert new order
+      const orderData = categoryOrder.map((item, index) => ({
+        user_id: userId,
+        category_name: typeof item === 'string' ? item : item.category_name,
+        display_order: index + 1,
+        created_at: new Date().toISOString()
+      }));
+
+      const { error: insertError } = await supabase
+        .from('category_order')
+        .insert(orderData);
+
+      if (insertError) throw insertError;
+
+      return SharedUtilities.createSuccessResponse(true, 'Category order saved successfully');
+    } catch (error) {
+      console.error('Error saving category order:', error);
+      return SharedUtilities.handleSupabaseError(error, 'save category order');
+    }
+  }
+
+  static async reorderCategory(userId, categoryId, direction) {
+    try {
+      SharedUtilities.validateUserId(userId);
+
+      if (!['up', 'down'].includes(direction)) {
+        return SharedUtilities.createErrorResponse('Direction must be "up" or "down"');
+      }
+
+      const currentOrder = await this.getUserCategoryOrder(userId);
+      if (!currentOrder || currentOrder.length === 0) {
+        return SharedUtilities.createErrorResponse('No category order found');
+      }
+
+      // Find the category to move
+      const categoryIndex = currentOrder.findIndex(item => 
+        item.category_name === categoryId || item.id === categoryId
+      );
+
+      if (categoryIndex === -1) {
+        return SharedUtilities.createErrorResponse('Category not found in order');
+      }
+
+      // Calculate new position
+      let newIndex;
+      if (direction === 'up' && categoryIndex > 0) {
+        newIndex = categoryIndex - 1;
+      } else if (direction === 'down' && categoryIndex < currentOrder.length - 1) {
+        newIndex = categoryIndex + 1;
+      } else {
+        return SharedUtilities.createErrorResponse('Cannot move category in that direction');
+      }
+
+      // Swap positions
+      const newOrder = [...currentOrder];
+      [newOrder[categoryIndex], newOrder[newIndex]] = [newOrder[newIndex], newOrder[categoryIndex]];
+
+      // Save the new order
+      return await this.saveCategoryOrder(userId, newOrder.map(item => item.category_name));
+    } catch (error) {
+      console.error('Error reordering category:', error);
+      return SharedUtilities.handleSupabaseError(error, 'reorder category');
+    }
+  }
+
+  // ===== CATEGORY CREATION AND MANAGEMENT =====
+
+  static async createCategory(userId, categoryData) {
+    try {
+      SharedUtilities.validateUserId(userId);
+
+      const { name, category_type, color, is_default = false } = categoryData;
+
+      if (!name || !category_type) {
+        return SharedUtilities.createErrorResponse('Category name and type are required');
+      }
+
+      // Check if category already exists for this user
+      const { data: existingCategory, error: checkError } = await supabase
+        .from('category')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('name', name)
+        .maybeSingle();
+
+      if (checkError) throw checkError;
+
+      if (existingCategory) {
+        return SharedUtilities.createErrorResponse('Category already exists');
+      }
+
+      const categoryToInsert = {
+        user_id: userId,
+        name,
+        category_type,
+        color: color || SharedUtilities.getCategoryColor(name),
+        is_default,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('category')
+        .insert([categoryToInsert])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Add to category order
+      const currentOrder = await this.getUserCategoryOrder(userId);
+      const newOrderItem = {
+        user_id: userId,
+        category_name: name,
+        display_order: currentOrder.length + 1,
+        created_at: new Date().toISOString()
+      };
+
+      await supabase
+        .from('category_order')
+        .insert([newOrderItem]);
+
+      return SharedUtilities.createSuccessResponse(data, 'Category created successfully');
+    } catch (error) {
+      console.error('Error creating category:', error);
+      return SharedUtilities.handleSupabaseError(error, 'create category');
+    }
+  }
+
+  static async updateCategory(userId, categoryId, updateData) {
+    try {
+      SharedUtilities.validateUserId(userId);
+
+      if (!categoryId) {
+        return SharedUtilities.createErrorResponse('Category ID is required');
+      }
+
+      const processedUpdateData = {
+        ...updateData,
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('category')
+        .update(processedUpdateData)
+        .eq('id', categoryId)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return SharedUtilities.createSuccessResponse(data, 'Category updated successfully');
+    } catch (error) {
+      console.error('Error updating category:', error);
+      return SharedUtilities.handleSupabaseError(error, 'update category');
+    }
+  }
+
+  static async deleteCategory(userId, categoryId) {
+    try {
+      SharedUtilities.validateUserId(userId);
+
+      if (!categoryId) {
+        return SharedUtilities.createErrorResponse('Category ID is required');
+      }
+
+      // First get the category to get its name for order cleanup
+      const { data: categoryData, error: fetchError } = await supabase
+        .from('category')
+        .select('name')
+        .eq('id', categoryId)
+        .eq('user_id', userId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Delete the category
+      const { data, error } = await supabase
+        .from('category')
+        .delete()
+        .eq('id', categoryId)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Remove from category order
+      if (categoryData) {
+        await supabase
+          .from('category_order')
+          .delete()
+          .eq('user_id', userId)
+          .eq('category_name', categoryData.name);
+      }
+
+      return SharedUtilities.createSuccessResponse(data, 'Category deleted successfully');
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      return SharedUtilities.handleSupabaseError(error, 'delete category');
+    }
+  }
+
+  // ===== BUSINESS-CATEGORY MAPPING =====
+
+  static async getMostFrequentCategoryForBusiness(businessName) {
+    try {
+      if (!businessName) {
+        return null;
+      }
+
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('category_name, category_id')
+        .eq('business_name', businessName)
+        .not('category_name', 'is', null)
+        .not('category_id', 'is', null);
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        return null;
+      }
+
+      // Count frequency of each category
+      const categoryFrequency = {};
+      data.forEach(transaction => {
+        const category = transaction.category_name || transaction.category_id;
+        if (category) {
+          categoryFrequency[category] = (categoryFrequency[category] || 0) + 1;
+        }
+      });
+
+      // Find most frequent category
+      let mostFrequentCategory = null;
+      let maxCount = 0;
+
+      for (const [category, count] of Object.entries(categoryFrequency)) {
+        if (count > maxCount) {
+          maxCount = count;
+          mostFrequentCategory = category;
+        }
+      }
+
+      return mostFrequentCategory;
+    } catch (error) {
+      console.error('Error getting most frequent category for business:', error);
+      return null;
+    }
+  }
+
+  static async getAutoCategoryForBusiness(businessName, amount, sourceType = null) {
+    try {
+      if (!businessName) {
+        return null;
+      }
+
+      // First try to get the most frequent category for this business
+      const frequentCategory = await this.getMostFrequentCategoryForBusiness(businessName);
+      
+      if (frequentCategory) {
+        return frequentCategory;
+      }
+
+      // If no frequent category found, use business name patterns or amount-based logic
+      const businessLower = businessName.toLowerCase();
+      
+      // Common business patterns
+      const categoryPatterns = {
+        'הוצאות קבועות': ['ביט', 'בזק', 'חברת חשמל', 'מי אביבים', 'ארנונה', 'ביטוח'],
+        'הוצאות משתנות': ['שופרסל', 'רמי לוי', 'טיב טעם', 'מגה', 'סופר'],
+        'בילויים ואוכל': ['מקדונלד', 'בורגר', 'פיצה', 'קפה', 'מסעדה'],
+        'תחבורה': ['דלק', 'בזין', 'חניה', 'מוניות', 'אוטובוס']
+      };
+
+      for (const [category, patterns] of Object.entries(categoryPatterns)) {
+        if (patterns.some(pattern => businessLower.includes(pattern))) {
+          return category;
+        }
+      }
+
+      // Default fallback based on amount
+      if (amount && parseFloat(amount) > 1000) {
+        return 'הוצאות קבועות';
+      }
+
+      return 'הוצאות משתנות'; // Default category
+    } catch (error) {
+      console.error('Error getting auto category for business:', error);
+      return 'הוצאות משתנות'; // Default fallback
+    }
+  }
+}
+
+module.exports = CategoryService;

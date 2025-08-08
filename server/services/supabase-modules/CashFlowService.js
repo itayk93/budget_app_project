@@ -1,0 +1,365 @@
+/**
+ * Cash Flow Service for Supabase Operations
+ * Extracted from supabaseService.js - Cash flow management operations
+ * ~200 lines - Handles all cash flow related database operations
+ */
+
+const { supabase } = require('../../config/supabase');
+const SharedUtilities = require('./SharedUtilities');
+
+class CashFlowService {
+
+  // ===== CASH FLOW RETRIEVAL =====
+  
+  static async getCashFlows(userId) {
+    try {
+      SharedUtilities.validateUserId(userId);
+
+      const { data, error } = await supabase
+        .from('cash_flows')
+        .select('*')
+        .eq('user_id', userId)
+        .order('is_default', { ascending: false })
+        .order('name');
+
+      if (error) throw error;
+      return SharedUtilities.createSuccessResponse(data || []);
+    } catch (error) {
+      console.error('Error fetching cash flows:', error);
+      return SharedUtilities.handleSupabaseError(error, 'fetch cash flows');
+    }
+  }
+
+  static async getCashFlow(cashFlowId) {
+    try {
+      if (!cashFlowId) {
+        return SharedUtilities.createErrorResponse('Cash flow ID is required');
+      }
+
+      const { data, error } = await supabase
+        .from('cash_flows')
+        .select('*')
+        .eq('id', cashFlowId)
+        .single();
+
+      if (error) throw error;
+      return SharedUtilities.createSuccessResponse(data);
+    } catch (error) {
+      console.error('Error fetching cash flow:', error);
+      return SharedUtilities.handleSupabaseError(error, 'fetch cash flow');
+    }
+  }
+
+  static async getDefaultCashFlow(userId) {
+    try {
+      SharedUtilities.validateUserId(userId);
+
+      // First try to get the default cash flow
+      const { data: defaultFlow, error: defaultError } = await supabase
+        .from('cash_flows')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_default', true)
+        .maybeSingle();
+
+      if (defaultError) throw defaultError;
+
+      if (defaultFlow) {
+        return SharedUtilities.createSuccessResponse(defaultFlow);
+      }
+
+      // If no default found, get the first cash flow for the user
+      const { data: firstFlow, error: firstError } = await supabase
+        .from('cash_flows')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at')
+        .limit(1)
+        .maybeSingle();
+
+      if (firstError) throw firstError;
+
+      if (firstFlow) {
+        // Set this as default
+        await this.updateCashFlow(firstFlow.id, { is_default: true });
+        return SharedUtilities.createSuccessResponse(firstFlow);
+      }
+
+      // No cash flows found - create a default one
+      const defaultCashFlow = await this.createCashFlow({
+        user_id: userId,
+        name: 'Default Cash Flow',
+        currency: 'ILS',
+        is_default: true,
+        description: 'Default cash flow created automatically'
+      });
+
+      return defaultCashFlow;
+    } catch (error) {
+      console.error('Error getting default cash flow:', error);
+      return SharedUtilities.handleSupabaseError(error, 'get default cash flow');
+    }
+  }
+
+  // ===== CASH FLOW CREATION =====
+
+  static async createCashFlow(cashFlowData) {
+    try {
+      const { user_id, name, currency = 'ILS', is_default = false, description = '' } = cashFlowData;
+
+      if (!user_id || !name) {
+        return SharedUtilities.createErrorResponse('User ID and cash flow name are required');
+      }
+
+      SharedUtilities.validateUserId(user_id);
+
+      // If this is being set as default, unset other defaults first
+      if (is_default) {
+        await supabase
+          .from('cash_flows')
+          .update({ is_default: false })
+          .eq('user_id', user_id);
+      }
+
+      const cashFlowToInsert = {
+        user_id,
+        name: name.trim(),
+        currency: currency.toUpperCase(),
+        is_default,
+        description: description.trim(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('cash_flows')
+        .insert([cashFlowToInsert])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return SharedUtilities.createSuccessResponse(data, 'Cash flow created successfully');
+    } catch (error) {
+      console.error('Error creating cash flow:', error);
+      return SharedUtilities.handleSupabaseError(error, 'create cash flow');
+    }
+  }
+
+  // ===== CASH FLOW UPDATES =====
+
+  static async updateCashFlow(cashFlowId, cashFlowData) {
+    try {
+      if (!cashFlowId) {
+        return SharedUtilities.createErrorResponse('Cash flow ID is required');
+      }
+
+      // Get the current cash flow to get user_id for default logic
+      const currentCashFlow = await this.getCashFlow(cashFlowId);
+      if (!currentCashFlow.success) {
+        return currentCashFlow;
+      }
+
+      // If setting as default, unset other defaults first
+      if (cashFlowData.is_default === true) {
+        await supabase
+          .from('cash_flows')
+          .update({ is_default: false })
+          .eq('user_id', currentCashFlow.data.user_id);
+      }
+
+      const updateData = {
+        ...cashFlowData,
+        updated_at: new Date().toISOString()
+      };
+
+      // Validate currency if provided
+      if (updateData.currency) {
+        updateData.currency = updateData.currency.toUpperCase();
+      }
+
+      // Trim name if provided
+      if (updateData.name) {
+        updateData.name = updateData.name.trim();
+      }
+
+      const { data, error } = await supabase
+        .from('cash_flows')
+        .update(updateData)
+        .eq('id', cashFlowId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return SharedUtilities.createSuccessResponse(data, 'Cash flow updated successfully');
+    } catch (error) {
+      console.error('Error updating cash flow:', error);
+      return SharedUtilities.handleSupabaseError(error, 'update cash flow');
+    }
+  }
+
+  static async setDefaultCashFlow(userId, cashFlowId) {
+    try {
+      SharedUtilities.validateUserId(userId);
+
+      if (!cashFlowId) {
+        return SharedUtilities.createErrorResponse('Cash flow ID is required');
+      }
+
+      // Verify the cash flow belongs to the user
+      const cashFlowResult = await this.getCashFlow(cashFlowId);
+      if (!cashFlowResult.success) {
+        return cashFlowResult;
+      }
+
+      if (cashFlowResult.data.user_id !== userId) {
+        return SharedUtilities.createErrorResponse('Cash flow does not belong to user');
+      }
+
+      // Unset all defaults for the user
+      await supabase
+        .from('cash_flows')
+        .update({ is_default: false })
+        .eq('user_id', userId);
+
+      // Set the new default
+      return await this.updateCashFlow(cashFlowId, { is_default: true });
+    } catch (error) {
+      console.error('Error setting default cash flow:', error);
+      return SharedUtilities.handleSupabaseError(error, 'set default cash flow');
+    }
+  }
+
+  // ===== CASH FLOW DELETION =====
+
+  static async deleteCashFlow(cashFlowId) {
+    try {
+      if (!cashFlowId) {
+        return SharedUtilities.createErrorResponse('Cash flow ID is required');
+      }
+
+      // Get cash flow info first
+      const cashFlowResult = await this.getCashFlow(cashFlowId);
+      if (!cashFlowResult.success) {
+        return cashFlowResult;
+      }
+
+      const cashFlow = cashFlowResult.data;
+
+      // Check if this is the only cash flow for the user
+      const userCashFlows = await this.getCashFlows(cashFlow.user_id);
+      if (userCashFlows.success && userCashFlows.data.length <= 1) {
+        return SharedUtilities.createErrorResponse('Cannot delete the only cash flow. Create another cash flow first.');
+      }
+
+      // First delete all associated transactions
+      const { error: transactionError } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('cash_flow_id', cashFlowId);
+
+      if (transactionError) throw transactionError;
+
+      // Delete associated monthly goals
+      const { error: goalsError } = await supabase
+        .from('monthly_goals')
+        .delete()
+        .eq('cash_flow_id', cashFlowId);
+
+      if (goalsError) throw goalsError;
+
+      // Then delete the cash flow
+      const { data, error } = await supabase
+        .from('cash_flows')
+        .delete()
+        .eq('id', cashFlowId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // If the deleted cash flow was default, set another one as default
+      if (cashFlow.is_default) {
+        const remainingFlows = await this.getCashFlows(cashFlow.user_id);
+        if (remainingFlows.success && remainingFlows.data.length > 0) {
+          await this.setDefaultCashFlow(cashFlow.user_id, remainingFlows.data[0].id);
+        }
+      }
+
+      return SharedUtilities.createSuccessResponse(data, 'Cash flow deleted successfully');
+    } catch (error) {
+      console.error('Error deleting cash flow:', error);
+      return SharedUtilities.handleSupabaseError(error, 'delete cash flow');
+    }
+  }
+
+  // ===== CASH FLOW VALIDATION =====
+
+  static async validateCashFlowAccess(userId, cashFlowId) {
+    try {
+      SharedUtilities.validateUserId(userId);
+
+      if (!cashFlowId) {
+        return SharedUtilities.createErrorResponse('Cash flow ID is required');
+      }
+
+      const { data, error } = await supabase
+        .from('cash_flows')
+        .select('id, user_id')
+        .eq('id', cashFlowId)
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return SharedUtilities.createErrorResponse('Cash flow not found or access denied');
+        }
+        throw error;
+      }
+
+      return SharedUtilities.createSuccessResponse(true, 'Access validated');
+    } catch (error) {
+      console.error('Error validating cash flow access:', error);
+      return SharedUtilities.handleSupabaseError(error, 'validate cash flow access');
+    }
+  }
+
+  // ===== CASH FLOW STATISTICS =====
+
+  static async getCashFlowStatistics(cashFlowId) {
+    try {
+      if (!cashFlowId) {
+        return SharedUtilities.createErrorResponse('Cash flow ID is required');
+      }
+
+      // Get transaction count
+      const { data: transactionData, error: transactionError } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('cash_flow_id', cashFlowId);
+
+      if (transactionError) throw transactionError;
+
+      // Get total amounts by category type
+      const { data: amountData, error: amountError } = await supabase
+        .from('transactions')
+        .select('amount, category_name')
+        .eq('cash_flow_id', cashFlowId)
+        .not('amount', 'is', null);
+
+      if (amountError) throw amountError;
+
+      const statistics = {
+        transaction_count: transactionData?.length || 0,
+        total_amount: amountData?.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0) || 0,
+        categories_used: [...new Set(amountData?.map(t => t.category_name).filter(Boolean))] || []
+      };
+
+      return SharedUtilities.createSuccessResponse(statistics);
+    } catch (error) {
+      console.error('Error getting cash flow statistics:', error);
+      return SharedUtilities.handleSupabaseError(error, 'get cash flow statistics');
+    }
+  }
+}
+
+module.exports = CashFlowService;
