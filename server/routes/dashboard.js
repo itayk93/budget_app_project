@@ -137,7 +137,9 @@ router.get('/', authenticateToken, async (req, res) => {
           spent: category.type === 'income' ? category.amount : -category.amount,
           amount: category.amount,
           count: category.count,
-          type: category.type
+          type: category.type,
+          transactions: category.transactions || [], // Include transactions
+          category_type: category.type
         };
       });
     }

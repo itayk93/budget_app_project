@@ -67,11 +67,13 @@ class AdditionalMethods {
             name: categoryName,
             amount: 0,
             count: 0,
-            type: categoryType
+            type: categoryType,
+            transactions: [] // Add transactions array
           };
         }
         categoryBreakdown[categoryName].amount += Math.abs(amount);
         categoryBreakdown[categoryName].count += 1;
+        categoryBreakdown[categoryName].transactions.push(transaction); // Add the transaction
       });
 
       // Calculate net balance
