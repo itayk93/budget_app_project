@@ -75,16 +75,22 @@ class AdditionalMethods {
         const amount = parseFloat(transaction.amount) || 0;
         const categoryName = transaction.category?.name || transaction.category_name || 'Uncategorized';
         const categoryType = transaction.category?.category_type || AdditionalMethods.inferCategoryType(categoryName);
+        
+        // Get category order info to check if this is non-cash-flow
+        const orderInfo = categoryOrderMap.get(categoryName) || {};
+        const isNonCashFlow = orderInfo.shared_category === 'לא בתזרים';
 
-        // Update category totals
-        if (categoryType === 'income' && amount > 0) {
-          categoryTotals.income += amount;
-        } else if (categoryType === 'fixed_expense' && amount < 0) {
-          categoryTotals.fixed_expense += Math.abs(amount);
-        } else if (categoryType === 'variable_expense' && amount < 0) {
-          categoryTotals.variable_expense += Math.abs(amount);
-        } else if (categoryName.includes('חיסכון')) {
-          categoryTotals.savings += Math.abs(amount);
+        // Update category totals - EXCLUDE non-cash-flow transactions
+        if (!isNonCashFlow) {
+          if (categoryType === 'income' && amount > 0) {
+            categoryTotals.income += amount;
+          } else if (categoryType === 'fixed_expense' && amount < 0) {
+            categoryTotals.fixed_expense += Math.abs(amount);
+          } else if (categoryType === 'variable_expense' && amount < 0) {
+            categoryTotals.variable_expense += Math.abs(amount);
+          } else if (categoryName.includes('חיסכון')) {
+            categoryTotals.savings += Math.abs(amount);
+          }
         }
 
         // Update category breakdown
@@ -109,7 +115,7 @@ class AdditionalMethods {
         categoryBreakdown[categoryName].transactions.push(transaction); // Add the transaction
       });
 
-      // Calculate net balance
+      // Calculate net balance (already excluding non-cash-flow)
       const totalIncome = categoryTotals.income;
       const totalExpenses = categoryTotals.fixed_expense + categoryTotals.variable_expense;
       const netBalance = totalIncome - totalExpenses;

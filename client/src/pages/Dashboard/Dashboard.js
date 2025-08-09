@@ -438,31 +438,14 @@ const Dashboard = () => {
       return { income: 0, expenses: 0, net: 0 };
     }
 
-    const { total_income, total_expenses } = dashboardData.summary;
+    const { total_income, total_expenses, net_balance } = dashboardData.summary;
 
-    // Look for the shared "לא בתזרים" category instead of individual categories
-    let nonCashflowIncome = 0;
-    let nonCashflowExpenses = 0;
-    
-    // Check if there's a shared "לא בתזרים" category
-    const nonCashflowCategory = dashboardData.categories['לא בתזרים'];
-    if (nonCashflowCategory && nonCashflowCategory.sub_categories) {
-      // Get amounts from sub-categories
-      nonCashflowIncome = Math.abs(nonCashflowCategory.sub_categories['הכנסות לא תזרימיות']?.spent || 0);
-      nonCashflowExpenses = Math.abs(nonCashflowCategory.sub_categories['הוצאות לא תזרימיות']?.spent || 0);
-    } else {
-      // Fallback to direct category access (backward compatibility)
-      nonCashflowIncome = Math.abs(dashboardData.categories['הכנסות לא תזרימיות']?.spent || 0);
-      nonCashflowExpenses = Math.abs(dashboardData.categories['הוצאות לא תזרימיות']?.spent || 0);
-    }
-
-    const adjustedIncome = total_income - nonCashflowIncome;
-    const adjustedExpenses = Math.abs(total_expenses) - nonCashflowExpenses;
-    
-    // Net is income minus expenses
-    const adjustedNet = adjustedIncome - adjustedExpenses;
-
-    return { income: adjustedIncome, expenses: adjustedExpenses, net: adjustedNet };
+    // Backend now excludes non-cash-flow transactions, so use values directly
+    return { 
+      income: total_income || 0, 
+      expenses: Math.abs(total_expenses || 0), 
+      net: net_balance || 0 
+    };
   };
 
   const summary = calculateSummary();
