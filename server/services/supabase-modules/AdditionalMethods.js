@@ -19,6 +19,32 @@ class AdditionalMethods {
         month = new Date().getMonth() + 1 
       } = options;
 
+      // Get category order settings for the user
+      const { data: categoryOrderData, error: categoryOrderError } = await supabase
+        .from('category_order')
+        .select('*')
+        .eq('user_id', userId)
+        .order('display_order', { ascending: true });
+
+      if (categoryOrderError) {
+        console.error('Error fetching category order:', categoryOrderError);
+        // Continue without category order if there's an error
+      }
+
+      // Create a map for quick category order lookup
+      const categoryOrderMap = new Map();
+      if (categoryOrderData) {
+        categoryOrderData.forEach(cat => {
+          categoryOrderMap.set(cat.category_name, {
+            display_order: cat.display_order,
+            shared_category: cat.shared_category,
+            weekly_display: cat.weekly_display,
+            monthly_target: cat.monthly_target,
+            use_shared_target: cat.use_shared_target
+          });
+        });
+      }
+
       // Get transactions for the specified period
       let transactionQuery = supabase
         .from('transactions')
@@ -63,12 +89,19 @@ class AdditionalMethods {
 
         // Update category breakdown
         if (!categoryBreakdown[categoryName]) {
+          const orderInfo = categoryOrderMap.get(categoryName) || {};
+          
           categoryBreakdown[categoryName] = {
             name: categoryName,
             amount: 0,
             count: 0,
             type: categoryType,
-            transactions: [] // Add transactions array
+            transactions: [], // Add transactions array
+            display_order: orderInfo.display_order || 999, // Default to end if no order
+            shared_category: orderInfo.shared_category || null,
+            weekly_display: orderInfo.weekly_display || false,
+            monthly_target: orderInfo.monthly_target || null,
+            use_shared_target: orderInfo.use_shared_target || false
           };
         }
         categoryBreakdown[categoryName].amount += Math.abs(amount);
@@ -98,6 +131,13 @@ class AdditionalMethods {
         }
       }
 
+      // Process shared categories
+      const processedCategories = AdditionalMethods.processSharedCategories(categoryBreakdown);
+      
+      // Sort by display order
+      const sortedCategories = Object.values(processedCategories)
+        .sort((a, b) => a.display_order - b.display_order);
+
       return SharedUtilities.createSuccessResponse({
         summary: {
           total_income: totalIncome,
@@ -106,8 +146,7 @@ class AdditionalMethods {
           savings: categoryTotals.savings
         },
         category_totals: categoryTotals,
-        category_breakdown: Object.values(categoryBreakdown)
-          .sort((a, b) => b.amount - a.amount),
+        category_breakdown: sortedCategories,
         monthly_goal: monthlyGoal,
         transaction_count: transactions ? transactions.length : 0,
         period: { year, month }
@@ -116,6 +155,81 @@ class AdditionalMethods {
       console.error('Error getting dashboard data:', error);
       return SharedUtilities.handleSupabaseError(error, 'get dashboard data');
     }
+  }
+
+  // Helper method to process shared categories
+  static processSharedCategories(categoryBreakdown) {
+    const processedCategories = {};
+    const sharedCategoryMap = new Map();
+
+    // First pass: identify all shared categories and their sub-categories
+    Object.values(categoryBreakdown).forEach(category => {
+      if (category.shared_category && category.use_shared_target) {
+        // This category should be grouped under a shared category
+        const sharedName = category.shared_category;
+        
+        if (!sharedCategoryMap.has(sharedName)) {
+          // Find the display order for the shared category (use the lowest display_order of its sub-categories)
+          const sharedDisplayOrder = Math.min(
+            ...Object.values(categoryBreakdown)
+              .filter(cat => cat.shared_category === sharedName)
+              .map(cat => cat.display_order)
+          );
+          
+          sharedCategoryMap.set(sharedName, {
+            name: sharedName,
+            amount: 0,
+            count: 0,
+            type: category.type,
+            transactions: [],
+            display_order: sharedDisplayOrder,
+            is_shared_category: true,
+            sub_categories: {},
+            shared_category: null,
+            weekly_display: false,
+            monthly_target: null,
+            use_shared_target: false
+          });
+        }
+        
+        const sharedCategory = sharedCategoryMap.get(sharedName);
+        
+        // Add this category as a sub-category
+        sharedCategory.sub_categories[category.name] = {
+          name: category.name,
+          amount: category.amount,
+          count: category.count,
+          spent: category.type === 'income' ? category.amount : -category.amount,
+          transactions: category.transactions,
+          display_order: category.display_order,
+          weekly_display: category.weekly_display,
+          monthly_target: category.monthly_target,
+          use_shared_target: category.use_shared_target
+        };
+        
+        // Update shared category totals
+        sharedCategory.amount += category.amount;
+        sharedCategory.count += category.count;
+        sharedCategory.transactions = sharedCategory.transactions.concat(category.transactions);
+      } else {
+        // This is a regular category (not shared)
+        processedCategories[category.name] = {
+          ...category,
+          spent: category.type === 'income' ? category.amount : -category.amount,
+          is_shared_category: false
+        };
+      }
+    });
+
+    // Add all shared categories to the processed categories
+    sharedCategoryMap.forEach((sharedCategory, sharedName) => {
+      processedCategories[sharedName] = {
+        ...sharedCategory,
+        spent: sharedCategory.type === 'income' ? sharedCategory.amount : -sharedCategory.amount
+      };
+    });
+
+    return processedCategories;
   }
 
   // Helper method to infer category type from name
