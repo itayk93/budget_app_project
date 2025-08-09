@@ -204,7 +204,8 @@ const CashFlowDashboard = () => {
         return;
       }
 
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      // Use flow_month if available, otherwise calculate from date
+      const monthKey = transaction.flow_month || `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       
       // Handle different amount field names and formats
       let amount = 0;

@@ -2,6 +2,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import './CategoryOrder.css';
 
+// Suppress react-beautiful-dnd defaultProps warning
+const originalError = console.error;
+console.error = (...args) => {
+  if (typeof args[0] === 'string' && args[0].includes('defaultProps will be removed from memo components')) {
+    return;
+  }
+  originalError.apply(console, args);
+};
+
 const CategoryOrder = () => {
   const [categories, setCategories] = useState([]);
   const [sharedCategories, setSharedCategories] = useState([]);
@@ -109,6 +118,13 @@ const CategoryOrder = () => {
   const updateSharedCategory = async (categoryName, sharedCategory) => {
     try {
       const token = localStorage.getItem('token');
+      
+      // Find the category to get its ID
+      const category = categories.find(cat => (cat.category_name || cat.name) === categoryName);
+      if (!category) {
+        throw new Error('Category not found');
+      }
+      
       const response = await fetch('/api/categories/update-shared-category', {
         method: 'POST',
         headers: {
@@ -116,8 +132,8 @@ const CategoryOrder = () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ 
-          category_name: categoryName, 
-          shared_category: sharedCategory || null 
+          categoryId: category.id, 
+          sharedCategoryName: sharedCategory || null 
         })
       });
 
@@ -126,7 +142,7 @@ const CategoryOrder = () => {
       }
 
       const updatedCategories = categories.map(cat => 
-        cat.category_name === categoryName 
+        (cat.category_name || cat.name) === categoryName 
           ? { ...cat, shared_category: sharedCategory || null }
           : cat
       );
@@ -150,6 +166,13 @@ const CategoryOrder = () => {
   const updateWeeklyDisplay = async (categoryName, weeklyDisplay) => {
     try {
       const token = localStorage.getItem('token');
+      
+      // Find the category to get its ID
+      const category = categories.find(cat => (cat.category_name || cat.name) === categoryName);
+      if (!category) {
+        throw new Error('Category not found');
+      }
+      
       const response = await fetch('/api/categories/update-weekly-display', {
         method: 'POST',
         headers: {
@@ -157,8 +180,8 @@ const CategoryOrder = () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ 
-          category_name: categoryName, 
-          weekly_display: weeklyDisplay 
+          categoryId: category.id, 
+          showInWeeklyView: weeklyDisplay 
         })
       });
 
@@ -167,8 +190,8 @@ const CategoryOrder = () => {
       }
 
       const updatedCategories = categories.map(cat => 
-        cat.category_name === categoryName 
-          ? { ...cat, weekly_display: weeklyDisplay }
+        (cat.category_name || cat.name) === categoryName 
+          ? { ...cat, show_in_weekly_view: weeklyDisplay }
           : cat
       );
       
@@ -299,10 +322,10 @@ const CategoryOrder = () => {
               ref={provided.innerRef}
               className={`categories-list ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
             >
-              {(categories || []).filter(category => category && category.category_name).map((category, index) => (
+              {(categories || []).filter(category => category && (category.category_name || category.name)).map((category, index) => (
                 <Draggable
-                  key={category.category_name}
-                  draggableId={category.category_name}
+                  key={category.category_name || category.name}
+                  draggableId={category.category_name || category.name}
                   index={index}
                 >
                   {(provided, snapshot) => (
@@ -322,7 +345,7 @@ const CategoryOrder = () => {
                         
                         <div className="category-info">
                           <div className="category-header">
-                            <span className="category-name">{category.category_name}</span>
+                            <span className="category-name">{category.category_name || category.name}</span>
                             <span className="position-badge">#{index + 1}</span>
                           </div>
                           
@@ -344,10 +367,10 @@ const CategoryOrder = () => {
                                 if (e.target.value === 'custom') {
                                   const customValue = prompt('הזן קטגוריה משותפת חדשה:');
                                   if (customValue) {
-                                    updateSharedCategory(category.category_name, customValue);
+                                    updateSharedCategory(category.category_name || category.name, customValue);
                                   }
                                 } else {
-                                  updateSharedCategory(category.category_name, e.target.value);
+                                  updateSharedCategory(category.category_name || category.name, e.target.value);
                                 }
                               }}
                               className="shared-select"
@@ -364,8 +387,8 @@ const CategoryOrder = () => {
                             <label className="weekly-checkbox-label">
                               <input
                                 type="checkbox"
-                                checked={category.weekly_display || false}
-                                onChange={(e) => updateWeeklyDisplay(category.category_name, e.target.checked)}
+                                checked={category.show_in_weekly_view || category.weekly_display || false}
+                                onChange={(e) => updateWeeklyDisplay(category.category_name || category.name, e.target.checked)}
                                 className="weekly-checkbox"
                               />
                               <span className="weekly-checkbox-text">תצוגה שבועית</span>

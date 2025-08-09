@@ -15,9 +15,26 @@ class AdditionalMethods {
 
       const { 
         cashFlowId = null, 
+        flowMonth = null,
+        allTime = false,
         year = new Date().getFullYear(), 
         month = new Date().getMonth() + 1 
       } = options;
+
+      // If allTime is true, get data for all time instead of specific month
+      let finalYear = year;
+      let finalMonth = month;
+      
+      if (allTime) {
+        // For all-time data, we'll aggregate across all months
+        finalYear = null;
+        finalMonth = null;
+      } else if (flowMonth) {
+        // If flowMonth is provided, parse it (format: YYYY-MM)
+        const [y, m] = flowMonth.split('-');
+        finalYear = parseInt(y);
+        finalMonth = parseInt(m);
+      }
 
       // Get category order settings for the user
       const { data: categoryOrderData, error: categoryOrderError } = await supabase
@@ -50,15 +67,19 @@ class AdditionalMethods {
         .from('transactions')
         .select('*')
         .eq('user_id', userId)
-        .eq('payment_year', year)
-        .eq('payment_month', month)
         .eq('excluded_from_flow', false);
+
+      // Add time period filters - use flow_month instead of payment_month
+      if (!allTime && finalYear && finalMonth) {
+        const flowMonthFilter = `${finalYear}-${finalMonth.toString().padStart(2, '0')}`;
+        transactionQuery = transactionQuery.eq('flow_month', flowMonthFilter);
+      }
 
       if (cashFlowId) {
         transactionQuery = transactionQuery.eq('cash_flow_id', cashFlowId);
       }
 
-      const { data: transactions, error: transactionError } = await transactionQuery;
+      const { data: transactions, error: transactionError } = await transactionQuery.order('payment_date', { ascending: true });
       if (transactionError) throw transactionError;
 
       // Calculate totals by category type
@@ -71,6 +92,28 @@ class AdditionalMethods {
 
       const categoryBreakdown = {};
 
+      // First, initialize ALL categories from category_order table (even without transactions)
+      if (categoryOrderData) {
+        categoryOrderData.forEach(categoryOrder => {
+          const categoryName = categoryOrder.category_name;
+          const categoryType = AdditionalMethods.inferCategoryType(categoryName);
+          
+          categoryBreakdown[categoryName] = {
+            name: categoryName,
+            amount: 0,
+            count: 0,
+            type: categoryType,
+            transactions: [],
+            display_order: categoryOrder.display_order,
+            shared_category: categoryOrder.shared_category || null,
+            weekly_display: categoryOrder.weekly_display || false,
+            monthly_target: categoryOrder.monthly_target || null,
+            use_shared_target: categoryOrder.use_shared_target || false
+          };
+        });
+      }
+
+      // Now process transactions and update existing categories
       (transactions || []).forEach(transaction => {
         const amount = parseFloat(transaction.amount) || 0;
         const categoryName = transaction.category?.name || transaction.category_name || 'Uncategorized';
@@ -93,16 +136,17 @@ class AdditionalMethods {
           }
         }
 
-        // Update category breakdown
+        // Update category breakdown (create if doesn't exist for categories not in category_order)
         if (!categoryBreakdown[categoryName]) {
           const orderInfo = categoryOrderMap.get(categoryName) || {};
+          console.log(`⚠️  Creating category ${categoryName} from transaction - orderInfo found:`, orderInfo);
           
           categoryBreakdown[categoryName] = {
             name: categoryName,
             amount: 0,
             count: 0,
             type: categoryType,
-            transactions: [], // Add transactions array
+            transactions: [],
             display_order: orderInfo.display_order || 999, // Default to end if no order
             shared_category: orderInfo.shared_category || null,
             weekly_display: orderInfo.weekly_display || false,
@@ -112,7 +156,7 @@ class AdditionalMethods {
         }
         categoryBreakdown[categoryName].amount += Math.abs(amount);
         categoryBreakdown[categoryName].count += 1;
-        categoryBreakdown[categoryName].transactions.push(transaction); // Add the transaction
+        categoryBreakdown[categoryName].transactions.push(transaction);
       });
 
       // Calculate net balance (already excluding non-cash-flow)
@@ -120,16 +164,16 @@ class AdditionalMethods {
       const totalExpenses = categoryTotals.fixed_expense + categoryTotals.variable_expense;
       const netBalance = totalIncome - totalExpenses;
 
-      // Get monthly goals
+      // Get monthly goals (only for specific months, not for all time)
       let monthlyGoal = null;
-      if (cashFlowId) {
+      if (cashFlowId && !allTime && finalYear && finalMonth) {
         const { data: goalData, error: goalError } = await supabase
           .from('monthly_goals')
           .select('*')
           .eq('user_id', userId)
           .eq('cash_flow_id', cashFlowId)
-          .eq('year', year)
-          .eq('month', month)
+          .eq('year', finalYear)
+          .eq('month', finalMonth)
           .maybeSingle();
 
         if (!goalError && goalData) {
@@ -140,9 +184,17 @@ class AdditionalMethods {
       // Process shared categories
       const processedCategories = AdditionalMethods.processSharedCategories(categoryBreakdown);
       
-      // Sort by display order
+      // Sort by display order - ensure we're comparing numbers, not strings
       const sortedCategories = Object.values(processedCategories)
-        .sort((a, b) => a.display_order - b.display_order);
+        .sort((a, b) => {
+          const aOrder = parseInt(a.display_order) || 999;
+          const bOrder = parseInt(b.display_order) || 999;
+          return aOrder - bOrder;
+        });
+
+      // Debug: log the sorting results
+      console.log('🔍 Categories before sorting:', Object.values(processedCategories).map(c => ({ name: c.name, display_order: c.display_order })));
+      console.log('✅ Categories after sorting:', sortedCategories.map(c => ({ name: c.name, display_order: c.display_order })));
 
       return SharedUtilities.createSuccessResponse({
         summary: {
@@ -155,7 +207,7 @@ class AdditionalMethods {
         category_breakdown: sortedCategories,
         monthly_goal: monthlyGoal,
         transaction_count: transactions ? transactions.length : 0,
-        period: { year, month }
+        period: allTime ? { all_time: true } : { year: finalYear, month: finalMonth }
       });
     } catch (error) {
       console.error('Error getting dashboard data:', error);
@@ -176,11 +228,9 @@ class AdditionalMethods {
         
         if (!sharedCategoryMap.has(sharedName)) {
           // Find the display order for the shared category (use the lowest display_order of its sub-categories)
-          const sharedDisplayOrder = Math.min(
-            ...Object.values(categoryBreakdown)
-              .filter(cat => cat.shared_category === sharedName)
-              .map(cat => cat.display_order)
-          );
+          const subCategories = Object.values(categoryBreakdown)
+            .filter(cat => cat.shared_category === sharedName);
+          const sharedDisplayOrder = Math.min(...subCategories.map(cat => parseInt(cat.display_order) || 999));
           
           sharedCategoryMap.set(sharedName, {
             name: sharedName,
@@ -222,7 +272,8 @@ class AdditionalMethods {
         processedCategories[category.name] = {
           ...category,
           spent: category.type === 'income' ? category.amount : -category.amount,
-          is_shared_category: false
+          is_shared_category: false,
+          display_order: parseInt(category.display_order) || 999 // Ensure display_order is properly preserved
         };
       }
     });
@@ -409,8 +460,7 @@ class AdditionalMethods {
         .select('amount')
         .eq('user_id', userId)
         .eq('category_name', categoryName)
-        .eq('payment_year', year)
-        .eq('payment_month', month)
+        .eq('flow_month', `${year}-${month.toString().padStart(2, '0')}`)
         .eq('excluded_from_flow', false);
 
       if (error) throw error;
@@ -447,7 +497,7 @@ class AdditionalMethods {
 
       const { data, error } = await supabase
         .from('transactions')
-        .select('amount, payment_year, payment_month')
+        .select('amount, flow_month')
         .eq('user_id', userId)
         .eq('category_name', categoryName)
         .gte('payment_date', startDate.toISOString().split('T')[0])
@@ -457,14 +507,15 @@ class AdditionalMethods {
 
       if (error) throw error;
 
-      // Group by month
+      // Group by flow_month
       const monthlyData = {};
       (data || []).forEach(transaction => {
-        const key = `${transaction.payment_year}-${String(transaction.payment_month).padStart(2, '0')}`;
+        const key = transaction.flow_month;
         if (!monthlyData[key]) {
+          const [year, month] = key.split('-');
           monthlyData[key] = {
-            year: transaction.payment_year,
-            month: transaction.payment_month,
+            year: parseInt(year),
+            month: parseInt(month),
             total_amount: 0,
             transaction_count: 0
           };

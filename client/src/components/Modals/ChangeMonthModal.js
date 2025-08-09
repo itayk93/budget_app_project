@@ -39,9 +39,16 @@ const ChangeMonthModal = ({
 
   useEffect(() => {
     if (isOpen && transaction) {
-      const currentDate = new Date();
-      setSelectedYear(currentDate.getFullYear().toString());
-      setSelectedMonth(currentDate.getMonth() + 1);
+      // Initialize with transaction's current flow month instead of current date
+      if (transaction.flow_month) {
+        const [year, month] = transaction.flow_month.split('-');
+        setSelectedYear(year);
+        setSelectedMonth(parseInt(month));
+      } else {
+        const currentDate = new Date();
+        setSelectedYear(currentDate.getFullYear().toString());
+        setSelectedMonth(currentDate.getMonth() + 1);
+      }
       setError('');
     }
   }, [isOpen, transaction]);

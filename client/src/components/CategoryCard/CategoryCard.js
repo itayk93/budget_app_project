@@ -473,7 +473,9 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
     }
   };
 
-  const transactions = categoryData.transactions || [];
+  const transactions = (categoryData.transactions || []).sort((a, b) => 
+    new Date(a.payment_date) - new Date(b.payment_date)
+  );
 
   return (
     <div 
@@ -908,7 +910,9 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                           data-per-page={(subCategoryData.transactions || []).length}
                           data-total={(subCategoryData.transactions || []).length}
                         >
-                          {(subCategoryData.transactions || []).map((transaction) => (
+                          {(subCategoryData.transactions || [])
+                            .sort((a, b) => new Date(a.payment_date) - new Date(b.payment_date))
+                            .map((transaction) => (
                             <div 
                               key={transaction.id}
                               className="transaction-item"

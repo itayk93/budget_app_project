@@ -201,10 +201,10 @@ class TransactionService {
         `, { count: 'exact' })
         .eq('user_id', userId);
 
-      // Apply filters
+      // Apply filters - use flow_month instead of payment_month/year for consistency
       if (filters.year && filters.month) {
-        query = query.eq('payment_month', parseInt(filters.month))
-                    .eq('payment_year', parseInt(filters.year));
+        const flowMonth = `${filters.year}-${filters.month.toString().padStart(2, '0')}`;
+        query = query.eq('flow_month', flowMonth);
       } else if (filters.flow_month) {
         query = query.eq('flow_month', filters.flow_month);
       }

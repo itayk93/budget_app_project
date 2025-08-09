@@ -751,21 +751,41 @@ const Dashboard = () => {
 
 
         {/* Categories with Full Functionality */}
-        {dashboardData?.categories && Object.keys(dashboardData.categories).length > 0 && (
+        {((dashboardData?.orderedCategories && dashboardData.orderedCategories.length > 0) || 
+          (dashboardData?.categories && Object.keys(dashboardData.categories).length > 0)) && (
           <div className="dashboard-section">
             <div className="categories-container">
-              {Object.entries(dashboardData.categories).map(([categoryName, categoryData]) => (
-                <CategoryCard
-                  key={categoryName}
-                  categoryName={categoryName}
-                  categoryData={categoryData}
-                  formatCurrency={formatCurrency}
-                  formatDate={formatDate}
-                  onDataChange={refetchDashboard}
-                  year={year}
-                  month={month}
-                />
-              ))}
+              {dashboardData?.orderedCategories && dashboardData.orderedCategories.length > 0 ? (
+                // Use ordered categories array (maintains display_order from database)
+                (console.log('🎯 DASHBOARD: Using orderedCategories:', dashboardData.orderedCategories.map(c => ({ name: c.name, display_order: c.display_order, shared_category: c.shared_category }))), 
+                 console.log('🎯 DASHBOARD: Category order by display_order:', dashboardData.orderedCategories.map((cat, index) => `${index + 1}. ${cat.name} (order: ${cat.display_order}${cat.shared_category ? `, shared: ${cat.shared_category}` : ''})`)), true) &&
+                dashboardData.orderedCategories.map((categoryData) => (
+                  <CategoryCard
+                    key={categoryData.name}
+                    categoryName={categoryData.name}
+                    categoryData={categoryData}
+                    formatCurrency={formatCurrency}
+                    formatDate={formatDate}
+                    onDataChange={refetchDashboard}
+                    year={year}
+                    month={month}
+                  />
+                ))
+              ) : (
+                // Fallback for backward compatibility with object format
+                Object.entries(dashboardData.categories).map(([categoryName, categoryData]) => (
+                  <CategoryCard
+                    key={categoryName}
+                    categoryName={categoryName}
+                    categoryData={categoryData}
+                    formatCurrency={formatCurrency}
+                    formatDate={formatDate}
+                    onDataChange={refetchDashboard}
+                    year={year}
+                    month={month}
+                  />
+                ))
+              )}
             </div>
           </div>
         )}

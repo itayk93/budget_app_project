@@ -879,6 +879,14 @@ async function processUploadAsync(uploadId) {
         createdAt: new Date()
       });
       
+      // Update processedData to include duplicate information for frontend
+      session.processedData = {
+        ...result,
+        has_duplicates: true,
+        duplicates_temp_id: duplicates_temp_id,
+        temp_duplicates_id: duplicates_temp_id
+      };
+      
       session.status = 'needs_duplicates_review';
       session.isProcessing = false; // Mark processing as complete
       saveSessions();

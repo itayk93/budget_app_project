@@ -131,8 +131,7 @@ class BudgetService {
         .select('amount')
         .eq('user_id', userId)
         .eq('cash_flow_id', cashFlowId)
-        .eq('payment_year', year)
-        .eq('payment_month', month)
+        .eq('flow_month', `${year}-${month.toString().padStart(2, '0')}`)
         .eq('category_name', 'חיסכון')
         .eq('excluded_from_flow', false);
 
@@ -266,6 +265,7 @@ class BudgetService {
         payment_date: new Date(year, month - 1, 1).toISOString().split('T')[0],
         payment_year: year,
         payment_month: month,
+        flow_month: `${year}-${month.toString().padStart(2, '0')}`,
         category_name: 'חיסכון',
         notes: `Goal converted to expense: ${goal.description}`,
         created_at: new Date().toISOString(),
@@ -295,8 +295,7 @@ class BudgetService {
         .delete()
         .eq('user_id', userId)
         .eq('cash_flow_id', cashFlowId)
-        .eq('payment_year', year)
-        .eq('payment_month', month)
+        .eq('flow_month', `${year}-${month.toString().padStart(2, '0')}`)
         .eq('category_name', 'חיסכון')
         .like('notes', '%Goal converted to expense%')
         .select();
@@ -344,6 +343,7 @@ class BudgetService {
         payment_date: new Date(targetYear, targetMonth - 1, 1).toISOString().split('T')[0],
         payment_year: targetYear,
         payment_month: targetMonth,
+        flow_month: `${targetYear}-${targetMonth.toString().padStart(2, '0')}`,
         category_name: 'הכנסות',
         notes: `Goal converted to future income: ${goal.description}`,
         created_at: new Date().toISOString(),
@@ -373,8 +373,7 @@ class BudgetService {
         .delete()
         .eq('user_id', userId)
         .eq('cash_flow_id', cashFlowId)
-        .eq('payment_year', year)
-        .eq('payment_month', month)
+        .eq('flow_month', `${year}-${month.toString().padStart(2, '0')}`)
         .eq('category_name', 'הכנסות')
         .like('notes', '%Goal converted to future income%')
         .select();
@@ -469,8 +468,7 @@ class BudgetService {
         .select('amount, category_name, category_id')
         .eq('user_id', userId)
         .eq('cash_flow_id', cashFlowId)
-        .eq('payment_year', year)
-        .eq('payment_month', month)
+        .eq('flow_month', `${year}-${month.toString().padStart(2, '0')}`)
         .eq('excluded_from_flow', false);
 
       if (transactionError) throw transactionError;

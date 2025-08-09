@@ -5,7 +5,13 @@ const router = express.Router();
 
 // Get category order
 router.get('/', authenticateToken, async (req, res) => {
+  // Disable caching completely 
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.set('ETag', Date.now().toString()); // Force different ETag each time
   try {
+    console.log('🚀 CATEGORY ORDER API CALLED - TIME:', new Date().toISOString());
     console.log('Getting category order for user:', req.user.id);
     
     const userId = req.user.id || req.user.user_id;
@@ -13,6 +19,18 @@ router.get('/', authenticateToken, async (req, res) => {
       throw new Error('User ID not found in request');
     }
     
+    // Get existing category order first
+    const { data: existingOrder, error: orderError } = await supabase
+      .from('category_order')
+      .select('category_name, display_order, shared_category, weekly_display, monthly_target')
+      .eq('user_id', userId)
+      .order('display_order');
+
+    if (orderError) {
+      console.error('Error fetching category order:', orderError);
+      throw orderError;
+    }
+
     // Get all distinct category names from transactions for the current user
     const { data: transactions, error: transactionError } = await supabase
       .from('transactions')
@@ -31,23 +49,11 @@ router.get('/', authenticateToken, async (req, res) => {
         .filter(name => name && name.trim())
     );
 
-    // Get existing category order
-    const { data: existingOrder, error: orderError } = await supabase
-      .from('category_order')
-      .select('category_name, display_order, shared_category')
-      .eq('user_id', userId)
-      .order('display_order');
-
-    if (orderError) {
-      console.error('Error fetching category order:', orderError);
-      throw orderError;
-    }
-
     const existingOrderedCategories = new Set(
       existingOrder.map(item => item.category_name)
     );
 
-    // Add missing categories to category_order
+    // Add missing categories to category_order (only those that have transactions)
     const categoriesToAdd = [];
     let currentMaxOrder = existingOrder.length > 0 
       ? Math.max(...existingOrder.map(item => item.display_order)) 
@@ -77,7 +83,7 @@ router.get('/', authenticateToken, async (req, res) => {
       }
     }
 
-    // Get updated category order
+    // Get updated category order (this time we get ALL categories in category_order)
     const { data: updatedOrder, error: updatedError } = await supabase
       .from('category_order')
       .select('category_name, display_order, shared_category, weekly_display, monthly_target')
@@ -89,20 +95,20 @@ router.get('/', authenticateToken, async (req, res) => {
       throw updatedError;
     }
 
-    // Count transactions per category
+    // Count transactions per category for ALL categories in category_order
     const categoryCounts = {};
-    for (const categoryName of transactionCategories) {
+    for (const orderItem of updatedOrder) {
       const { count, error: countError } = await supabase
         .from('transactions')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', userId)
-        .eq('category_name', categoryName);
+        .eq('category_name', orderItem.category_name);
 
       if (countError) {
         console.error('Error counting transactions:', countError);
-        categoryCounts[categoryName] = 0;
+        categoryCounts[orderItem.category_name] = 0;
       } else {
-        categoryCounts[categoryName] = count || 0;
+        categoryCounts[orderItem.category_name] = count || 0;
       }
     }
 
@@ -129,6 +135,11 @@ router.get('/', authenticateToken, async (req, res) => {
       sharedCategories: Array.from(sharedCategories).sort()
     };
     
+    console.log('📊 CATEGORIES ORDER API RESPONSE:');
+    console.log('Total categories found:', response.categories.length);
+    console.log('Shared categories found:', response.sharedCategories.length);
+    console.log('Categories:', response.categories.map(c => c.category_name));
+    console.log('Shared categories:', response.sharedCategories);
     console.log('Sending response:', JSON.stringify(response, null, 2));
     res.json(response);
 

@@ -30,7 +30,7 @@ app.set('trust proxy', 1);
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // increased for upload polling
+  max: 1000, // increased for intensive upload processing
   standardHeaders: true,
   legacyHeaders: false
 });

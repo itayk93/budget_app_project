@@ -8,8 +8,18 @@ const router = express.Router();
 
 // Get category display order
 router.get('/order', authenticateToken, async (req, res) => {
+  // Disable caching completely 
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.set('ETag', Date.now().toString()); // Force different ETag each time
+  
   try {
+    console.log('🚀 CATEGORY ORDER API CALLED - TIME:', new Date().toISOString());
+    console.log('📊 Getting category order for user:', req.user.id);
+    
     const categories = await SupabaseService.getCategories(req.user.id);
+    console.log('📝 Found categories count:', categories.length);
     
     // Add transaction counts for each category
     const categoriesWithCounts = await Promise.all(
@@ -28,6 +38,9 @@ router.get('/order', authenticateToken, async (req, res) => {
       })
     );
 
+    console.log('✅ About to send response with', categoriesWithCounts.length, 'categories');
+    console.log('🎯 Sample category names:', categoriesWithCounts.slice(0, 3).map(c => c.name));
+    
     res.json({
       categories: categoriesWithCounts,
       total_count: categoriesWithCounts.length

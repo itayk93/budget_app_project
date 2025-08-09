@@ -129,25 +129,37 @@ router.get('/', authenticateToken, async (req, res) => {
     // Get cash flows for selector
     const cashFlows = await SupabaseService.getCashFlows(userId);
     
-    // Convert category_breakdown array to categories object (for frontend compatibility)
+    // Keep categories as ordered array (maintains display_order from database)
     const categories = {};
+    const orderedCategories = [];
     if (dashboardResult.category_breakdown && Array.isArray(dashboardResult.category_breakdown)) {
+      console.log('📋 Dashboard categories before processing:', dashboardResult.category_breakdown.map(c => ({ name: c.name, display_order: c.display_order })));
+      
       dashboardResult.category_breakdown.forEach(category => {
-        categories[category.name] = {
+        const categoryData = {
+          name: category.name,
           spent: category.type === 'income' ? category.amount : -category.amount,
           amount: category.amount,
           count: category.count,
           type: category.type,
           transactions: category.transactions || [], // Include transactions
-          category_type: category.type
+          category_type: category.type,
+          display_order: category.display_order // Add display_order for debugging
         };
+        
+        // Keep both object format (for backward compatibility) and array format (for proper ordering)
+        categories[category.name] = categoryData;
+        orderedCategories.push(categoryData);
       });
+      
+      console.log('✅ Final ordered categories:', orderedCategories.map(c => ({ name: c.name, display_order: c.display_order })));
     }
     
     // Prepare response data
     const responseData = {
       ...dashboardResult,
       categories, // Add categories object for frontend compatibility
+      orderedCategories, // Add ordered array that maintains display_order
       cash_flows: cashFlows,
       current_cash_flow_id: cash_flow,
       flow_month: flow_month,
