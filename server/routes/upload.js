@@ -859,35 +859,37 @@ async function processUploadAsync(uploadId) {
       session.isProcessing = false; // Mark processing as complete
       saveSessions();
     }
-    // Check for duplicates - fix the condition to check actual duplicate count
+    // Check for duplicates - integrate with transaction review instead of separate flow
     else if ((result.has_duplicates && result.duplicates && result.duplicates.length > 0) || 
              (result.duplicates && result.duplicates.length > 0)) {
-      console.log(`⚠️ Duplicates found: ${result.duplicates.length}, using temp_id: ${result.temp_duplicates_id}`);
-      duplicates_temp_id = result.temp_duplicates_id;
+      console.log(`⚠️ Duplicates found: ${result.duplicates.length}, integrating with transaction review`);
       
-      // Store duplicates session for review
-      currencyGroupsSessions.set(duplicates_temp_id, {
-        userId: session.userId,
-        duplicates: result.duplicates,
-        transactions: result.duplicates_data?.transactions || result.transactions,
-        currencyGroups: result.currencyGroups || { 'ILS': { transactions: result.transactions } },
-        originalDetails: {
-          original_file: result.file_name || result.fileName || 'uploaded_file',
-          total_transactions: result.totalRows || result.processedTransactions
-        },
-        type: 'duplicates_review',
-        createdAt: new Date()
-      });
+      // Merge all transactions (new + existing duplicates) for unified review
+      const allTransactions = result.transactions || [];
+      const duplicateHashes = new Set(result.duplicates.map(dup => dup.transaction_hash));
       
-      // Update processedData to include duplicate information for frontend
+      // Mark which transactions are duplicates
+      const transactionsWithDuplicateInfo = allTransactions.map((transaction, index) => ({
+        ...transaction,
+        tempId: `temp_${index}`,
+        originalIndex: index,
+        isDuplicate: duplicateHashes.has(transaction.transaction_hash),
+        duplicateInfo: duplicateHashes.has(transaction.transaction_hash) 
+          ? result.duplicates.find(dup => dup.transaction_hash === transaction.transaction_hash)
+          : null
+      }));
+      
+      // Update processedData for transaction review with duplicate info
       session.processedData = {
         ...result,
+        transactions: transactionsWithDuplicateInfo,
         has_duplicates: true,
-        duplicates_temp_id: duplicates_temp_id,
-        temp_duplicates_id: duplicates_temp_id
+        duplicates_count: result.duplicates.length,
+        needs_transaction_review: true,
+        duplicates: result.duplicates // Keep original duplicate data for reference
       };
       
-      session.status = 'needs_duplicates_review';
+      session.status = 'needs_transaction_review';
       session.isProcessing = false; // Mark processing as complete
       saveSessions();
     }

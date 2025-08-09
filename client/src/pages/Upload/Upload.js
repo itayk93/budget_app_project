@@ -359,16 +359,20 @@ const Upload = () => {
       console.log('🔄 Multi-currency detected, moving to currency groups review');
       setCurrencyGroupsTempId(result.currency_groups_temp_id);
       setCurrentStep(2); // Move to currency groups review
-    } else if (result.needs_transaction_review && result.transactions && fileSource !== 'budgetlens') {
-      // Non-BudgetLens file needs transaction review
-      console.log('🔄 Non-BudgetLens file detected, showing transaction review modal');
+    } else if (result.needs_transaction_review && result.transactions) {
+      // Transaction review needed (including files with duplicates)
+      if (result.has_duplicates) {
+        console.log('🔄 Transaction review with duplicates detected, showing unified modal');
+      } else {
+        console.log('🔄 Non-BudgetLens file detected, showing transaction review modal');
+      }
       setReviewTransactions(result.transactions);
       setReviewFileSource(result.fileSource || fileSource);
       setShowTransactionReview(true);
     } else if (result.has_duplicates && (result.duplicates_temp_id || result.temp_duplicates_id)) {
-      // Duplicates detected, go to duplicates review
+      // Legacy duplicates flow - should not happen with new integrated approach
       const tempId = result.duplicates_temp_id || result.temp_duplicates_id;
-      console.log('🔄 Duplicates detected, moving to review step with tempId:', tempId);
+      console.log('🔄 Legacy duplicates detected, moving to review step with tempId:', tempId);
       setDuplicatesTempId(tempId);
       setCurrentStep(3); // Move to duplicates review
     } else if (result.currencyGroups && Object.keys(result.currencyGroups).length > 1) {
