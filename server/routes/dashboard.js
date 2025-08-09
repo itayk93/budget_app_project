@@ -3,6 +3,25 @@ const SupabaseService = require('../services/supabaseService');
 const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
+// Helper function for Hebrew month names
+function getHebrewMonthName(month) {
+  const hebrewMonths = {
+    1: 'ינואר',
+    2: 'פברואר', 
+    3: 'מרץ',
+    4: 'אפריל',
+    5: 'מאי',
+    6: 'יוני',
+    7: 'יולי',
+    8: 'אוגוסט',
+    9: 'ספטמבר',
+    10: 'אוקטובר',
+    11: 'נובמבר',
+    12: 'דצמבר'
+  };
+  return hebrewMonths[month] || `חודש ${month}`;
+}
+
 // Main dashboard route
 router.get('/', authenticateToken, async (req, res) => {
   try {
@@ -110,18 +129,32 @@ router.get('/', authenticateToken, async (req, res) => {
     // Get cash flows for selector
     const cashFlows = await SupabaseService.getCashFlows(userId);
     
+    // Convert category_breakdown array to categories object (for frontend compatibility)
+    const categories = {};
+    if (dashboardResult.category_breakdown && Array.isArray(dashboardResult.category_breakdown)) {
+      dashboardResult.category_breakdown.forEach(category => {
+        categories[category.name] = {
+          spent: category.type === 'income' ? category.amount : -category.amount,
+          amount: category.amount,
+          count: category.count,
+          type: category.type
+        };
+      });
+    }
+    
     // Prepare response data
     const responseData = {
       ...dashboardResult,
+      categories, // Add categories object for frontend compatibility
       cash_flows: cashFlows,
       current_cash_flow_id: cash_flow,
       flow_month: flow_month,
       year: finalYear,
       month: finalMonth,
       all_time: allTime,
-      hebrew_month_name: finalMonth ? SupabaseService.getHebrewMonthName(finalMonth) : null,
-      monthly_savings: monthlySavings,
-      transaction_count: dashboardResult.transaction_count
+      hebrew_month_name: finalMonth ? getHebrewMonthName(finalMonth) : null,
+      monthly_savings: 0, // Default value
+      transaction_count: dashboardResult.transaction_count || 0
     };
 
     // Return JSON for API requests

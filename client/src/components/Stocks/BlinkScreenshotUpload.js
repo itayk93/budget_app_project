@@ -153,8 +153,16 @@ const BlinkScreenshotUpload = ({ cashFlowId, onTransactionsImported }) => {
     };
 
     const formatCurrency = (amount) => {
+        // Handle null, undefined, or invalid amounts
+        if (amount === null || amount === undefined || isNaN(amount)) {
+            amount = 0;
+        }
+        
+        // Ensure amount is a number
+        const numericAmount = Number(amount);
+        
         // Force LTR direction for currency to ensure minus sign appears on the left
-        const formatted = Math.abs(amount).toLocaleString('en-US', {
+        const formatted = Math.abs(numericAmount).toLocaleString('en-US', {
             style: 'currency',
             currency: 'USD',
             minimumFractionDigits: 2,
@@ -162,7 +170,7 @@ const BlinkScreenshotUpload = ({ cashFlowId, onTransactionsImported }) => {
         });
         
         // Manually add minus sign on the left for negative values
-        return amount < 0 ? `-${formatted}` : formatted;
+        return numericAmount < 0 ? `-${formatted}` : formatted;
     };
 
     const formatDate = (dateStr) => {

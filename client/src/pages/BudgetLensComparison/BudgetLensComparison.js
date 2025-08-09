@@ -63,10 +63,18 @@ const BudgetLensComparison = () => {
   };
 
   const formatCurrency = (amount) => {
+    // Handle null, undefined, or invalid amounts
+    if (amount === null || amount === undefined || isNaN(amount)) {
+      amount = 0;
+    }
+    
+    // Ensure amount is a number
+    const numericAmount = Number(amount);
+    
     return new Intl.NumberFormat('he-IL', {
       style: 'currency',
       currency: 'ILS'
-    }).format(amount);
+    }).format(numericAmount);
   };
 
   const formatDate = (dateStr) => {

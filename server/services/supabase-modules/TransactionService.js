@@ -110,6 +110,44 @@ class TransactionService {
     }
   }
 
+  // Original method name for backward compatibility - returns array of transactions
+  static async getTransactionsByHash(transactionHash, userId, cashFlowId = null) {
+    try {
+      SharedUtilities.validateUserId(userId);
+
+      let query = supabase
+        .from('transactions')
+        .select(`
+          *,
+          categories (
+            id,
+            name,
+            category_type,
+            color
+          )
+        `)
+        .eq('user_id', userId)
+        .eq('transaction_hash', transactionHash);
+
+      if (cashFlowId) {
+        query = query.eq('cash_flow_id', cashFlowId);
+      }
+
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      
+      // Process the data to include category name - return as array like original
+      return (data || []).map(transaction => ({
+        ...transaction,
+        category_name: transaction.categories?.name || null
+      }));
+    } catch (error) {
+      console.error('Error fetching transactions by hash:', error);
+      return [];
+    }
+  }
+
   // Batch check for existing transaction hashes - much faster than individual queries
   static async getExistingHashesBatch(userId, transactionHashes, cashFlowId = null) {
     try {
@@ -302,31 +340,96 @@ class TransactionService {
   
   static async createTransaction(transactionData, forceImport = false) {
     try {
+      console.log(`[createTransaction] Received transaction with hash: ${transactionData.transaction_hash}. forceImport: ${forceImport}`);
+      
       // Validate required fields
       if (!transactionData.user_id) {
-        return SharedUtilities.createErrorResponse('User ID is required');
+        return { success: false, error: 'User ID is required' };
       }
 
       // Generate transaction hash for duplicate detection
-      const transactionHash = this.generateTransactionHash(transactionData);
+      if (!transactionData.transaction_hash) {
+        transactionData.transaction_hash = this.generateTransactionHash(transactionData);
+        console.log(`[createTransaction] Generated new hash: ${transactionData.transaction_hash}`);
+      }
+      const transactionHash = transactionData.transaction_hash;
       
-      // Check for duplicates unless forcing import
-      if (!forceImport) {
-        const exists = await this.checkTransactionExists(
-          transactionData.user_id, 
-          transactionHash, 
-          transactionData.cash_flow_id
-        );
-        
-        if (exists) {
-          return SharedUtilities.createErrorResponse('Transaction already exists (duplicate detected)');
+      // Check for duplicates using getTransactionByHash method
+      console.log(`[createTransaction] Checking for existing transaction with hash: ${transactionHash}`);
+      const existingResult = await this.getTransactionByHash(
+        transactionData.user_id,
+        transactionHash,
+        transactionData.cash_flow_id
+      );
+
+      // Check if we found an existing transaction (existingResult.success means we got data)
+      if (existingResult && existingResult.success && existingResult.data) {
+        if (forceImport) {
+          console.log(`⚠️ Duplicate detected, but forceImport is true. Creating new transaction with unique hash`);
+          
+          // If the note doesn't already contain duplicate information, add it
+          if (!transactionData.notes || !transactionData.notes.includes('כפילות של עסקה')) {
+            const originalTxId = existingResult.data.id;
+            console.log(`🔄 [FORCE IMPORT] Original transaction ID: ${originalTxId}, business_name: ${existingResult.data.business_name}`);
+            
+            // Add a note to signify this is an intentional duplicate
+            const originalNote = transactionData.notes ? `${transactionData.notes}\n` : '';
+            transactionData.notes = `${originalNote}כפילות של עסקה ${originalTxId}`;
+            console.log(`📝 [FORCE IMPORT] Added duplicate note: ${transactionData.notes}`);
+          }
+          
+          // Regenerate the hash with the new note to ensure it's unique.
+          transactionData.transaction_hash = this.generateTransactionHash(transactionData);
+          console.log(`🔑 [FORCE IMPORT] Generated new hash with note: ${transactionData.transaction_hash}`);
+          
+          // Check if the new hash is also a duplicate and make it unique if needed
+          let attempt = 1;
+          let newHash = transactionData.transaction_hash;
+          while (true) {
+            const existingWithNewHash = await this.getTransactionByHash(
+              transactionData.user_id,
+              newHash,
+              transactionData.cash_flow_id
+            );
+            
+            if (!existingWithNewHash || !existingWithNewHash.success || !existingWithNewHash.data) {
+              // Hash is unique, use it
+              transactionData.transaction_hash = newHash;
+              console.log(`✅ [FORCE IMPORT] Found unique hash after ${attempt} attempts: ${newHash}`);
+              break;
+            }
+            
+            // Hash is still a duplicate, add attempt number to make it unique
+            attempt++;
+            const baseNote = transactionData.notes.replace(/ \(\d+\)$/, ''); // Remove any existing attempt number
+            transactionData.notes = `${baseNote} (${attempt})`;
+            newHash = this.generateTransactionHash(transactionData);
+            console.log(`🔄 [FORCE IMPORT] Attempt ${attempt}, new hash: ${newHash}`);
+            
+            // Safety check to prevent infinite loop
+            if (attempt > 10) {
+              // Add timestamp to make it truly unique
+              transactionData.notes = `${baseNote} (${Date.now()})`;
+              transactionData.transaction_hash = this.generateTransactionHash(transactionData);
+              console.log(`🛑 [FORCE IMPORT] Using timestamp fallback: ${transactionData.transaction_hash}`);
+              break;
+            }
+          }
+
+        } else {
+          // It's a duplicate and we're not forcing, so return a duplicate error
+          return {
+            success: false,
+            duplicate: true,
+            existing: existingResult.data
+          };
         }
       }
 
       // Prepare transaction data
       const processedData = {
         ...transactionData,
-        transaction_hash: transactionHash,
+        transaction_hash: transactionData.transaction_hash,
         amount: SharedUtilities.validateAmount(transactionData.amount || 0),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -338,8 +441,31 @@ class TransactionService {
         if (!isNaN(paymentDate.getTime())) {
           processedData.payment_year = paymentDate.getFullYear();
           processedData.payment_month = paymentDate.getMonth() + 1;
+          // Set flow_month if not already present
+          if (!processedData.flow_month) {
+            processedData.flow_month = `${processedData.payment_year}-${String(processedData.payment_month).padStart(2, '0')}`;
+          }
         }
       }
+
+      // Ensure amount is a number
+      if (typeof processedData.amount === 'string') {
+        processedData.amount = parseFloat(processedData.amount.replace(/,/g, '').trim());
+      }
+      if (isNaN(processedData.amount) || !isFinite(processedData.amount)) {
+        return { success: false, error: 'Invalid amount: must be a valid number' };
+      }
+
+      // Set default values
+      processedData.currency = processedData.currency || 'ILS';
+      processedData.source_type = processedData.source_type || 'manual';
+
+      console.log(`📤 [DB INSERT] Attempting to insert transaction:`, {
+        id: processedData.id,
+        business_name: processedData.business_name,
+        transaction_hash: processedData.transaction_hash,
+        amount: processedData.amount
+      });
 
       const { data, error } = await supabase
         .from('transactions')
@@ -347,11 +473,38 @@ class TransactionService {
         .select()
         .single();
 
-      if (error) throw error;
-      return SharedUtilities.createSuccessResponse(data, 'Transaction created successfully');
+      if (error) {
+        console.error(`❌ [DB INSERT ERROR] Failed to insert transaction:`, error);
+        if (error.message.includes('unique constraint')) {
+          return { success: false, duplicate: true, error: 'Duplicate transaction' };
+        }
+        return { success: false, error: error.message };
+      }
+
+      console.log(`✅ [DB INSERT SUCCESS] Transaction inserted successfully:`, {
+        id: data.id,
+        business_name: data.business_name,
+        created_at: data.created_at
+      });
+
+      console.log(`✅ [CREATE SUCCESS] Transaction created with ID: ${data.id}, business_name: ${data.business_name}, hash: ${data.transaction_hash}`);
+
+      // Return the original format expected by ExcelService
+      return {
+        success: true,
+        transaction_id: data.id,
+        data: data
+      };
+      
     } catch (error) {
       console.error('Error creating transaction:', error);
-      return SharedUtilities.handleSupabaseError(error, 'create transaction');
+      if (error.message.includes('unique constraint')) {
+        return { success: false, duplicate: true, error: 'Duplicate transaction' };
+      }
+      if (error.message.includes('Invalid amount')) {
+        return { success: false, invalid_amount: true, error: 'Invalid amount data' };
+      }
+      return { success: false, error: error.message };
     }
   }
 

@@ -82,7 +82,15 @@ const BudgetModal = ({
   };
 
   const formatCurrency = (amount) => {
-    return `${Math.round(amount)} ₪`;
+    // Handle null, undefined, or invalid amounts
+    if (amount === null || amount === undefined || isNaN(amount)) {
+      amount = 0;
+    }
+    
+    // Ensure amount is a number
+    const numericAmount = Number(amount);
+    
+    return `${Math.round(numericAmount)} ₪`;
   };
 
   const modalFooter = (

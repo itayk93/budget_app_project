@@ -19,7 +19,7 @@
   width: 95vw;
   max-width: 1200px;
   max-height: 90vh;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   border: 1px solid #e0e0e0;
@@ -71,7 +71,7 @@
 
 .modal-body {
   flex: 1;
-  overflow: auto;
+  overflow: visible;
   padding: 0;
 }
 
@@ -119,8 +119,9 @@
 
 .transactions-table-container {
   overflow: auto;
-  max-height: 500px;
+  max-height: 400px;
   margin: 0;
+  position: relative;
 }
 
 .transactions-table {
@@ -153,6 +154,13 @@
 .transactions-table td {
   padding: 12px;
   vertical-align: middle;
+  position: relative;
+}
+
+/* Special handling for category dropdown cells */
+.transactions-table td:nth-child(4) {
+  overflow: visible;
+  z-index: 1;
 }
 
 .date-input,
@@ -374,6 +382,8 @@
   
   .card-field {
     margin-bottom: 12px;
+    position: relative;
+    overflow: visible;
   }
   
   .card-field label {
@@ -390,7 +400,7 @@
     padding: 8px 12px;
     border: 1px solid #d1d5db;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 16px; /* Prevents zoom on iOS */
   }
   
   .modal-footer {

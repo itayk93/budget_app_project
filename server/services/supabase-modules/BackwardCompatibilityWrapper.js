@@ -77,11 +77,21 @@ class BackwardCompatibleSupabaseService {
   static generateTransactionHash = TransactionService.generateTransactionHash;
   static checkTransactionExists = TransactionService.checkTransactionExists;
   static getTransactionByHash = unwrapResponse(TransactionService.getTransactionByHash, null);
+  static getTransactionsByHash = TransactionService.getTransactionsByHash; // Returns array - no unwrapping needed
   static getExistingHashesBatch = TransactionService.getExistingHashesBatch;
   static getTransactions = unwrapResponse(TransactionService.getTransactions, { transactions: [], totalCount: 0 });
   static getTransactionById = unwrapResponse(TransactionService.getTransactionById, null);
   static getLatestTransactionMonth = unwrapResponse(TransactionService.getLatestTransactionMonth, null);
-  static createTransaction = unwrapResponse(TransactionService.createTransaction, null);
+  static createTransaction = async function(...args) {
+    try {
+      const result = await TransactionService.createTransaction(...args);
+      console.log(`[BackwardCompatibilityWrapper] createTransaction result:`, result);
+      return result;
+    } catch (error) {
+      console.error(`[BackwardCompatibilityWrapper] createTransaction error:`, error);
+      return { success: false, error: error.message };
+    }
+  };
   static updateTransaction = unwrapResponse(TransactionService.updateTransaction, null);
   static updateTransactionFlowMonth = unwrapResponse(TransactionService.updateTransactionFlowMonth, null);
   static deleteTransaction = unwrapResponse(TransactionService.deleteTransaction, null);
@@ -141,6 +151,7 @@ class BackwardCompatibleSupabaseService {
   static getDashboardData = unwrapResponse(AdditionalMethods.getDashboardData, null);
   static getUserPreference = unwrapResponse(AdditionalMethods.getUserPreference, null);
   static setUserPreference = unwrapResponse(AdditionalMethods.setUserPreference, null);
+  static inferCategoryType = AdditionalMethods.inferCategoryType; // Static method, no unwrapping needed
   static getSharedCategoryTarget = unwrapResponse(AdditionalMethods.getSharedCategoryTarget, null);
   static updateSharedCategoryTarget = unwrapResponse(AdditionalMethods.updateSharedCategoryTarget, null);
   static setUseSharedTarget = unwrapResponse(AdditionalMethods.setUseSharedTarget, null);
