@@ -241,6 +241,14 @@ ul li::marker {
   color: #2196F3;
 }
 
+.text-green {
+  color: #4CAF50;
+}
+
+.text-red {
+  color: #f44336;
+}
+
 /* Menu dots */
 .menu-dots {
   display: flex;

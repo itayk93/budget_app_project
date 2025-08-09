@@ -499,7 +499,7 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
       <div className="category-header">
         <div className="ri-bold-title">{categoryName}</div>
         <div className="category-header-actions">
-          <div className="ri-bold-body text-blue">
+          <div className={`ri-bold-body ${isIncome ? 'text-green' : 'text-red'}`}>
             {formatCurrency(spent)}
           </div>
           <div className="menu-dots" onClick={(e) => {
@@ -622,22 +622,6 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
               </div>
               
               <div className="target-info-section">
-                  <div className="target-item">
-                    <div className="target-label">
-                      {(() => {
-                        const isSharedCategory = categoryData?.shared_category && useSharedTarget && sharedTarget;
-                        const weeklyDisplay = isSharedCategory ? sharedTarget.weekly_display : categoryData.weekly_display;
-                        return isIncome 
-                          ? (weeklyDisplay ? 'הכנסת השבוע' : 'הכנסת החודש')
-                          : (weeklyDisplay ? 'הוצאת השבוע' : 'הוצאת החודש');
-                      })()}
-                    </div>
-                    <div className="target-value current">{formatCurrency(
-                      (categoryData?.shared_category && useSharedTarget && sharedTarget) 
-                        ? sharedSpending 
-                        : currentSpending
-                    )}</div>
-                  </div>
                   {(() => {
                     const effectiveTarget = (categoryData?.shared_category && useSharedTarget && sharedTarget) 
                       ? sharedTarget.monthly_target 
