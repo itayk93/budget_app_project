@@ -17,6 +17,8 @@ const TransactionReviewModal = ({
   const [deletedTransactionIds, setDeletedTransactionIds] = useState(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [filteredCategories, setFilteredCategories] = useState([]);
+  const [showNonCashFlowOnly, setShowNonCashFlowOnly] = useState(false);
 
   // Fetch categories for dropdown - using regular categories API for now
   const { data: categoriesData = [], isLoading: categoriesLoading, error: categoriesError } = useQuery(
@@ -48,6 +50,18 @@ const TransactionReviewModal = ({
       setCategories(categoryNames);
     }
   }, [categoriesData]);
+
+  // Filter categories based on non-cash flow checkbox
+  useEffect(() => {
+    if (showNonCashFlowOnly) {
+      const nonCashFlowCategories = categories.filter(categoryName => 
+        categoryName.includes('לא תזרימיות')
+      );
+      setFilteredCategories(nonCashFlowCategories);
+    } else {
+      setFilteredCategories(categories);
+    }
+  }, [categories, showNonCashFlowOnly]);
 
   // Initialize edited transactions when modal opens
   useEffect(() => {
@@ -137,6 +151,17 @@ const TransactionReviewModal = ({
             זוהו {transactions.length} עסקאות מקובץ {fileSource}. 
             בדוק את הפרטים ושנה לפי הצורך לפני ההעלאה הסופית.
           </p>
+          <div className="filter-controls">
+            <label className="checkbox-container">
+              <input
+                type="checkbox"
+                checked={showNonCashFlowOnly}
+                onChange={(e) => setShowNonCashFlowOnly(e.target.checked)}
+              />
+              <span className="checkmark"></span>
+              <span className="checkbox-label">הראה קטגוריות לא תזרימיות בלבד</span>
+            </label>
+          </div>
           <button className="close-button" onClick={onClose}>×</button>
         </div>
 
@@ -225,7 +250,7 @@ const TransactionReviewModal = ({
                           <CategoryDropdown
                             value={transaction.category_name || ''}
                             onChange={(categoryData) => handleCategoryChange(transaction.tempId, categoryData)}
-                            categories={categories}
+                            categories={filteredCategories}
                             placeholder="בחר קטגוריה..."
                           />
                         </td>
@@ -320,7 +345,7 @@ const TransactionReviewModal = ({
                         <CategoryDropdown
                           value={transaction.category_name || ''}
                           onChange={(categoryData) => handleCategoryChange(transaction.tempId, categoryData)}
-                          categories={categories}
+                          categories={filteredCategories}
                           placeholder="בחר קטגוריה..."
                         />
                       </div>

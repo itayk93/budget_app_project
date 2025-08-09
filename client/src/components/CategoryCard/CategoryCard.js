@@ -480,6 +480,20 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
       className={`category-card category-${isIncome ? 'income' : 'expense'} ${isModalOpen ? 'modal-open' : ''}`}
       data-category-name={categoryName}
       data-category-spent={categoryData.spent}
+      onClick={(e) => {
+        // Only expand if clicking on safe areas - not on interactive elements
+        const target = e.target;
+        const isClickOnButton = target.closest('button');
+        const isClickOnLink = target.closest('a');
+        const isClickOnInput = target.closest('input');
+        const isClickOnDropdown = target.closest('.dropdown-menu');
+        const isClickOnMenuDots = target.closest('.menu-dots');
+        
+        if (!isClickOnButton && !isClickOnLink && !isClickOnInput && !isClickOnDropdown && !isClickOnMenuDots) {
+          toggleExpanded();
+        }
+      }}
+      style={{ cursor: 'pointer' }}
     >
       {/* Category Header */}
       <div className="category-header">
@@ -488,7 +502,11 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
           <div className="ri-bold-body text-blue">
             {formatCurrency(spent)}
           </div>
-          <div className="menu-dots" onClick={toggleDropdown} ref={dropdownRef}>
+          <div className="menu-dots" onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleDropdown();
+          }} ref={dropdownRef}>
             <div className="dot"></div>
             <div className="dot"></div>
             <div className="dot"></div>
@@ -572,7 +590,11 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                 </div>
                 <button 
                   className="edit-target-btn"
-                  onClick={showMonthlyTargetDialog}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showMonthlyTargetDialog();
+                  }}
                   title={(() => {
                     const effectiveTarget = (categoryData?.shared_category && useSharedTarget && sharedTarget) 
                       ? sharedTarget.monthly_target 
@@ -828,7 +850,11 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
           className={`expandable-section margin-top-m ${isExpanded ? 'expanded' : ''}`}
           data-category={categoryName}
         >
-          <div className="expandable-header" onClick={toggleExpanded}>
+          <div className="expandable-header" onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleExpanded();
+          }}>
             <div className="header-content">
               <span className="ri-bold-body">
                 {categoryData.weekly_display ? 'פירוט שבועי' : 'פירוט חודשי'}&nbsp;&nbsp;<span className="transaction-count-badge">
@@ -869,7 +895,11 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                   <div key={subCategoryName} className="sub-category-item">
                     <div 
                       className="sub-category-header"
-                      onClick={() => toggleSubCategory(subCategoryName)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleSubCategory(subCategoryName);
+                      }}
                     >
                       <div className="sub-category-info">
                         <div className="sub-category-name">{subCategoryName}</div>
@@ -905,7 +935,11 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                                 <button 
                                   className="transaction-menu-btn" 
                                   title="פעולות"
-                                  onClick={() => showTransactionActions(transaction)}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    showTransactionActions(transaction);
+                                  }}
                                 >
                                   <i className="fas fa-ellipsis-v"></i>
                                 </button>
@@ -991,7 +1025,11 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                       <button 
                         className="transaction-menu-btn" 
                         title="פעולות"
-                        onClick={() => showTransactionActions(transaction)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          showTransactionActions(transaction);
+                        }}
                       >
                         <i className="fas fa-ellipsis-v"></i>
                       </button>
