@@ -200,7 +200,13 @@ const Upload = () => {
   };
 
   const addOneDay = (dateString) => {
+    if (!dateString || dateString === null || dateString === undefined) {
+      return '';
+    }
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return '';
+    }
     date.setDate(date.getDate() + 1);
     return date.toISOString().split('T')[0];
   };
@@ -749,7 +755,7 @@ const Upload = () => {
                           e.target.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.1)';
                         }}
                       >
-                        🗓️ מהיום שאחרי ({formatDateForDisplay(addOneDay(latestTransactionInfo.latestTransactionDate))})
+                        🗓️ מהיום שאחרי ({latestTransactionInfo?.latestTransactionDate ? formatDateForDisplay(addOneDay(latestTransactionInfo.latestTransactionDate)) : ''})
                       </button>
                       <button
                         type="button"

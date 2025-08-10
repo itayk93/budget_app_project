@@ -476,8 +476,21 @@ router.post('/handle-duplicates', authenticateToken, async (req, res) => {
     const ExcelService = require('../services/excelService');
     const importResult = await ExcelService.importTransactions(transactionsToImport, false);
 
-    // Clean up session
+    // Clean up session and temp files
     currencyGroupsSessions.delete(tempId);
+    
+    // Clean up temporary duplicates file
+    if (tempId) {
+      const duplicatesFilePath = path.join(__dirname, '../../uploads', `temp_duplicates_${tempId}.json`);
+      if (fs.existsSync(duplicatesFilePath)) {
+        try {
+          fs.unlinkSync(duplicatesFilePath);
+          console.log(`🧹 Cleaned up temp duplicates file: ${tempId}`);
+        } catch (error) {
+          console.warn('Failed to cleanup temp duplicates file:', error);
+        }
+      }
+    }
 
     res.json({
       success: true,
@@ -1498,10 +1511,21 @@ router.post('/handle_duplicates', authenticateToken, async (req, res) => {
       }
     }
 
-    // Clean up duplicates sessions for this user
+    // Clean up duplicates sessions and temp files for this user
     for (const [sessionId, sessionData] of currencyGroupsSessions.entries()) {
       if (sessionData.userId === userId && sessionData.type === 'duplicates') {
         currencyGroupsSessions.delete(sessionId);
+        
+        // Clean up corresponding temp file
+        const duplicatesFilePath = path.join(__dirname, '../../uploads', `temp_duplicates_${sessionId}.json`);
+        if (fs.existsSync(duplicatesFilePath)) {
+          try {
+            fs.unlinkSync(duplicatesFilePath);
+            console.log(`🧹 Cleaned up temp duplicates file: ${sessionId}`);
+          } catch (error) {
+            console.warn('Failed to cleanup temp duplicates file:', error);
+          }
+        }
       }
     }
 
@@ -3126,5 +3150,37 @@ router.post('/bank-yahav/import', authenticateToken, async (req, res) => {
     });
   }
 });
+
+// Periodic cleanup of old temp duplicate files (runs every 30 minutes)
+setInterval(() => {
+  try {
+    const uploadsDir = path.join(__dirname, '../../uploads');
+    const tempFiles = fs.readdirSync(uploadsDir).filter(file => 
+      file.startsWith('temp_duplicates_') && file.endsWith('.json')
+    );
+    
+    let cleanedCount = 0;
+    const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000); // 24 hours ago
+    
+    tempFiles.forEach(file => {
+      const filePath = path.join(uploadsDir, file);
+      try {
+        const stats = fs.statSync(filePath);
+        if (stats.mtime.getTime() < oneDayAgo) {
+          fs.unlinkSync(filePath);
+          cleanedCount++;
+        }
+      } catch (error) {
+        console.warn(`Failed to clean up temp file ${file}:`, error);
+      }
+    });
+    
+    if (cleanedCount > 0) {
+      console.log(`🧹 Periodic cleanup: Removed ${cleanedCount} old temp duplicate files`);
+    }
+  } catch (error) {
+    console.error('Periodic cleanup error:', error);
+  }
+}, 30 * 60 * 1000); // Every 30 minutes
 
 module.exports = router;

@@ -230,38 +230,24 @@ const TransactionReviewModal = ({
     <div className="transaction-review-modal-overlay">
       <div className="transaction-review-modal">
         <div className="modal-header">
-          <div className="header-content">
-            <div className="header-text">
-              <h2>בדיקת עסקאות לפני העלאה</h2>
-              <p className="modal-subtitle">
-                בדוק את הפרטים ושנה לפי הצורך לפני ההעלאה הסופית.
-              </p>
-            </div>
-            <button className="close-button" onClick={onClose}>
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-          </div>
-          
-          <div className="controls-section">
-            <div className="filter-controls">
-              <div className="control-group">
-                <button 
-                  className={`toggle-button ${showNonCashFlowOnly ? 'active' : ''}`}
-                  onClick={() => setShowNonCashFlowOnly(!showNonCashFlowOnly)}
-                >
-                  <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  הראה קטגוריות לא תזרימיות בלבד
-                </button>
-              </div>
+          <div className="header-content-centered">
+            <h2>בדיקת עסקאות לפני העלאה</h2>
+            
+            <div className="controls-inline">
+              <button 
+                className={`toggle-button compact ${showNonCashFlowOnly ? 'active' : ''}`}
+                onClick={() => setShowNonCashFlowOnly(!showNonCashFlowOnly)}
+              >
+                <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                הראה קטגוריות לא תזרימיות בלבד
+              </button>
 
               {duplicateTransactionIds.size > 0 && (
-                <div className="control-group duplicate-controls">
+                <>
                   <button 
-                    className={`toggle-button duplicate-toggle ${skipDuplicates ? 'active warning' : ''}`}
+                    className={`toggle-button compact duplicate-toggle ${skipDuplicates ? 'active warning' : ''}`}
                     onClick={handleToggleAllDuplicates}
                   >
                     <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
@@ -272,7 +258,7 @@ const TransactionReviewModal = ({
                   
                   {showDeleteDuplicatesButton && (
                     <button 
-                      className="action-button delete-duplicates"
+                      className="action-button compact delete-duplicates"
                       onClick={handleDeleteAllDuplicates}
                       title="מחק את כל הכפילויות לצמיתות"
                     >
@@ -283,7 +269,7 @@ const TransactionReviewModal = ({
                       מחק כפילויות ({duplicateTransactionIds.size})
                     </button>
                   )}
-                </div>
+                </>
               )}
             </div>
           </div>
@@ -447,17 +433,9 @@ const TransactionReviewModal = ({
                         <div className={`card-amount ${transaction.amount >= 0 ? 'positive' : 'negative'}`}>
                           {formatAmount(transaction.amount || 0)}
                         </div>
-                        <button
-                          onClick={() => handleDeleteTransaction(transaction.tempId)}
-                          className="delete-button"
-                          title="מחק עסקה"
-                        >
-                          🗑️
-                        </button>
                       </div>
 
-                      <div className="card-field">
-                        <label>תאריך</label>
+                      <div className="card-field date-delete-row">
                         <input
                           type="date"
                           value={transaction.payment_date?.split('T')[0] || transaction.transaction_date?.split('T')[0] || ''}
@@ -467,6 +445,13 @@ const TransactionReviewModal = ({
                             e.target.value
                           )}
                         />
+                        <button
+                          onClick={() => handleDeleteTransaction(transaction.tempId)}
+                          className="delete-button"
+                          title="מחק עסקה"
+                        >
+                          מחק
+                        </button>
                       </div>
 
                       <div className="card-field">

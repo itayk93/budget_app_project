@@ -26,46 +26,45 @@
 }
 
 .modal-header {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  color: white;
+  background: white;
+  color: #111827;
   border-radius: 16px 16px 0 0;
   position: relative;
-  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.15);
+  border-bottom: none;
+  padding: 4px 10px;
+  margin: 0;
 }
 
-.header-content {
+.header-content-centered {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: 24px 24px 0 24px;
-  gap: 20px;
-}
-
-.header-text {
-  flex: 1;
-  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 24px 20px 24px;
+  text-align: center;
 }
 
 .modal-header h2 {
   margin: 0 0 8px 0;
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #111827;
+  text-align: center;
 }
 
 .modal-subtitle {
   margin: 0;
-  font-size: 16px;
-  opacity: 0.95;
+  font-size: 14px;
+  color: #6b7280;
   line-height: 1.5;
   font-weight: 400;
 }
 
 .controls-section {
-  padding: 20px 24px 24px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  margin-top: 20px;
+  padding: 16px 24px 20px 24px;
+  background: #f9fafb;
+  margin-top: 0;
 }
 
 .filter-controls {
@@ -153,40 +152,36 @@
 }
 
 .close-button {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  border-radius: 12px;
-  width: 44px;
-  height: 44px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
+  transition: all 0.15s ease;
   flex-shrink: 0;
 }
 
 .close-button:hover {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.4);
-  transform: scale(1.05);
-}
-
-.close-button:active {
-  transform: scale(0.95);
+  background: #f9fafb;
+  border-color: #d1d5db;
+  color: #374151;
 }
 
 .close-button svg {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
 }
 
 .modal-body {
   flex: 1;
   overflow: visible;
   padding: 0;
+  margin-top: 0;
 }
 
 .loading-container {
@@ -198,18 +193,24 @@
 
 .transactions-summary {
   background: #f8fafc;
-  padding: 20px 24px;
+  padding: 2px 8px 4px 8px;
   display: flex;
-  gap: 32px;
-  border-bottom: 1px solid #e2e8f0;
+  gap: 10px;
+  border-bottom: none;
+  border-top: none;
   flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  direction: ltr;
+  margin: 2px 0 0 0;
 }
 
 .summary-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 16px;
+  gap: 6px;
+  font-size: 14px;
+  direction: rtl;
 }
 
 .summary-item .label {
@@ -219,7 +220,7 @@
 
 .summary-item .value {
   font-weight: 700;
-  font-size: 18px;
+  font-size: 16px;
   color: #1f2937;
 }
 
@@ -234,8 +235,10 @@
 .transactions-table-container {
   overflow: auto;
   max-height: 400px;
-  margin: 0;
+  margin: 16px 0 0 0;
   position: relative;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
 }
 
 .transactions-table {
@@ -245,15 +248,16 @@
 }
 
 .transactions-table th {
-  background: #f8fafc;
-  padding: 16px 12px;
+  background: #f9fafb;
+  padding: 12px;
   text-align: right;
-  font-weight: 600;
-  color: #374151;
-  border-bottom: 2px solid #e5e7eb;
+  font-weight: 500;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
   position: sticky;
   top: 0;
   z-index: 10;
+  font-size: 13px;
 }
 
 .transaction-row {
@@ -365,54 +369,57 @@
 }
 
 .modal-footer {
-  background: #f8f9fa;
-  padding: 20px 24px;
+  background: white;
+  padding: 16px 24px;
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
+  align-items: center;
   gap: 12px;
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid #f3f4f6;
   border-radius: 0 0 16px 16px;
 }
 
 .btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.3s ease;
-  font-size: 14px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .btn-secondary {
-  background: #f3f4f6;
+  background: white;
+  border: 1px solid #e5e7eb;
   color: #374151;
-  border: 1px solid #d1d5db;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #e5e7eb;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: #f9fafb;
+  border-color: #d1d5db;
 }
 
 .btn-primary {
   background: #2563eb;
   color: white;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  border-color: #2563eb;
 }
 
 .btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+  background: #1d4ed8;
+  border-color: #1d4ed8;
 }
 
 /* Responsive Design */
@@ -436,14 +443,18 @@
   }
   
   .transactions-summary {
-    padding: 16px;
-    gap: 12px;
-    flex-direction: column;
+    padding: 12px 16px;
+    gap: 8px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   
   .summary-item {
-    font-size: 14px;
-    justify-content: space-between;
+    font-size: 13px;
+    justify-content: center;
+    flex: 0 0 calc(50% - 4px);
+    min-width: calc(50% - 4px);
   }
   
   .transactions-table-container {
@@ -462,28 +473,30 @@
   
   .transaction-card {
     background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 16px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
   }
   
   .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 6px;
   }
   
   .card-title {
     font-weight: 600;
     color: #1f2937;
+    font-size: 14px;
+    flex: 1;
   }
   
   .card-amount {
     font-weight: 700;
-    font-size: 16px;
+    font-size: 14px;
+    margin-left: 8px;
   }
   
   .card-amount.positive {
@@ -495,38 +508,69 @@
   }
   
   .card-field {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     position: relative;
     overflow: visible;
   }
   
   .card-field label {
     display: block;
-    font-size: 12px;
+    font-size: 11px;
     color: #6b7280;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
     font-weight: 500;
   }
   
   .card-field input,
   .card-field select {
     width: 100%;
-    padding: 8px 12px;
+    padding: 6px 8px;
     border: 1px solid #d1d5db;
-    border-radius: 8px;
-    font-size: 16px; /* Prevents zoom on iOS */
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  
+  /* שורה של תאריך ומחיקה */
+  .card-field.date-delete-row {
+    display: flex;
+    gap: 8px;
+    align-items: end;
+    margin-bottom: 8px;
+  }
+  
+  .card-field.date-delete-row input {
+    flex: 1;
+  }
+  
+  .card-field.date-delete-row .delete-button {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   
   .modal-footer {
     padding: 16px;
     flex-direction: column;
+    justify-content: center;
+    align-items: center;
     gap: 12px;
   }
   
   .btn {
-    padding: 14px 20px;
+    padding: 10px 14px;
     justify-content: center;
-    width: 100%;
+    text-align: center;
+    width: 90%;
+    max-width: 320px;
+    margin: 0 auto;
+    display: block;
+    font-size: 12px;
   }
 }
 
@@ -549,11 +593,52 @@
   }
 }
 
-/* RTL Support */
+/* RTL Support - Override for centered header */
 [dir="rtl"] .transaction-review-modal,
 .transaction-review-modal {
   direction: rtl;
   text-align: right;
+}
+
+/* Override RTL for centered header content */
+.header-content-centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;  /* מרכז אופקית */
+  justify-content: center; /* מרכז אנכית עבור האייטמים */
+  width: 100%;
+  direction: ltr; /* כדי לנטרל את RTL */
+  text-align: center;
+  padding: 0;
+  margin: 0;
+}
+
+.header-content-centered h2 {
+  direction: rtl; /* לשמור על כתיבה בעברית */
+  text-align: center;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #111827;
+  line-height: 1.2;
+}
+
+/* Force center alignment for controls */
+.controls-inline {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center; /* מרכז את הכפתורים */
+  align-items: center;
+  width: 100%;
+  gap: 6px;
+  margin: 2px 0 0 0;
+  direction: ltr; /* שיתעלם מה-RTL */
+}
+
+.controls-inline button {
+  direction: rtl; /* הטקסט בכפתורים עדיין בעברית */
+  margin: 0; /* מבטל margin אוטומטי */
 }
 
 /* RTL support handled by flex layout now */
@@ -694,46 +779,62 @@
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
 }
 
-/* Modern Button Styles */
+/* Inline Controls Layout */
+.controls-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+/* Clean Button Styles */
 .toggle-button {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  padding: 12px 16px;
-  border-radius: 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  padding: 8px 14px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
+  transition: all 0.15s ease;
   white-space: nowrap;
 }
 
+/* Compact button variations */
+.toggle-button.compact,
+.action-button.compact {
+  font-size: 12px;
+  padding: 4px 8px;
+  line-height: 1.2;
+}
+
 .toggle-button:hover {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.4);
-  transform: translateY(-1px);
+  background: #f9fafb;
+  border-color: #d1d5db;
 }
 
 .toggle-button.active {
-  background: rgba(255, 255, 255, 0.9);
-  color: #2563eb;
-  border-color: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
 }
 
 .toggle-button.active.warning {
-  background: #fbbf24;
-  color: #92400e;
+  background: #f59e0b;
+  color: white;
   border-color: #f59e0b;
 }
 
 .toggle-button .icon {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
 }
 
@@ -742,38 +843,30 @@
   align-items: center;
   gap: 8px;
   background: #dc2626;
-  border: 1px solid #b91c1c;
+  border: 1px solid #dc2626;
   color: white;
-  padding: 12px 16px;
-  border-radius: 12px;
+  padding: 8px 14px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.2s ease;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s ease;
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
 }
 
 .action-button:hover {
   background: #b91c1c;
-  border-color: #991b1b;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.3);
-}
-
-.action-button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
+  border-color: #b91c1c;
 }
 
 .action-button.delete-duplicates {
-  animation: slideIn 0.3s ease-out;
+  animation: slideIn 0.2s ease-out;
 }
 
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateX(-20px);
+    transform: translateX(-10px);
   }
   to {
     opacity: 1;
@@ -782,8 +875,8 @@
 }
 
 .action-button .icon {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
 }
 
@@ -793,17 +886,26 @@
     border-radius: 20px 20px 0 0;
   }
   
-  .header-content {
-    padding: 20px 16px 0 16px;
-    gap: 16px;
+  .header-content-centered {
+    padding: 8px 16px 2px 16px;
+    margin-bottom: 0;
   }
   
   .modal-header h2 {
-    font-size: 22px;
+    font-size: 18px;
+    margin-bottom: 4px;
   }
   
-  .modal-subtitle {
-    font-size: 14px;
+  .controls-inline {
+    flex-direction: column;
+    gap: 6px;
+    margin: 2px 0 0 0;
+  }
+  
+  .transactions-summary {
+    padding: 2px 12px 6px 12px;
+    gap: 8px;
+    margin-top: 2px;
   }
   
   .controls-section {
@@ -827,19 +929,23 @@
     align-items: center;
   }
   
-  .toggle-button {
-    padding: 14px 16px;
-    font-size: 13px;
+  .toggle-button,
+  .toggle-button.compact {
+    padding: 10px 14px;
+    font-size: 12px;
     justify-content: center;
     text-align: center;
+    width: 100%;
   }
   
-  .action-button {
-    padding: 14px 16px;
-    font-size: 13px;
+  .action-button,
+  .action-button.compact {
+    padding: 10px 14px;
+    font-size: 12px;
     justify-content: center;
     text-align: center;
-    min-width: 140px;
+    width: 100%;
+    min-width: unset;
   }
   
   .close-button {
@@ -855,22 +961,21 @@
 
 @media (max-width: 480px) {
   .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+    padding: 16px 16px 0 16px;
+  }
+  
+  .controls-section {
+    padding: 12px 16px 16px 16px;
   }
   
   .close-button {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    width: 36px;
-    height: 36px;
+    width: 28px;
+    height: 28px;
   }
   
   .close-button svg {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
   }
   
   .duplicate-controls {
@@ -883,5 +988,14 @@
   .action-button {
     width: 100%;
     min-width: unset;
+    justify-content: center;
+  }
+  
+  .modal-header h2 {
+    font-size: 18px;
+  }
+  
+  .modal-subtitle {
+    font-size: 13px;
   }
 }
