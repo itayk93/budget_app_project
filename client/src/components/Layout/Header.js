@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import TransactionSearchModal from '../TransactionSearchModal/TransactionSearchModal';
 import './Header.css';
 
 const Header = ({ onToggleSidebar }) => {
   const { user, logout } = useAuth();
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   return (
     <header className="header">
@@ -17,6 +19,13 @@ const Header = ({ onToggleSidebar }) => {
             <span></span>
             <span></span>
             <span></span>
+          </button>
+          <button 
+            className="search-toggle"
+            onClick={() => setIsSearchModalOpen(true)}
+            aria-label="חיפוש עסקאות"
+          >
+            <i className="fas fa-search"></i>
           </button>
         </div>
 
@@ -32,6 +41,11 @@ const Header = ({ onToggleSidebar }) => {
           </div>
         </div>
       </div>
+      
+      <TransactionSearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+      />
     </header>
   );
 };

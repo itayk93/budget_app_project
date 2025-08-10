@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from 'react-query';
 import { transactionsAPI, budgetsAPI, categoriesAPI, cashFlowsAPI, monthlyGoalsAPI } from '../../services/api';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import CategoryCard from '../../components/CategoryCard/CategoryCard';
+import CategoryGroupCard from '../../components/CategoryGroupCard/CategoryGroupCard';
 import MonthlyGoalModal from '../../components/MonthlyGoalModal/MonthlyGoalModal';
 import api from '../../services/api';
 import './Dashboard.css';
@@ -450,6 +451,40 @@ const Dashboard = () => {
 
   const summary = calculateSummary();
 
+  // Group categories by shared_category
+  const groupCategories = (categories) => {
+    const grouped = {};
+    const standalone = [];
+    const parentCategoryNames = new Set();
+
+    // First, collect all parent category names
+    categories.forEach(categoryData => {
+      if (categoryData.shared_category) {
+        parentCategoryNames.add(categoryData.shared_category);
+      }
+    });
+
+    // Now process categories - exclude parent categories that exist as both parent and child
+    categories.forEach(categoryData => {
+      // Skip categories that are parent categories (exist in shared_category of other categories)
+      if (parentCategoryNames.has(categoryData.name)) {
+        console.log(`🚫 Skipping parent category: ${categoryData.name}`);
+        return; // Skip this category
+      }
+
+      if (categoryData.shared_category) {
+        if (!grouped[categoryData.shared_category]) {
+          grouped[categoryData.shared_category] = [];
+        }
+        grouped[categoryData.shared_category].push(categoryData);
+      } else {
+        standalone.push(categoryData);
+      }
+    });
+
+    return { grouped, standalone };
+  };
+
   const handleSaveGoal = async (goalData) => {
     try {
       await monthlyGoalsAPI.save(goalData);
@@ -756,21 +791,47 @@ const Dashboard = () => {
           <div className="dashboard-section">
             <div className="categories-container">
               {dashboardData?.orderedCategories && dashboardData.orderedCategories.length > 0 ? (
-                // Use ordered categories array (maintains display_order from database)
-                (console.log('🎯 DASHBOARD: Using orderedCategories:', dashboardData.orderedCategories.map(c => ({ name: c.name, display_order: c.display_order, shared_category: c.shared_category }))), 
-                 console.log('🎯 DASHBOARD: Category order by display_order:', dashboardData.orderedCategories.map((cat, index) => `${index + 1}. ${cat.name} (order: ${cat.display_order}${cat.shared_category ? `, shared: ${cat.shared_category}` : ''})`)), true) &&
-                dashboardData.orderedCategories.map((categoryData) => (
-                  <CategoryCard
-                    key={categoryData.name}
-                    categoryName={categoryData.name}
-                    categoryData={categoryData}
-                    formatCurrency={formatCurrency}
-                    formatDate={formatDate}
-                    onDataChange={refetchDashboard}
-                    year={year}
-                    month={month}
-                  />
-                ))
+                // Use ordered categories array with grouping
+                (() => {
+                  console.log('🔍 DASHBOARD: Raw categories before grouping:', dashboardData.orderedCategories);
+                  const { grouped, standalone } = groupCategories(dashboardData.orderedCategories);
+                  
+                  console.log('🎯 DASHBOARD: Grouped categories:', Object.keys(grouped));
+                  console.log('🎯 DASHBOARD: Grouped categories details:', grouped);
+                  console.log('🎯 DASHBOARD: Standalone categories:', standalone.map(c => c.name));
+                  
+                  return (
+                    <>
+                      {/* Render grouped categories */}
+                      {Object.entries(grouped).map(([groupName, categories]) => (
+                        <CategoryGroupCard
+                          key={groupName}
+                          groupName={groupName}
+                          categories={categories}
+                          onCategoryClick={(categoryName) => {
+                            console.log(`🖱️ Dashboard: Category clicked: ${categoryName}`);
+                            // Navigate to transactions for this category
+                            window.location.href = `/transactions?category=${encodeURIComponent(categoryName)}&year=${year}&month=${month}&cash_flow=${selectedCashFlow?.id}`;
+                          }}
+                        />
+                      ))}
+                      
+                      {/* Render standalone categories */}
+                      {standalone.map((categoryData) => (
+                        <CategoryCard
+                          key={categoryData.name}
+                          categoryName={categoryData.name}
+                          categoryData={categoryData}
+                          formatCurrency={formatCurrency}
+                          formatDate={formatDate}
+                          onDataChange={refetchDashboard}
+                          year={year}
+                          month={month}
+                        />
+                      ))}
+                    </>
+                  );
+                })()
               ) : (
                 // Fallback for backward compatibility with object format
                 Object.entries(dashboardData.categories).map(([categoryName, categoryData]) => (

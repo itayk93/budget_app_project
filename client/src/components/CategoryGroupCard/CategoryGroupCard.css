@@ -1,0 +1,130 @@
+.category-group-card {
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.category-group-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  border-color: #d0d0d0;
+}
+
+.group-header {
+  padding: 16px 20px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8f9fa;
+  border-bottom: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.group-header:hover {
+  background: #f0f0f0;
+}
+
+.group-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.group-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+  text-align: right;
+}
+
+.group-amount {
+  font-size: 16px;
+  font-weight: 500;
+  color: #f44336;
+}
+
+.group-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #666;
+}
+
+.category-count {
+  font-size: 14px;
+  background: #e3f2fd;
+  padding: 4px 8px;
+  border-radius: 12px;
+  color: #1976d2;
+}
+
+.expand-icon {
+  font-size: 12px;
+  transition: transform 0.2s ease;
+  color: #666;
+}
+
+.expand-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.group-content {
+  padding: 16px;
+  background: #fafafa;
+}
+
+.group-categories {
+  display: grid;
+  gap: 8px;
+}
+
+.group-category-item {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.group-category-item .category-card {
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  margin: 0;
+  box-shadow: none;
+  border-radius: 8px;
+}
+
+.group-category-item .category-card:hover {
+  border-color: #2196f3;
+  box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .group-header {
+    padding: 12px 16px;
+  }
+  
+  .group-name {
+    font-size: 16px;
+  }
+  
+  .group-amount {
+    font-size: 14px;
+  }
+  
+  .group-controls {
+    gap: 8px;
+  }
+  
+  .category-count {
+    font-size: 12px;
+    padding: 2px 6px;
+  }
+  
+  .group-content {
+    padding: 12px;
+  }
+}

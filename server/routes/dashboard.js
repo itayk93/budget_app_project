@@ -133,7 +133,7 @@ router.get('/', authenticateToken, async (req, res) => {
     const categories = {};
     const orderedCategories = [];
     if (dashboardResult.category_breakdown && Array.isArray(dashboardResult.category_breakdown)) {
-      console.log('📋 Dashboard categories before processing:', dashboardResult.category_breakdown.map(c => ({ name: c.name, display_order: c.display_order })));
+      console.log('📋 Dashboard categories before processing:', dashboardResult.category_breakdown.map(c => ({ name: c.name, display_order: c.display_order, shared_category: c.shared_category })));
       
       dashboardResult.category_breakdown.forEach(category => {
         const categoryData = {
@@ -144,7 +144,11 @@ router.get('/', authenticateToken, async (req, res) => {
           type: category.type,
           transactions: category.transactions || [], // Include transactions
           category_type: category.type,
-          display_order: category.display_order // Add display_order for debugging
+          display_order: category.display_order, // Add display_order for debugging
+          shared_category: category.shared_category || null, // Add shared_category from DB
+          weekly_display: category.weekly_display || false,
+          monthly_target: category.monthly_target || null,
+          use_shared_target: category.use_shared_target || false
         };
         
         // Keep both object format (for backward compatibility) and array format (for proper ordering)
@@ -152,7 +156,7 @@ router.get('/', authenticateToken, async (req, res) => {
         orderedCategories.push(categoryData);
       });
       
-      console.log('✅ Final ordered categories:', orderedCategories.map(c => ({ name: c.name, display_order: c.display_order })));
+      console.log('✅ Final ordered categories:', orderedCategories.map(c => ({ name: c.name, display_order: c.display_order, shared_category: c.shared_category })));
     }
     
     // Prepare response data

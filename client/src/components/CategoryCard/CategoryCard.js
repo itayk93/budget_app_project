@@ -13,7 +13,7 @@ import WeeklyBreakdown from '../WeeklyBreakdown/WeeklyBreakdown';
 import { transactionsAPI, categoriesAPI } from '../../services/api';
 import './CategoryCard.css';
 
-const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, onDataChange, year, month }) => {
+const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, onDataChange, year, month, isInGroup = false }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedSubCategory, setExpandedSubCategory] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
