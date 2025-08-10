@@ -217,12 +217,33 @@ class TransactionService {
         query = query.eq('category_id', filters.category_id);
       }
       
-      // Category name filtering temporarily disabled for debugging
+      // Filter by category name - lookup category_id first then filter
       if (filters.category_name) {
-        console.warn(`Category name filtering for "${filters.category_name}" temporarily disabled - returning all transactions`);
-        // TODO: Implement proper category name to ID lookup
-        // For now, we'll return all transactions instead of filtering by category name
-        // This prevents the PGRST108 error while we debug the issue
+        try {
+          // First, find the category ID by name
+          const { data: categoryData, error: categoryError } = await supabase
+            .from('categories')
+            .select('id')
+            .eq('name', filters.category_name)
+            .eq('user_id', userId)
+            .single();
+            
+          if (categoryError || !categoryData) {
+            console.warn(`Category with name "${filters.category_name}" not found`);
+            return SharedUtilities.createSuccessResponse({
+              data: [],
+              total_count: 0,
+              transactions: [],
+              totalCount: 0
+            });
+          }
+          
+          // Filter by the found category_id
+          query = query.eq('category_id', categoryData.id);
+        } catch (error) {
+          console.error('Error looking up category by name:', error);
+          return SharedUtilities.handleSupabaseError(error, 'lookup category by name');
+        }
       }
       
       if (filters.no_category) {
