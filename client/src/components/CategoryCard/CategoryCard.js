@@ -140,11 +140,18 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
   useEffect(() => {
     const loadCurrentSpending = async () => {
       try {
+        console.log(`🔄 LOADING SPENDING: "${categoryName}" for ${year}/${month}`);
         const response = await categoriesAPI.getMonthlySpending(categoryName, year, month);
-        setCurrentSpending(response.total_spending || response.current_spending);
-        console.log(`Current spending for ${categoryName} (${year}/${month}):`, response.total_spending || response.current_spending);
+        const spending = response.total_spending || response.current_spending;
+        setCurrentSpending(spending);
+        console.log(`💸 API RESPONSE for "${categoryName}":`, {
+          total_spending: response.total_spending,
+          current_spending: response.current_spending,
+          transaction_count: response.transaction_count,
+          final_spending: spending
+        });
       } catch (error) {
-        console.error('Error loading current spending:', error);
+        console.error(`❌ ERROR loading spending for "${categoryName}":`, error);
       }
     };
 
@@ -235,8 +242,17 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                    categoryName.includes('הכנסות') ||
                    categoryData?.shared_category === 'הכנסות';
   
-  // DEBUG: Log category info
-  console.log(`Category ${categoryName}: type=${categoryType}, isIncome=${isIncome}, shared=${categoryData?.shared_category}`);
+  // DEBUG: Log detailed category info
+  console.log(`🔍 CATEGORY ANALYSIS: "${categoryName}"`);
+  console.log(`   📊 Type: ${categoryType}, IsIncome: ${isIncome}`);
+  console.log(`   🤝 Shared Category: ${categoryData?.shared_category || 'null'}`);
+  console.log(`   💰 Amount/Spent: ${categoryData?.amount || categoryData?.spent || 0}`);
+  console.log(`   🎯 Monthly Target: ${categoryData?.monthly_target || 'none'}`);
+  console.log(`   📈 Current Spending: ${currentSpending || 'not loaded yet'}`);
+  
+  if (categoryData?.shared_category) {
+    console.log(`   ⚠️  SHARED CATEGORY DETECTED: This should get spending from API for "${categoryName}", NOT "${categoryData.shared_category}"`);
+  }
   
   // Handler functions
   const showSetBudgetDialog = (categoryName, budget, displayName) => {

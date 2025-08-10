@@ -15,15 +15,23 @@ const CategoryGroupCard = ({
   const [isOpen, setIsOpen] = useState(false);
 
   console.log(`🎯 CategoryGroupCard rendering: ${groupName} with ${categories.length} categories`);
+  console.log(`📋 Categories in group "${groupName}":`, categories.map(c => ({
+    name: c.name,
+    amount: c.amount || c.spent || 0,
+    shared_category: c.shared_category
+  })));
 
   // Calculate group totals
   const calculateGroupTotals = () => {
     let totalSpent = 0;
     
     categories.forEach(categoryData => {
-      totalSpent += Math.abs(categoryData.amount || categoryData.spent || 0);
+      const amount = Math.abs(categoryData.amount || categoryData.spent || 0);
+      totalSpent += amount;
+      console.log(`   💰 "${categoryData.name}": ${amount} ₪`);
     });
     
+    console.log(`📊 TOTAL for group "${groupName}": ${totalSpent} ₪`);
     return { totalSpent };
   };
 
