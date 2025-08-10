@@ -59,11 +59,14 @@ const CategoryGroupCard = ({
             {categories.map((category) => (
               <div key={category.name} className="group-category-item">
                 <CategoryCard
-                  category={category}
-                  onClick={() => {
-                    console.log(`🖱️ Clicked category: ${category.name}`);
-                    onCategoryClick(category.name);
-                  }}
+                  categoryName={category.name}
+                  categoryData={category}
+                  formatCurrency={(amount) => `${Math.abs(amount).toLocaleString('he-IL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ₪`}
+                  formatDate={(date) => new Date(date).toLocaleDateString('he-IL')}
+                  onDataChange={() => {/* Refresh callback */}}
+                  year={new Date().getFullYear()}
+                  month={new Date().getMonth() + 1}
+                  isInGroup={true}
                 />
               </div>
             ))}
