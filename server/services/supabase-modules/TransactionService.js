@@ -217,9 +217,9 @@ class TransactionService {
         query = query.eq('category_id', filters.category_id);
       }
       
-      // Filter by category name - need to join with categories table
+      // Filter by category name - using the joined category table
       if (filters.category_name) {
-        query = query.eq('categories.name', filters.category_name);
+        query = query.eq('category.name', filters.category_name);
       }
       
       if (filters.no_category) {
