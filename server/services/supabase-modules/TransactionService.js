@@ -217,6 +217,11 @@ class TransactionService {
         query = query.eq('category_id', filters.category_id);
       }
       
+      // Filter by category name - need to join with categories table
+      if (filters.category_name) {
+        query = query.eq('categories.name', filters.category_name);
+      }
+      
       if (filters.no_category) {
         query = query.is('category_id', null).is('category_name', null);
       }

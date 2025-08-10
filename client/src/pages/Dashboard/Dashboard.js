@@ -813,6 +813,11 @@ const Dashboard = () => {
                             // Navigate to transactions for this category
                             window.location.href = `/transactions?category=${encodeURIComponent(categoryName)}&year=${year}&month=${month}&cash_flow=${selectedCashFlow?.id}`;
                           }}
+                          formatCurrency={formatCurrency}
+                          formatDate={formatDate}
+                          onDataChange={refetchDashboard}
+                          year={year}
+                          month={month}
                         />
                       ))}
                       

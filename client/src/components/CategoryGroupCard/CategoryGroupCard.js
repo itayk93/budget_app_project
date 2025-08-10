@@ -5,7 +5,12 @@ import './CategoryGroupCard.css';
 const CategoryGroupCard = ({ 
   groupName, 
   categories, 
-  onCategoryClick
+  onCategoryClick,
+  formatCurrency,
+  formatDate,
+  onDataChange,
+  year,
+  month
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -29,10 +34,10 @@ const CategoryGroupCard = ({
     console.log(`🔄 Toggling ${groupName}: ${!isOpen ? 'opened' : 'closed'}`);
   };
 
-  // Format currency
-  const formatCurrency = (amount) => {
+  // Use the formatCurrency prop or fallback to local function
+  const formatCurrencyLocal = formatCurrency || ((amount) => {
     return `${Math.abs(amount).toLocaleString('he-IL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ₪`;
-  };
+  });
 
   return (
     <div className="category-group-card">
@@ -41,7 +46,7 @@ const CategoryGroupCard = ({
         <div className="group-info">
           <h3 className="group-name">{groupName}</h3>
           <div className="group-amount">
-            {formatCurrency(totalSpent)}
+            {formatCurrencyLocal(totalSpent)}
           </div>
         </div>
         <div className="group-controls">
@@ -61,11 +66,11 @@ const CategoryGroupCard = ({
                 <CategoryCard
                   categoryName={category.name}
                   categoryData={category}
-                  formatCurrency={(amount) => `${Math.abs(amount).toLocaleString('he-IL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ₪`}
-                  formatDate={(date) => new Date(date).toLocaleDateString('he-IL')}
-                  onDataChange={() => {/* Refresh callback */}}
-                  year={new Date().getFullYear()}
-                  month={new Date().getMonth() + 1}
+                  formatCurrency={formatCurrency}
+                  formatDate={formatDate}
+                  onDataChange={onDataChange}
+                  year={year}
+                  month={month}
                   isInGroup={true}
                 />
               </div>

@@ -140,15 +140,15 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
   useEffect(() => {
     const loadCurrentSpending = async () => {
       try {
-        const response = await categoriesAPI.getMonthlySpending(categoryName);
-        setCurrentSpending(response.current_spending);
-        console.log(`Current spending for ${categoryName}:`, response.current_spending);
+        const response = await categoriesAPI.getMonthlySpending(categoryName, year, month);
+        setCurrentSpending(response.total_spending || response.current_spending);
+        console.log(`Current spending for ${categoryName} (${year}/${month}):`, response.total_spending || response.current_spending);
       } catch (error) {
         console.error('Error loading current spending:', error);
       }
     };
 
-    if (categoryName) {
+    if (categoryName && year && month) {
       loadCurrentSpending();
     }
     
@@ -156,7 +156,7 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
     const target = categoryData?.monthly_target || null;
     setMonthlyTarget(target);
     console.log(`Monthly target for ${categoryName}:`, target);
-  }, [categoryName, categoryData]);
+  }, [categoryName, categoryData, year, month]);
 
   const toggleDropdown = () => {
     setShowDropdown(!showDropdown);

@@ -129,7 +129,13 @@ export const categoriesAPI = {
   // Monthly target APIs
   calculateMonthlyTarget: (data) => api.post('/categories/calculate-monthly-target', data),
   updateMonthlyTarget: (data) => api.post('/categories/update-monthly-target', data),
-  getMonthlySpending: (categoryName) => api.get(`/categories/monthly-spending/${encodeURIComponent(categoryName)}`),
+  getMonthlySpending: (categoryName, year = null, month = null) => {
+    const params = {};
+    if (year) params.year = year;
+    if (month) params.month = month;
+    
+    return api.get(`/categories/monthly-spending/${encodeURIComponent(categoryName)}`, { params });
+  },
   getSpendingHistory: (categoryName, months = 12) => api.get(`/categories/spending-history/${encodeURIComponent(categoryName)}`, { params: { months } }),
   
   // Monthly targets refresh APIs
