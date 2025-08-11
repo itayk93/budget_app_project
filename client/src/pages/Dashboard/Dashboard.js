@@ -451,33 +451,37 @@ const Dashboard = () => {
 
   const summary = calculateSummary();
 
-  // Group categories by shared_category
+  // Group categories - handle both old system (CategoryGroupCard) and new system (Shared Categories)
   const groupCategories = (categories) => {
     const grouped = {};
     const standalone = [];
-    const parentCategoryNames = new Set();
 
-    // First, collect all parent category names
     categories.forEach(categoryData => {
-      if (categoryData.shared_category) {
-        parentCategoryNames.add(categoryData.shared_category);
-      }
-    });
-
-    // Now process categories - exclude parent categories that exist as both parent and child
-    categories.forEach(categoryData => {
-      // Skip categories that are parent categories (exist in shared_category of other categories)
-      if (parentCategoryNames.has(categoryData.name)) {
-        console.log(`🚫 Skipping parent category: ${categoryData.name}`);
-        return; // Skip this category
+      // NEW SYSTEM: If category has is_shared_category=true, it should be rendered as standalone with dropdown
+      if (categoryData.is_shared_category) {
+        console.log(`✅ Adding shared category to standalone: ${categoryData.name}`);
+        standalone.push(categoryData);
+        return;
       }
 
+      // OLD SYSTEM: Regular shared_category grouping for categories that don't use the new system
       if (categoryData.shared_category) {
-        if (!grouped[categoryData.shared_category]) {
-          grouped[categoryData.shared_category] = [];
+        // Check if the parent category exists in the current list as a shared category
+        const parentExists = categories.find(c => c.name === categoryData.shared_category && c.is_shared_category);
+        
+        if (parentExists) {
+          // Parent exists as shared category - this subcategory will be handled by the parent
+          console.log(`🔗 Sub-category ${categoryData.name} will be handled by shared parent: ${categoryData.shared_category}`);
+          return; // Skip - will be rendered as part of the shared category
+        } else {
+          // Use old system - group under shared_category
+          if (!grouped[categoryData.shared_category]) {
+            grouped[categoryData.shared_category] = [];
+          }
+          grouped[categoryData.shared_category].push(categoryData);
         }
-        grouped[categoryData.shared_category].push(categoryData);
       } else {
+        // Regular standalone category
         standalone.push(categoryData);
       }
     });
