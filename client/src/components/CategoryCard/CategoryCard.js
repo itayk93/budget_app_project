@@ -906,6 +906,15 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
             ) : categoryData.is_shared_category ? (
               // Shared category view - show sub-categories
               <div className="sub-categories-list margin-top-s">
+                {/* Header row - similar to WeeklyBreakdown */}
+                <div className="sub-categories-header">
+                  <div className="sub-categories-header-row">
+                    <div className="header-category">קטגוריה</div>
+                    <div className="header-amount">סכום</div>
+                    <div className="header-count">עסקאות</div>
+                  </div>
+                </div>
+                
                 {Object.entries(categoryData.sub_categories || {}).map(([subCategoryName, subCategoryData]) => (
                   <div key={subCategoryName} className="sub-category-item">
                     <div 

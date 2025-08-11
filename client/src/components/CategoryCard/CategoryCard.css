@@ -119,22 +119,62 @@ ul li::marker {
   margin-top: 12px;
 }
 
-/* Sub-categories styling */
+/* Sub-categories styling - matching WeeklyBreakdown design */
 .sub-categories-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
+  background: #fff;
+  border-radius: 8px;
+  overflow: visible;
+}
+
+/* Sub-categories header - similar to WeeklyBreakdown */
+.sub-categories-header {
+  padding: 8px 0;
+  font-size: 12px;
+  color: #666;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.sub-categories-header-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 16px;
+  padding: 0 16px;
+}
+
+.header-category {
+  text-align: right;
+  font-weight: 500;
+}
+
+.header-amount {
+  text-align: center;
+  font-weight: 500;
+}
+
+.header-count {
+  text-align: center;
+  font-weight: 500;
 }
 
 .sub-category-item {
-  background: rgba(248, 249, 250, 0.8);
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #f0f0f0;
+  background: transparent;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: none;
   overflow: hidden;
 }
 
+.sub-category-item:last-child {
+  border-bottom: none;
+}
+
 .sub-category-header {
-  padding: 12px 16px;
+  padding: 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -144,34 +184,43 @@ ul li::marker {
 }
 
 .sub-category-header:hover {
-  background: rgba(33, 150, 243, 0.05);
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  margin: -8px;
+  padding: 24px;
 }
 
 .sub-category-info {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
   gap: 16px;
+  align-items: center;
   flex: 1;
+  width: 100%;
 }
 
 .sub-category-name {
-  font-weight: 600;
-  color: #2c3e50;
+  font-weight: 500;
+  color: #333;
   font-size: 14px;
+  display: flex;
+  flex-direction: column;
 }
 
 .sub-category-amount {
-  font-weight: 700;
-  color: #e74c3c;
+  text-align: center;
+  font-weight: 600;
+  color: #333;
   font-size: 14px;
 }
 
 .sub-category-count {
-  font-size: 12px;
-  color: #7f8c8d;
-  background: rgba(0, 0, 0, 0.05);
-  padding: 4px 8px;
-  border-radius: 12px;
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+  background: none;
+  padding: 0;
+  border-radius: 0;
 }
 
 .sub-category-transactions {
@@ -909,6 +958,34 @@ ul li::marker {
   /* Mobile adjustment for sub-category arrows */
   .sub-category-header .expand-arrow {
     margin-right: 4px;
+  }
+  
+  /* Mobile responsive sub-categories - match WeeklyBreakdown */
+  .sub-categories-header-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    text-align: center;
+    display: none; /* Hide column headers on mobile for cleaner look */
+  }
+  
+  .sub-category-info {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    text-align: center;
+  }
+  
+  .sub-category-name {
+    order: 1;
+  }
+  
+  .sub-category-amount {
+    order: 2;
+    text-align: center;
+  }
+  
+  .sub-category-count {
+    order: 3;
+    text-align: center;
   }
 }
 
