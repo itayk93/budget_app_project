@@ -511,7 +511,7 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
       className={`category-card category-${isIncome ? 'income' : 'expense'} ${isModalOpen ? 'modal-open' : ''}`}
       data-category-name={categoryName}
       data-category-spent={categoryData.spent}
-      data-is-shared={categoryData.is_shared_category || false}
+      data-is-shared={categoryData.is_shared_category ? "true" : "false"}
       onClick={(e) => {
         // Only expand if clicking on safe areas - not on interactive elements
         const target = e.target;

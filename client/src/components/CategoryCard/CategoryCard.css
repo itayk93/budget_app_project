@@ -624,15 +624,15 @@ ul li::marker {
   left: 16px;
 }
 
-/* Hide main expand arrow for shared categories - they have their own sub-category arrows */
+/* Hide main expand arrow ONLY for shared categories - they have their own sub-category arrows */
 .category-card[data-is-shared="true"] .expandable-header .expand-arrow {
   display: none !important;
 }
 
-/* Alternative selector if data attribute doesn't work */
-.expandable-content .sub-categories-list ~ * .expand-arrow,
-.sub-categories-list + * .expand-arrow {
-  display: none !important;
+/* Make sure regular category arrows are always visible */
+.category-card[data-is-shared="false"] .expandable-header .expand-arrow,
+.category-card:not([data-is-shared]) .expandable-header .expand-arrow {
+  display: block !important;
 }
 
 /* Sub-category arrows - positioned more to the right */
