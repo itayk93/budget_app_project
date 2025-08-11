@@ -140,6 +140,7 @@ ul li::marker {
   align-items: center;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  position: relative;
 }
 
 .sub-category-header:hover {
@@ -574,6 +575,14 @@ ul li::marker {
   left: 16px;
 }
 
+/* Sub-category arrows - positioned more to the right */
+.sub-category-header .expand-arrow {
+  position: relative;
+  left: auto;
+  right: auto;
+  margin-right: 8px;
+}
+
 .expandable-section.expanded .expand-arrow {
   transform: rotate(180deg);
 }
@@ -895,6 +904,11 @@ ul li::marker {
   
   .transaction-count-badge {
     margin-left: 12px;
+  }
+  
+  /* Mobile adjustment for sub-category arrows */
+  .sub-category-header .expand-arrow {
+    margin-right: 4px;
   }
 }
 
