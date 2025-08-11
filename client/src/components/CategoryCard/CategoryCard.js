@@ -904,8 +904,8 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                 onDeleteTransaction={confirmDeleteTransaction}
                 onShowTransactionActions={showTransactionActions}
               />
-            ) : categoryData.is_shared_category ? (
-              // Shared category view - show sub-categories
+            ) : categoryData.is_shared_category && isExpanded ? (
+              // Shared category view - show sub-categories ONLY when expanded
               <div className="sub-categories-list margin-top-s">
                 {/* Header row - similar to WeeklyBreakdown */}
                 <div className="sub-categories-header">

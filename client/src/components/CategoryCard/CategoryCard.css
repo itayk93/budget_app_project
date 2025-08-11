@@ -624,15 +624,24 @@ ul li::marker {
   left: 16px;
 }
 
-/* Hide main expand arrow ONLY for shared categories - they have their own sub-category arrows */
-.category-card[data-is-shared="true"] .expandable-header .expand-arrow {
+/* Hide main expand arrow ONLY for shared categories - target the specific expandable-section that has data-category attribute */
+.category-card[data-is-shared="true"] .expandable-section[data-category] > .expandable-header > .expand-arrow {
   display: none !important;
+  visibility: hidden !important;
 }
 
-/* Make sure regular category arrows are always visible */
-.category-card[data-is-shared="false"] .expandable-header .expand-arrow,
-.category-card:not([data-is-shared]) .expandable-header .expand-arrow {
+/* Show arrows only when expandable section is collapsed (not expanded) for regular categories */
+.category-card[data-is-shared="false"] .expandable-section[data-category]:not(.expanded) > .expandable-header > .expand-arrow,
+.category-card:not([data-is-shared]) .expandable-section[data-category]:not(.expanded) > .expandable-header > .expand-arrow {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Show arrows only when expandable section is expanded for regular categories */
+.category-card[data-is-shared="false"] .expandable-section[data-category].expanded > .expandable-header > .expand-arrow,
+.category-card:not([data-is-shared]) .expandable-section[data-category].expanded > .expandable-header > .expand-arrow {
   display: block !important;
+  visibility: visible !important;
 }
 
 /* Sub-category arrows - positioned more to the right */
