@@ -633,15 +633,27 @@ ul li::marker {
 /* Show arrows only when expandable section is collapsed (not expanded) for regular categories */
 .category-card[data-is-shared="false"] .expandable-section[data-category]:not(.expanded) > .expandable-header > .expand-arrow,
 .category-card:not([data-is-shared]) .expandable-section[data-category]:not(.expanded) > .expandable-header > .expand-arrow {
+  display: block !important;
+  visibility: visible !important;
+}
+
+/* Hide arrows when expandable section is expanded for regular categories */
+.category-card[data-is-shared="false"] .expandable-section[data-category].expanded > .expandable-header > .expand-arrow,
+.category-card:not([data-is-shared]) .expandable-section[data-category].expanded > .expandable-header > .expand-arrow {
   display: none !important;
   visibility: hidden !important;
 }
 
-/* Show arrows only when expandable section is expanded for regular categories */
-.category-card[data-is-shared="false"] .expandable-section[data-category].expanded > .expandable-header > .expand-arrow,
-.category-card:not([data-is-shared]) .expandable-section[data-category].expanded > .expandable-header > .expand-arrow {
-  display: block !important;
-  visibility: visible !important;
+/* Hide ALL weekly breakdown arrows when category section is collapsed */
+.category-card .expandable-section:not(.expanded) .weekly-breakdown .expand-arrow,
+.category-card .expandable-section:not(.expanded) .weekly-breakdown .week-controls .expand-arrow {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Hide weekly breakdown content when category is collapsed */
+.category-card .expandable-section:not(.expanded) .weekly-breakdown .weekly-breakdown-content {
+  display: none !important;
 }
 
 /* Sub-category arrows - positioned more to the right */
