@@ -140,18 +140,21 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
   useEffect(() => {
     const loadCurrentSpending = async () => {
       try {
-        console.log(`🔄 LOADING SPENDING: "${categoryName}" for ${year}/${month}`);
+        // ALWAYS load individual spending for each category card
+        console.log(`🔄 LOADING INDIVIDUAL SPENDING: "${categoryName}" for ${year}/${month}`);
         const response = await categoriesAPI.getMonthlySpending(categoryName, year, month);
-        const spending = response.total_spending || response.current_spending;
+        const spending = response.total_spending || response.current_spending || 0;
         setCurrentSpending(spending);
-        console.log(`💸 API RESPONSE for "${categoryName}":`, {
+        console.log(`💸 INDIVIDUAL SPENDING API RESPONSE for "${categoryName}":`, {
           total_spending: response.total_spending,
           current_spending: response.current_spending,
           transaction_count: response.transaction_count,
-          final_spending: spending
+          final_spending: spending,
+          success: response.success
         });
       } catch (error) {
         console.error(`❌ ERROR loading spending for "${categoryName}":`, error);
+        setCurrentSpending(0);
       }
     };
 
@@ -242,16 +245,26 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                    categoryName.includes('הכנסות') ||
                    categoryData?.shared_category === 'הכנסות';
   
-  // DEBUG: Log detailed category info
-  console.log(`🔍 CATEGORY ANALYSIS: "${categoryName}"`);
-  console.log(`   📊 Type: ${categoryType}, IsIncome: ${isIncome}`);
-  console.log(`   🤝 Shared Category: ${categoryData?.shared_category || 'null'}`);
-  console.log(`   💰 Amount/Spent: ${categoryData?.amount || categoryData?.spent || 0}`);
-  console.log(`   🎯 Monthly Target: ${categoryData?.monthly_target || 'none'}`);
-  console.log(`   📈 Current Spending: ${currentSpending || 'not loaded yet'}`);
+  // DEBUG: Log shared categories
+  if (categoryData?.is_shared_category) {
+    console.log(`🔍 CLIENT DEBUG - SHARED CATEGORY: "${categoryName}"`);
+    console.log(`   📂 Has Sub Categories: ${categoryData?.sub_categories ? Object.keys(categoryData.sub_categories).length : 0}`);
+    console.log(`   💰 Total Amount: ${categoryData?.amount || categoryData?.spent || 0} ₪`);
+    
+    if (categoryData?.sub_categories) {
+      console.log(`   📋 Sub Categories:`, Object.keys(categoryData.sub_categories));
+      Object.entries(categoryData.sub_categories).forEach(([subName, subData]) => {
+        console.log(`      └─ ${subName}: ${subData.amount || 0} ₪ (${subData.count || 0} transactions)`);
+      });
+    }
+  }
   
-  if (categoryData?.shared_category) {
-    console.log(`   ⚠️  SHARED CATEGORY DETECTED: This should get spending from API for "${categoryName}", NOT "${categoryData.shared_category}"`);
+  // DEBUG: Log specific problematic categories if they're NOT showing as shared
+  const expectedSharedCategories = ['לא בתזרים', 'הוצאות קבועות', 'הכנסות', 'הפקדות לחיסכון'];
+  if (expectedSharedCategories.includes(categoryName) && !categoryData?.is_shared_category) {
+    console.log(`❌ PROBLEM: "${categoryName}" should be shared but showing as regular:`);
+    console.log(`   ✨ Is Shared Category: ${categoryData?.is_shared_category || 'false'}`);
+    console.log(`   📂 Has Sub Categories: ${categoryData?.sub_categories ? Object.keys(categoryData.sub_categories).length : 0}`);
   }
   
   // Handler functions

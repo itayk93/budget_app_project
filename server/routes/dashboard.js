@@ -109,17 +109,21 @@ router.get('/', authenticateToken, async (req, res) => {
       );
     }
 
-    // Get dashboard data
-    const dashboardResult = await SupabaseService.getDashboardData(userId, {
+    // Get dashboard data - use AdditionalMethods for proper shared categories
+    const AdditionalMethods = require('../services/supabase-modules/AdditionalMethods');
+    const dashboardResult = await AdditionalMethods.getDashboardData(userId, {
       flowMonth: flow_month,
       cashFlowId: cash_flow,
       allTime: allTime,
       year: finalYear,
       month: finalMonth
     });
+    
+    // Extract data from result wrapper
+    const actualData = dashboardResult.success ? dashboardResult.data : dashboardResult;
 
-    // dashboardResult is already unwrapped by BackwardCompatibilityWrapper
-    if (!dashboardResult) {
+    // Check result
+    if (!actualData) {
       return res.status(500).json({ 
         error: 'Failed to fetch dashboard data',
         details: 'No data returned' 
@@ -132,10 +136,16 @@ router.get('/', authenticateToken, async (req, res) => {
     // Keep categories as ordered array (maintains display_order from database)
     const categories = {};
     const orderedCategories = [];
-    if (dashboardResult.category_breakdown && Array.isArray(dashboardResult.category_breakdown)) {
-      console.log('📋 Dashboard categories before processing:', dashboardResult.category_breakdown.map(c => ({ name: c.name, display_order: c.display_order, shared_category: c.shared_category })));
+    if (actualData.category_breakdown && Array.isArray(actualData.category_breakdown)) {
+      console.log('📋 Dashboard categories before processing (with shared categories):', actualData.category_breakdown.map(c => ({ 
+        name: c.name, 
+        display_order: c.display_order, 
+        shared_category: c.shared_category,
+        is_shared_category: c.is_shared_category,
+        sub_categories: c.sub_categories ? Object.keys(c.sub_categories).length : 0
+      })));
       
-      dashboardResult.category_breakdown.forEach(category => {
+      actualData.category_breakdown.forEach(category => {
         const categoryData = {
           name: category.name,
           spent: category.type === 'income' ? category.amount : -category.amount,
@@ -148,7 +158,10 @@ router.get('/', authenticateToken, async (req, res) => {
           shared_category: category.shared_category || null, // Add shared_category from DB
           weekly_display: category.weekly_display || false,
           monthly_target: category.monthly_target || null,
-          use_shared_target: category.use_shared_target || false
+          use_shared_target: category.use_shared_target || false,
+          // CRITICAL: Add the shared category data that was missing
+          is_shared_category: category.is_shared_category || false,
+          sub_categories: category.sub_categories || null
         };
         
         // Keep both object format (for backward compatibility) and array format (for proper ordering)
@@ -156,12 +169,18 @@ router.get('/', authenticateToken, async (req, res) => {
         orderedCategories.push(categoryData);
       });
       
-      console.log('✅ Final ordered categories:', orderedCategories.map(c => ({ name: c.name, display_order: c.display_order, shared_category: c.shared_category })));
+      console.log('✅ Final ordered categories (with shared category data):', orderedCategories.map(c => ({ 
+        name: c.name, 
+        display_order: c.display_order, 
+        shared_category: c.shared_category,
+        is_shared_category: c.is_shared_category,
+        sub_categories: c.sub_categories ? Object.keys(c.sub_categories).length : 0
+      })));
     }
     
     // Prepare response data
     const responseData = {
-      ...dashboardResult,
+      ...actualData,
       categories, // Add categories object for frontend compatibility
       orderedCategories, // Add ordered array that maintains display_order
       cash_flows: cashFlows,
@@ -172,7 +191,7 @@ router.get('/', authenticateToken, async (req, res) => {
       all_time: allTime,
       hebrew_month_name: finalMonth ? getHebrewMonthName(finalMonth) : null,
       monthly_savings: 0, // Default value
-      transaction_count: dashboardResult.transaction_count || 0
+      transaction_count: actualData.transaction_count || 0
     };
 
     // Return JSON for API requests

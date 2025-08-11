@@ -145,7 +145,13 @@ export const categoriesAPI = {
   // Shared category targets APIs
   getSharedTarget: (sharedCategoryName) => api.get(`/categories/shared-target/${encodeURIComponent(sharedCategoryName)}`),
   updateSharedTarget: (data) => api.post('/categories/update-shared-target', data),
-  getSharedSpending: (sharedCategoryName) => api.get(`/categories/shared-spending/${encodeURIComponent(sharedCategoryName)}`),
+  getSharedSpending: (sharedCategoryName, year = null, month = null) => {
+    const params = {};
+    if (year) params.year = year;
+    if (month) params.month = month;
+    
+    return api.get(`/categories/shared-spending/${encodeURIComponent(sharedCategoryName)}`, { params });
+  },
   setUseSharedTarget: (data) => api.post('/categories/set-use-shared-target', data),
   calculateSharedTargets: (data) => api.post('/categories/calculate-shared-targets', data),
   

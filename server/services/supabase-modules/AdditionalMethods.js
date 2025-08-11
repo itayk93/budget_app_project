@@ -192,9 +192,17 @@ class AdditionalMethods {
           return aOrder - bOrder;
         });
 
-      // Debug: log the sorting results
-      console.log('🔍 Categories before sorting:', Object.values(processedCategories).map(c => ({ name: c.name, display_order: c.display_order })));
-      console.log('✅ Categories after sorting:', sortedCategories.map(c => ({ name: c.name, display_order: c.display_order })));
+      // Debug: log all shared categories
+      const sharedCategories = Object.values(processedCategories).filter(c => c.is_shared_category);
+      if (sharedCategories.length > 0) {
+        console.log(`🔍 SERVER DEBUG: Found ${sharedCategories.length} shared categories:`);
+        sharedCategories.forEach(category => {
+          console.log(`   📁 "${category.name}": ${category.sub_categories ? Object.keys(category.sub_categories).length : 0} sub-categories`);
+          if (category.sub_categories) {
+            console.log(`      └─ Sub Categories:`, Object.keys(category.sub_categories));
+          }
+        });
+      }
 
       return SharedUtilities.createSuccessResponse({
         summary: {

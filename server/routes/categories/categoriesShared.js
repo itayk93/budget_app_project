@@ -73,10 +73,11 @@ router.post('/update-shared-target', authenticateToken, async (req, res) => {
 router.get('/shared-spending/:sharedCategoryName', authenticateToken, async (req, res) => {
   try {
     const { sharedCategoryName } = req.params;
+    const { year: queryYear, month: queryMonth } = req.query;
     
     const currentDate = new Date();
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth() + 1;
+    const year = queryYear ? parseInt(queryYear) : currentDate.getFullYear();
+    const month = queryMonth ? parseInt(queryMonth) : currentDate.getMonth() + 1;
 
     // Get all categories that belong to this shared category
     const { data: categories, error: categoryError } = await supabase

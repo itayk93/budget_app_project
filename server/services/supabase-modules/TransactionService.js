@@ -217,32 +217,20 @@ class TransactionService {
         query = query.eq('category_id', filters.category_id);
       }
       
-      // Filter by category name - lookup category_id first then filter
+      // Filter by category name - handle both category_id lookup and direct category_name field
       if (filters.category_name) {
         try {
-          // First, find the category ID by name
-          const { data: categoryData, error: categoryError } = await supabase
-            .from('categories')
-            .select('id')
-            .eq('name', filters.category_name)
-            .eq('user_id', userId)
-            .single();
-            
-          if (categoryError || !categoryData) {
-            console.warn(`Category with name "${filters.category_name}" not found`);
-            return SharedUtilities.createSuccessResponse({
-              data: [],
-              total_count: 0,
-              transactions: [],
-              totalCount: 0
-            });
-          }
+          // Try both approaches: 
+          // 1. Look for transactions with matching category_name field directly
+          // 2. Look for transactions linked via categories table
           
-          // Filter by the found category_id
-          query = query.eq('category_id', categoryData.id);
+          // First attempt: filter by direct category_name field
+          query = query.or(`category_name.eq.${filters.category_name},categories.name.eq.${filters.category_name}`);
+          
+          console.log(`Filtering transactions by category_name: "${filters.category_name}"`);
         } catch (error) {
-          console.error('Error looking up category by name:', error);
-          return SharedUtilities.handleSupabaseError(error, 'lookup category by name');
+          console.error('Error filtering by category name:', error);
+          return SharedUtilities.handleSupabaseError(error, 'filter by category name');
         }
       }
       
