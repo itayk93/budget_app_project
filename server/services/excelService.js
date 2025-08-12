@@ -79,21 +79,28 @@ class ExcelService {
   static detectFileFormat(headers) {
     const headerString = headers.join('|').toLowerCase();
     
+    console.log('🔍 [DETECT] File headers:', headers);
+    console.log('🔍 [DETECT] Header string for detection:', headerString);
+    
     // Bank Yahav detection - check for specific Hebrew headers
     if (headerString.includes('תאריך') && headerString.includes('אסמכתא') && 
         (headerString.includes('תיאור פעולה') || headerString.includes('שם הפעולה'))) {
+      console.log('✅ [DETECT] Detected as: bank_yahav');
       return 'bank_yahav';
     }
     
-    // Israeli bank detection patterns
-    if (headerString.includes('עסקה') && headerString.includes('סכום') && headerString.includes('תאריך עסקה')) {
-      return 'isracard';
-    }
-
     // Max credit card detection - includes both תאריך עסקה and תאריך חיוב columns
+    // Check this BEFORE isracard because Max files also contain עסקה and סכום
     if (headerString.includes('תאריך עסקה') && headerString.includes('תאריך חיוב') && 
         headerString.includes('שם בית העסק') && headerString.includes('סוג עסקה')) {
+      console.log('✅ [DETECT] Detected as: max_credit');
       return 'max_credit';
+    }
+
+    // Israeli bank detection patterns
+    if (headerString.includes('עסקה') && headerString.includes('סכום') && headerString.includes('תאריך עסקה')) {
+      console.log('✅ [DETECT] Detected as: isracard');
+      return 'isracard';
     }
     
     if (headerString.includes('תאריך') && headerString.includes('תיאור') && headerString.includes('זכות')) {
@@ -114,6 +121,7 @@ class ExcelService {
       return 'budgetlens';
     }
     
+    console.log('✅ [DETECT] Detected as: generic (fallback)');
     return 'generic';
   }
   
