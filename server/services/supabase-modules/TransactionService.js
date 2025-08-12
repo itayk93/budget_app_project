@@ -689,16 +689,38 @@ class TransactionService {
       // Extract and prepare the new transaction data, excluding system fields
       const { tempId, originalIndex, isDuplicate, duplicateInfo, ...cleanData } = newTransactionData;
       
-      // Extract recipient name if it's a PAYBOX transaction
-      const { recipientName, cleanedNotes } = this.extractRecipientName(
-        cleanData.business_name, 
-        cleanData.notes
-      );
+      // For replace operations, only extract recipient if new data actually has notes
+      // Don't preserve old recipient data if the new file doesn't contain recipient info
+      let finalRecipientName = null;
+      let finalNotes = cleanData.notes;
+      
+      if (cleanData.business_name && cleanData.business_name.includes('PAYBOX') && cleanData.notes) {
+        // Only extract recipient if new transaction actually has notes
+        const { recipientName, cleanedNotes } = this.extractRecipientName(
+          cleanData.business_name, 
+          cleanData.notes
+        );
+        finalRecipientName = recipientName;
+        finalNotes = cleanedNotes !== null ? cleanedNotes : cleanData.notes;
+        
+        if (recipientName) {
+          console.log(`🎯 [REPLACE] Extracted recipient "${recipientName}" from new transaction notes`);
+        }
+      } else if (cleanData.business_name && cleanData.business_name.includes('PAYBOX')) {
+        // PAYBOX transaction with no notes - clear recipient data
+        console.log(`🧹 [REPLACE] PAYBOX transaction with no notes - clearing recipient data`);
+        finalRecipientName = null;
+        finalNotes = cleanData.notes;
+      } else {
+        // Non-PAYBOX transaction - preserve as-is
+        finalRecipientName = cleanData.recipient_name;
+        finalNotes = cleanData.notes;
+      }
 
       const updateData = {
         ...cleanData,
-        recipient_name: recipientName || cleanData.recipient_name,
-        notes: cleanedNotes !== null ? cleanedNotes : cleanData.notes,
+        recipient_name: finalRecipientName,
+        notes: finalNotes,
         updated_at: new Date().toISOString()
       };
 

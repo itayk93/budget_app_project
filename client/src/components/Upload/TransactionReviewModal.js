@@ -88,10 +88,21 @@ const TransactionReviewModal = ({
         let currentRecipientName = tx.recipient_name;
         
         // If this is a duplicate transaction, check if we have original file notes
-        if (tx.isDuplicate && tx.duplicateInfo && tx.duplicateInfo.original_notes) {
+        if (tx.isDuplicate && tx.duplicateInfo && tx.duplicateInfo.original_notes !== undefined) {
           // Use original notes from the file, not the existing database notes
           notesToProcess = tx.duplicateInfo.original_notes;
           console.log(`🔄 [DUPLICATE FIX] Using original notes for duplicate: "${notesToProcess}" instead of: "${tx.notes}"`);
+          
+          // If original file notes are null/empty, don't extract recipient
+          if (!notesToProcess) {
+            console.log(`⚠️ [DUPLICATE FIX] Original file has no notes - skipping recipient extraction`);
+            // Clear any existing recipient_name since the new file doesn't have recipient info
+            return {
+              ...tx,
+              recipient_name: null,
+              notes: notesToProcess // Use original file notes (null/empty)
+            };
+          }
         }
         
         if (tx.business_name && tx.business_name.includes('PAYBOX') && notesToProcess) {
