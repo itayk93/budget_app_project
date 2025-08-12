@@ -23,7 +23,6 @@ const TransactionReviewModal = ({
   // Duplicate handling state
   const [duplicateTransactionIds, setDuplicateTransactionIds] = useState(new Set());
   const [skipDuplicates, setSkipDuplicates] = useState(false); // Default to show duplicates in yellow for review
-  const [showDeleteDuplicatesButton, setShowDeleteDuplicatesButton] = useState(false);
 
   // Fetch categories for dropdown - using regular categories API for now
   const { data: categoriesData = [], isLoading: categoriesLoading, error: categoriesError } = useQuery(
@@ -95,10 +94,7 @@ const TransactionReviewModal = ({
       
       console.log('🔍 [MODAL DEBUG] Found duplicates:', duplicateIds.size);
       
-      // Initialize the delete button state - show only if skipping duplicates and there are duplicates
-      if (duplicateIds.size > 0 && skipDuplicates) {
-        setShowDeleteDuplicatesButton(true);
-      }
+      // Duplicates are now handled directly with delete button
 
       // Auto-suggest categories for business names
       autoSuggestCategories(processedTransactions);
@@ -234,10 +230,7 @@ const TransactionReviewModal = ({
             const remainingDuplicateCount = currentTransactions.filter(tx => tx.isDuplicate).length;
             
             if (remainingDuplicateCount === 0) {
-              setShowDeleteDuplicatesButton(false);
               setSkipDuplicates(false);
-            } else if (skipDuplicates) {
-              setShowDeleteDuplicatesButton(true);
             }
             
             return currentTransactions;
@@ -266,9 +259,8 @@ const TransactionReviewModal = ({
     
     setIsSubmitting(true);
     try {
-      // Prepare final transactions (excluding deleted ones and skipped duplicates)
+      // Prepare final transactions (excluding deleted ones)
       const finalTransactions = editedTransactions
-        .filter(tx => !shouldSkipTransaction(tx))
         .map(tx => {
           const { tempId, originalIndex, isDuplicate, duplicateInfo, ...cleanTx } = tx;
           return cleanTx;
@@ -286,27 +278,9 @@ const TransactionReviewModal = ({
     }
   };
 
-  // Helper function to determine if transaction should be skipped
-  const shouldSkipTransaction = (tx) => {
-    // Skip if duplicate and skipDuplicates is enabled
-    return tx.isDuplicate && skipDuplicates;
-  };
 
   // Bulk duplicate handling functions
-  const handleToggleAllDuplicates = () => {
-    const newSkipValue = !skipDuplicates;
-    setSkipDuplicates(newSkipValue);
-    
-    // Show delete button when skipping duplicates
-    if (newSkipValue && duplicateTransactionIds.size > 0) {
-      setShowDeleteDuplicatesButton(true);
-    } else {
-      setShowDeleteDuplicatesButton(false);
-    }
-  };
-
-  // Delete all duplicate transactions
-  const handleDeleteAllDuplicates = () => {
+  const handleDeleteAllDuplicatesDirectly = () => {
     const duplicateOriginalIndices = new Set();
     editedTransactions.forEach(tx => {
       if (tx.isDuplicate) {
@@ -318,9 +292,8 @@ const TransactionReviewModal = ({
     setDeletedTransactionIds(prev => new Set([...prev, ...duplicateOriginalIndices]));
     setEditedTransactions(prev => prev.filter(tx => !tx.isDuplicate));
     setDuplicateTransactionIds(new Set());
-    setShowDeleteDuplicatesButton(false);
-    setSkipDuplicates(false);
   };
+
 
   const formatAmount = (amount) => {
     return new Intl.NumberFormat('he-IL', {
@@ -353,17 +326,16 @@ const TransactionReviewModal = ({
               {duplicateTransactionIds.size > 0 && (
                 <>
                   <button 
-                    className={`toggle-button compact duplicate-toggle ${skipDuplicates ? 'active warning' : ''}`}
-                    onClick={handleToggleAllDuplicates}
+                    className="action-button compact delete-duplicates"
+                    onClick={handleDeleteAllDuplicatesDirectly}
                   >
                     <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                     </svg>
-                    דלג על כל הכפילויות ({duplicateTransactionIds.size})
+                    מחק כפילויות ({duplicateTransactionIds.size})
                   </button>
-                  
-                  {showDeleteDuplicatesButton && (
-                    <button 
+ 
                       className="action-button compact delete-duplicates"
                       onClick={handleDeleteAllDuplicates}
                       title="מחק את כל הכפילויות לצמיתות"
@@ -406,7 +378,7 @@ const TransactionReviewModal = ({
                 <div className="summary-item">
                   <span className="label">יועלו:</span>
                   <span className="value active">
-                    {editedTransactions.filter(tx => !shouldSkipTransaction(tx)).length}
+                    {editedTransactions.length}
                   </span>
                 </div>
               </div>
@@ -427,8 +399,7 @@ const TransactionReviewModal = ({
                   <tbody>
                     {editedTransactions.map((transaction) => {
                       const isDuplicate = transaction.isDuplicate;
-                      const willBeSkipped = shouldSkipTransaction(transaction);
-                      const rowClass = `transaction-row ${isDuplicate ? 'duplicate-row' : ''} ${willBeSkipped ? 'skipped' : ''}`;
+                      const rowClass = `transaction-row ${isDuplicate ? 'duplicate-row' : ''}`;
                       
                       return (
                       <tr key={transaction.tempId} className={rowClass}>
@@ -458,8 +429,8 @@ const TransactionReviewModal = ({
                               placeholder="שם העסק"
                             />
                             {isDuplicate && (
-                              <span className={`duplicate-badge ${willBeSkipped ? 'skipped' : ''}`}>
-                                {willBeSkipped ? 'ידלג' : 'כפול'}
+                              <span className="duplicate-badge">
+                                כפול
                               </span>
                             )}
                           </div>
@@ -522,8 +493,7 @@ const TransactionReviewModal = ({
                 <div className="transactions-mobile">
                   {editedTransactions.map((transaction) => {
                     const isDuplicate = transaction.isDuplicate;
-                    const willBeSkipped = shouldSkipTransaction(transaction);
-                    const cardClass = `transaction-card ${isDuplicate ? 'duplicate-card' : ''} ${willBeSkipped ? 'skipped' : ''}`;
+                    const cardClass = `transaction-card ${isDuplicate ? 'duplicate-card' : ''}`;
                     
                     return (
                     <div key={transaction.tempId} className={cardClass}>
@@ -531,8 +501,8 @@ const TransactionReviewModal = ({
                         <div className="card-title">
                           {transaction.business_name || 'שם העסק'}
                           {isDuplicate && (
-                            <span className={`duplicate-badge mobile ${willBeSkipped ? 'skipped' : ''}`}>
-                              {willBeSkipped ? 'ידלג' : 'כפול'}
+                            <span className="duplicate-badge mobile">
+                              כפול
                             </span>
                           )}
                         </div>
@@ -645,7 +615,7 @@ const TransactionReviewModal = ({
                 מעלה עסקאות...
               </>
             ) : (
-`אשר והעלה ${editedTransactions.filter(tx => !shouldSkipTransaction(tx)).length} עסקאות`
+`אשר והעלה ${editedTransactions.length} עסקאות`
             )}
           </button>
         </div>
