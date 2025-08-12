@@ -83,21 +83,32 @@ const TransactionReviewModal = ({
       
       // Extract recipient names from PAYBOX transactions before setting state
       const transactionsWithRecipients = processedTransactions.map(tx => {
-        if (tx.business_name && tx.business_name.includes('PAYBOX') && tx.notes) {
+        // For duplicate transactions, prioritize original file data over existing database data
+        let notesToProcess = tx.notes;
+        let currentRecipientName = tx.recipient_name;
+        
+        // If this is a duplicate transaction, check if we have original file notes
+        if (tx.isDuplicate && tx.duplicateInfo && tx.duplicateInfo.original_notes) {
+          // Use original notes from the file, not the existing database notes
+          notesToProcess = tx.duplicateInfo.original_notes;
+          console.log(`🔄 [DUPLICATE FIX] Using original notes for duplicate: "${notesToProcess}" instead of: "${tx.notes}"`);
+        }
+        
+        if (tx.business_name && tx.business_name.includes('PAYBOX') && notesToProcess) {
           // Try multiple patterns for recipient extraction
           let recipientMatch = null;
           let pattern = null;
           let recipientName = null;
           
           // Pattern 1: "למי: [name]"
-          recipientMatch = tx.notes.match(/למי:\s*(.+?)(?:\s+(?:some|additional|notes|info|details|comment|remark)|$)/);
+          recipientMatch = notesToProcess.match(/למי:\s*(.+?)(?:\s+(?:some|additional|notes|info|details|comment|remark)|$)/);
           if (recipientMatch) {
             recipientName = recipientMatch[1].trim();
             pattern = new RegExp(`למי:\\s*${recipientName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s+|$)`, 'g');
             console.log(`🎯 [FRONTEND EXTRACTION] Found recipient with "למי:" pattern: "${recipientName}"`);
           } else {
             // Pattern 2: "שובר ל-[name]" or "שוברים ל-[name]" or "שוברים לקניה ב-[name]"
-            recipientMatch = tx.notes.match(/שוברי?ם?\s+ל(?:קניה\s+ב)?-(.+?)(?:\s+|$)/);
+            recipientMatch = notesToProcess.match(/שוברי?ם?\s+ל(?:קניה\s+ב)?-(.+?)(?:\s+|$)/);
             if (recipientMatch) {
               recipientName = recipientMatch[1].trim();
               pattern = new RegExp(`שוברי?ם?\\s+ל(?:קניה\\s+ב)?-${recipientName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s+|$)`, 'g');
@@ -107,7 +118,7 @@ const TransactionReviewModal = ({
           
           if (recipientName) {
             // Clean the notes by removing the recipient pattern
-            const cleanedNotes = tx.notes.replace(pattern, '').trim();
+            const cleanedNotes = notesToProcess.replace(pattern, '').trim();
             
             return {
               ...tx,

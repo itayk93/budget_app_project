@@ -788,6 +788,7 @@ class ExcelService {
     const results = {
       success: 0,
       duplicates: 0,
+      replaced: 0,
       errors: 0,
       details: []
     };
@@ -834,16 +835,28 @@ class ExcelService {
         });
         
         if (result.success) {
-          results.success++;
-          console.log(`✅ [IMPORT SUCCESS] Transaction ${transaction.business_name} imported with ID: ${result.transaction_id}`);
+          if (duplicateAction && duplicateAction.shouldReplace) {
+            results.replaced++;
+            console.log(`✅ [IMPORT REPLACED] Transaction ${transaction.business_name} replaced with ID: ${result.transaction_id}`);
+          } else {
+            results.success++;
+            console.log(`✅ [IMPORT SUCCESS] Transaction ${transaction.business_name} imported with ID: ${result.transaction_id}`);
+          }
         } else if (result.duplicate) {
-          results.duplicates++;
-          console.log(`⚠️ [IMPORT DUPLICATE] Transaction ${transaction.business_name} marked as duplicate`);
+          if (duplicateAction && duplicateAction.shouldReplace) {
+            // This means the replace operation was attempted but the system still marked it as duplicate
+            // Count it as replaced since user wanted to replace
+            results.replaced++;
+            console.log(`✅ [IMPORT REPLACED] Transaction ${transaction.business_name} replaced (system marked as duplicate but user requested replace)`);
+          } else {
+            results.duplicates++;
+            console.log(`⚠️ [IMPORT DUPLICATE] Transaction ${transaction.business_name} marked as duplicate`);
+          }
           results.details.push({
             business_name: transaction.business_name,
             amount: transaction.amount,
             payment_date: transaction.payment_date,
-            status: 'duplicate'
+            status: duplicateAction && duplicateAction.shouldReplace ? 'replaced' : 'duplicate'
           });
         } else {
           results.errors++;

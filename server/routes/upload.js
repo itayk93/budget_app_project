@@ -702,6 +702,7 @@ router.post('/finalize', authenticateToken, async (req, res) => {
         processedTransactions: transactions.length,
         imported: importResult.success,
         duplicates: importResult.duplicates,
+        replaced: importResult.replaced || 0,
         errors: importResult.errors
       }
     });
@@ -883,15 +884,26 @@ async function processUploadAsync(uploadId) {
       const duplicateHashes = new Set(result.duplicates.map(dup => dup.transaction_hash));
       
       // Mark which transactions are duplicates
-      const transactionsWithDuplicateInfo = allTransactions.map((transaction, index) => ({
-        ...transaction,
-        tempId: `temp_${index}`,
-        originalIndex: index,
-        isDuplicate: duplicateHashes.has(transaction.transaction_hash),
-        duplicateInfo: duplicateHashes.has(transaction.transaction_hash) 
-          ? result.duplicates.find(dup => dup.transaction_hash === transaction.transaction_hash)
-          : null
-      }));
+      const transactionsWithDuplicateInfo = allTransactions.map((transaction, index) => {
+        const isDup = duplicateHashes.has(transaction.transaction_hash);
+        const existingDuplicate = isDup ? result.duplicates.find(dup => dup.transaction_hash === transaction.transaction_hash) : null;
+        
+        return {
+          ...transaction,
+          tempId: `temp_${index}`,
+          originalIndex: index,
+          isDuplicate: isDup,
+          duplicateInfo: isDup ? {
+            ...existingDuplicate,
+            // Preserve original file data for comparison and potential replacement
+            original_notes: transaction.notes,
+            original_recipient_name: transaction.recipient_name,
+            original_business_name: transaction.business_name,
+            original_amount: transaction.amount,
+            original_payment_date: transaction.payment_date
+          } : null
+        };
+      });
       
       // Update processedData for transaction review with duplicate info
       session.processedData = {
