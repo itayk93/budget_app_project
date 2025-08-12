@@ -65,7 +65,7 @@ class IsraeliBankScraperService {
             const { data, error } = await supabase
                 .from('bank_scraper_configs')
                 .insert([{
-                    user_id: userId,
+                    user_id: userId, // userId is already a UUID string
                     config_name: configName,
                     bank_type: bankType,
                     credentials_encrypted: encryptedCredentials,

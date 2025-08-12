@@ -1,4 +1,4 @@
--- Israeli Bank Scraper Tables - Completely separate from existing budget app
+-- Israeli Bank Scraper Tables - FIXED VERSION with UUID support
 -- Created for israeli-bank-scrapers integration
 
 -- Table to store bank connection configurations
