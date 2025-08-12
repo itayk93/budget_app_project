@@ -380,6 +380,7 @@ const TransactionReviewModal = ({
                       <th>שם העסק</th>
                       <th>סכום</th>
                       <th>קטגוריה</th>
+                      <th>מקבל</th>
                       <th>הערות</th>
                       <th>פעולות</th>
                     </tr>
@@ -447,6 +448,19 @@ const TransactionReviewModal = ({
                             onChange={(categoryData) => handleCategoryChange(transaction.tempId, categoryData)}
                             categories={filteredCategories}
                             placeholder="בחר קטגוריה..."
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            value={transaction.recipient_name || ''}
+                            onChange={(e) => handleTransactionChange(
+                              transaction.tempId, 
+                              'recipient_name', 
+                              e.target.value
+                            )}
+                            className="notes-input"
+                            placeholder="שם המקבל..."
                           />
                         </td>
                         <td>
@@ -553,6 +567,20 @@ const TransactionReviewModal = ({
                           onChange={(categoryData) => handleCategoryChange(transaction.tempId, categoryData)}
                           categories={filteredCategories}
                           placeholder="בחר קטגוריה..."
+                        />
+                      </div>
+
+                      <div className="card-field">
+                        <label>מקבל</label>
+                        <input
+                          type="text"
+                          value={transaction.recipient_name || ''}
+                          onChange={(e) => handleTransactionChange(
+                            transaction.tempId, 
+                            'recipient_name', 
+                            e.target.value
+                          )}
+                          placeholder="שם המקבל..."
                         />
                       </div>
 

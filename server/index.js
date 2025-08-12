@@ -91,6 +91,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const monthlyGoalsRoutes = require('./routes/monthlyGoals');
 const budgetlensRoutes = require('./routes/budgetlens');
 const transactionsBusinessRoutes = require('./routes/transactionsBusiness');
+const migrationRoutes = require('./routes/migration');
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -107,6 +108,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/monthly-goals', monthlyGoalsRoutes);
 app.use('/api/budgetlens', budgetlensRoutes);
 app.use('/api/transactions-business', transactionsBusinessRoutes);
+app.use('/api/migration', migrationRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

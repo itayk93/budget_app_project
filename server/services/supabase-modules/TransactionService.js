@@ -353,6 +353,38 @@ class TransactionService {
     }
   }
 
+  // ===== RECIPIENT NAME EXTRACTION =====
+  
+  static extractRecipientName(businessName, notes) {
+    // Check if this is a PAYBOX transaction and has recipient info in notes
+    if (businessName && businessName.includes('PAYBOX') && notes) {
+      // Match Hebrew or English names after "למי:" - stop at common English words that indicate additional info
+      const recipientMatch = notes.match(/למי:\s*(.+?)(?:\s+(?:some|additional|notes|info|details|comment|remark)|$)/);
+      if (recipientMatch) {
+        const recipientName = recipientMatch[1].trim();
+        
+        console.log(`🎯 [RECIPIENT EXTRACTION] Found recipient: "${recipientName}" for PAYBOX transaction`);
+        
+        // Remove the entire "למי: [name]" part from notes
+        const pattern = new RegExp(`למי:\\s*${recipientName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s+|$)`, 'g');
+        const cleanedNotes = notes.replace(pattern, '').trim();
+        
+        return {
+          recipientName: recipientName,
+          cleanedNotes: cleanedNotes || null
+        };
+      }
+    }
+    
+    // For other transfer types (can be extended later)
+    // TODO: Add support for BIT transfers, bank transfers, etc.
+    
+    return {
+      recipientName: null,
+      cleanedNotes: notes
+    };
+  }
+
   // ===== TRANSACTION CREATION =====
   
   static async createTransaction(transactionData, forceImport = false) {
@@ -443,14 +475,28 @@ class TransactionService {
         }
       }
 
+      // Extract recipient name from notes before processing
+      const recipientInfo = this.extractRecipientName(
+        transactionData.business_name,
+        transactionData.notes
+      );
+
       // Prepare transaction data
       const processedData = {
         ...transactionData,
         transaction_hash: transactionData.transaction_hash,
         amount: SharedUtilities.validateAmount(transactionData.amount || 0),
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        // Add recipient name and cleaned notes
+        recipient_name: recipientInfo.recipientName,
+        notes: recipientInfo.cleanedNotes
       };
+
+      if (recipientInfo.recipientName) {
+        console.log(`🎯 [TRANSACTION CREATION] Added recipient_name: "${recipientInfo.recipientName}"`);
+        console.log(`🧹 [TRANSACTION CREATION] Cleaned notes: "${recipientInfo.cleanedNotes}"`);
+      }
 
       // Handle payment date processing
       if (processedData.payment_date) {
@@ -533,11 +579,32 @@ class TransactionService {
         return SharedUtilities.createErrorResponse('Transaction ID is required');
       }
 
+      // Extract recipient name if business_name or notes are being updated
+      let recipientInfo = null;
+      if (updateData.business_name || updateData.notes) {
+        // If updating business_name or notes, extract recipient info
+        recipientInfo = this.extractRecipientName(
+          updateData.business_name,
+          updateData.notes
+        );
+      }
+
       // Prepare update data
       const processedUpdateData = {
         ...updateData,
         updated_at: new Date().toISOString()
       };
+
+      // Add recipient info if extracted
+      if (recipientInfo) {
+        processedUpdateData.recipient_name = recipientInfo.recipientName;
+        processedUpdateData.notes = recipientInfo.cleanedNotes;
+        
+        if (recipientInfo.recipientName) {
+          console.log(`🎯 [TRANSACTION UPDATE] Updated recipient_name: "${recipientInfo.recipientName}"`);
+          console.log(`🧹 [TRANSACTION UPDATE] Cleaned notes: "${recipientInfo.cleanedNotes}"`);
+        }
+      }
 
       // Handle amount validation if provided
       if (processedUpdateData.amount !== undefined) {
