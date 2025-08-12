@@ -96,6 +96,11 @@ const menuItems = [
     icon: '🔍'
   },
   {
+    path: '/bank-scraper',
+    label: 'Israeli Bank Scraper',
+    icon: '🏦'
+  },
+  {
     path: '/profile',
     label: 'פרופיל',
     icon: '👤'

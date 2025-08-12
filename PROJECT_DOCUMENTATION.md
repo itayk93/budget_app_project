@@ -1020,6 +1020,327 @@ Split transactions are identified by:
   - Requires: Authentication
   - Returns: Success message
 
+### 13. Israeli Bank Scraper Routes (`/api/bank-scraper`)
+
+The Israeli Bank Scraper integration provides automated transaction fetching from Israeli banks using user credentials. All endpoints require authentication and implement secure credential storage and scraping orchestration.
+
+#### Bank Information
+- **GET** `/api/bank-scraper/bank-types`
+  - Retrieves list of supported Israeli banks for scraper configuration
+  - Requires: Authentication
+  - Returns: Array of supported bank types
+  - Response format:
+    ```json
+    {
+      "success": true,
+      "data": [
+        {
+          "id": "hapoalim",
+          "name": "בנק הפועלים",
+          "loginFields": [
+            { "name": "userCode", "label": "קוד משתמש", "type": "text" },
+            { "name": "password", "label": "סיסמה", "type": "password" }
+          ]
+        },
+        {
+          "id": "leumi",
+          "name": "בנק לאומי",
+          "loginFields": [
+            { "name": "username", "label": "שם משתמש", "type": "text" },
+            { "name": "password", "label": "סיסמה", "type": "password" }
+          ]
+        }
+      ]
+    }
+    ```
+
+#### Configuration Management
+- **POST** `/api/bank-scraper/configs`
+  - Creates new bank scraper configuration with encrypted credentials
+  - Requires: Authentication
+  - Body:
+    ```json
+    {
+      "name": "חשבון עיקרי פועלים",
+      "bankType": "hapoalim",
+      "loginFields": {
+        "userCode": "12345678",
+        "password": "mypassword123"
+      },
+      "cashFlowId": "uuid-of-cash-flow",
+      "isActive": true
+    }
+    ```
+  - Returns: Created configuration object (credentials excluded)
+  - Response format:
+    ```json
+    {
+      "success": true,
+      "data": {
+        "id": "config-uuid",
+        "name": "חשבון עיקרי פועלים",
+        "bankType": "hapoalim",
+        "bankName": "בנק הפועלים",
+        "cashFlowId": "uuid-of-cash-flow",
+        "cashFlowName": "חשבון עיקרי",
+        "isActive": true,
+        "createdAt": "2025-08-12T10:00:00Z",
+        "lastScraped": null,
+        "status": "ready"
+      }
+    }
+    ```
+
+- **GET** `/api/bank-scraper/configs`
+  - Retrieves all user's scraper configurations
+  - Requires: Authentication
+  - Returns: Array of configuration objects (credentials excluded)
+  - Response format:
+    ```json
+    {
+      "success": true,
+      "data": [
+        {
+          "id": "config-uuid-1",
+          "name": "חשבון עיקרי פועלים",
+          "bankType": "hapoalim",
+          "bankName": "בנק הפועלים",
+          "cashFlowId": "uuid-of-cash-flow-1",
+          "cashFlowName": "חשבון עיקרי",
+          "isActive": true,
+          "createdAt": "2025-08-12T10:00:00Z",
+          "lastScraped": "2025-08-12T14:30:00Z",
+          "status": "completed",
+          "lastScrapedCount": 45
+        }
+      ]
+    }
+    ```
+
+- **PUT** `/api/bank-scraper/configs/:configId/toggle`
+  - Toggles configuration active status (enable/disable automatic scraping)
+  - Requires: Authentication
+  - URL parameter: `configId` - Configuration UUID
+  - Returns: Updated configuration with new status
+  - Response format:
+    ```json
+    {
+      "success": true,
+      "data": {
+        "id": "config-uuid",
+        "isActive": false,
+        "message": "Configuration deactivated successfully"
+      }
+    }
+    ```
+
+- **DELETE** `/api/bank-scraper/configs/:configId`
+  - Permanently deletes scraper configuration and all associated data
+  - Requires: Authentication
+  - URL parameter: `configId` - Configuration UUID
+  - Returns: Success message
+  - Response format:
+    ```json
+    {
+      "success": true,
+      "message": "Configuration deleted successfully",
+      "data": {
+        "deletedConfig": "config-uuid",
+        "deletedTransactions": 123,
+        "deletedLogs": 45
+      }
+    }
+    ```
+
+#### Scraping Operations
+- **POST** `/api/bank-scraper/configs/:configId/scrape`
+  - Initiates manual scraping process for specific configuration
+  - Requires: Authentication
+  - URL parameter: `configId` - Configuration UUID
+  - Body (optional):
+    ```json
+    {
+      "startDate": "2025-07-01",
+      "endDate": "2025-08-12",
+      "force": false
+    }
+    ```
+  - Returns: Scraping job details and initial status
+  - Response format:
+    ```json
+    {
+      "success": true,
+      "data": {
+        "jobId": "scrape-job-uuid",
+        "configId": "config-uuid",
+        "status": "started",
+        "startedAt": "2025-08-12T15:00:00Z",
+        "dateRange": {
+          "startDate": "2025-07-01",
+          "endDate": "2025-08-12"
+        }
+      }
+    }
+    ```
+
+#### Transaction Data Access
+- **GET** `/api/bank-scraper/configs/:configId/transactions`
+  - Retrieves scraped transactions for specific configuration
+  - Requires: Authentication
+  - URL parameter: `configId` - Configuration UUID
+  - Query parameters:
+    - `startDate` - Filter from date (YYYY-MM-DD)
+    - `endDate` - Filter to date (YYYY-MM-DD)
+    - `page` - Page number (default: 1)
+    - `limit` - Results per page (default: 50, max: 200)
+    - `imported` - Filter by import status (true/false/all)
+  - Returns: Paginated scraped transactions
+  - Response format:
+    ```json
+    {
+      "success": true,
+      "data": {
+        "transactions": [
+          {
+            "id": "scraped-transaction-uuid",
+            "configId": "config-uuid",
+            "date": "2025-08-10",
+            "amount": -150.50,
+            "description": "עסקה בכרטיס אשראי",
+            "memo": "דלק סונול",
+            "category": "תחבורה",
+            "balance": 5420.30,
+            "currency": "ILS",
+            "scrapedAt": "2025-08-12T15:30:00Z",
+            "imported": false,
+            "importedAt": null,
+            "transactionId": null
+          }
+        ],
+        "pagination": {
+          "page": 1,
+          "limit": 50,
+          "total": 125,
+          "totalPages": 3,
+          "hasNext": true,
+          "hasPrev": false
+        },
+        "summary": {
+          "totalTransactions": 125,
+          "importedCount": 87,
+          "pendingCount": 38,
+          "dateRange": {
+            "earliest": "2025-07-01",
+            "latest": "2025-08-12"
+          }
+        }
+      }
+    }
+    ```
+
+#### Logging & Monitoring
+- **GET** `/api/bank-scraper/configs/:configId/logs`
+  - Retrieves scraping logs for specific configuration
+  - Requires: Authentication
+  - URL parameter: `configId` - Configuration UUID
+  - Query parameters:
+    - `level` - Filter by log level (debug/info/warn/error)
+    - `page` - Page number (default: 1)
+    - `limit` - Results per page (default: 20, max: 100)
+    - `startDate` - Filter from date (YYYY-MM-DD)
+    - `endDate` - Filter to date (YYYY-MM-DD)
+  - Returns: Paginated scraping logs
+  - Response format:
+    ```json
+    {
+      "success": true,
+      "data": {
+        "logs": [
+          {
+            "id": "log-uuid",
+            "configId": "config-uuid",
+            "level": "info",
+            "message": "Scraping started for date range 2025-07-01 to 2025-08-12",
+            "timestamp": "2025-08-12T15:00:00Z",
+            "metadata": {
+              "jobId": "scrape-job-uuid",
+              "bankType": "hapoalim",
+              "dateRange": {
+                "startDate": "2025-07-01",
+                "endDate": "2025-08-12"
+              }
+            }
+          },
+          {
+            "id": "log-uuid-2",
+            "level": "success",
+            "message": "Successfully scraped 45 transactions",
+            "timestamp": "2025-08-12T15:05:00Z",
+            "metadata": {
+              "transactionCount": 45,
+              "newTransactions": 12,
+              "duplicates": 33
+            }
+          },
+          {
+            "id": "log-uuid-3",
+            "level": "error",
+            "message": "Login failed - incorrect credentials",
+            "timestamp": "2025-08-12T15:01:00Z",
+            "metadata": {
+              "error": "INVALID_CREDENTIALS",
+              "bankResponse": "Authentication failed"
+            }
+          }
+        ],
+        "pagination": {
+          "page": 1,
+          "limit": 20,
+          "total": 156,
+          "totalPages": 8
+        }
+      }
+    }
+    ```
+
+#### Security & Authentication
+All Israeli Bank Scraper endpoints implement additional security measures:
+
+- **Credential Encryption**: Bank login credentials are encrypted using AES-256-GCM before storage
+- **Secure Transmission**: All sensitive data transmitted over HTTPS with additional encryption layers
+- **Access Control**: Configurations are strictly user-isolated - users can only access their own configurations
+- **Audit Logging**: All scraper operations are logged with detailed metadata for security monitoring
+- **Rate Limiting**: Additional rate limiting applied to scraping operations to prevent abuse
+- **Credential Validation**: Bank credentials are validated during configuration creation (test login attempt)
+
+#### Error Codes & Handling
+Common error responses specific to bank scraper operations:
+
+- **400 Bad Request**: Invalid bank type, malformed credentials, or missing required fields
+- **401 Unauthorized**: Invalid bank credentials during scraping or configuration test
+- **403 Forbidden**: Access denied to configuration (belongs to different user)
+- **404 Not Found**: Configuration not found or has been deleted
+- **409 Conflict**: Scraping already in progress for this configuration
+- **429 Too Many Requests**: Rate limit exceeded for scraping operations
+- **500 Internal Server Error**: Bank website unavailable, parsing errors, or encryption failures
+- **502 Bad Gateway**: Bank website temporarily unavailable
+- **503 Service Unavailable**: Israeli Bank Scraper service is down for maintenance
+
+Example error response:
+```json
+{
+  "success": false,
+  "error": "SCRAPING_IN_PROGRESS",
+  "message": "Scraping is already in progress for this configuration",
+  "details": {
+    "configId": "config-uuid",
+    "currentJobId": "scrape-job-uuid",
+    "startedAt": "2025-08-12T15:00:00Z",
+    "estimatedCompletion": "2025-08-12T15:10:00Z"
+  }
+}
+```
+
 ## Frontend Routes (React Router)
 
 The React application uses client-side routing with the following main routes:

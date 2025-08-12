@@ -24,6 +24,7 @@ import BusinessCategoryIntelligence from './pages/BusinessCategoryIntelligence/B
 import Subscriptions from './pages/Subscriptions/Subscriptions';
 import CashFlowDashboard from './pages/CashFlow/CashFlowDashboard';
 import BudgetLensComparison from './pages/BudgetLensComparison/BudgetLensComparison';
+import BankScraperPage from './components/BankScraper/BankScraperPage';
 import './styles/stocks.css';
 import LoadingSpinner from './components/Common/LoadingSpinner';
 
@@ -75,6 +76,7 @@ function App() {
         <Route path="business-category-intelligence" element={<BusinessCategoryIntelligence />} />
         <Route path="subscriptions" element={<Subscriptions />} />
         <Route path="budgetlens-comparison" element={<BudgetLensComparison />} />
+        <Route path="bank-scraper" element={<BankScraperPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
