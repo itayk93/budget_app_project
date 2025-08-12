@@ -327,16 +327,22 @@ const TransactionReviewModal = ({
           return cleanTx;
         });
 
-      // Prepare duplicate handling data
+      // Prepare duplicate handling data - include ALL duplicates, not just ones with explicit actions
       const duplicateActions = {};
-      replaceDuplicates.forEach((shouldReplace, tempId) => {
-        const transaction = editedTransactions.find(tx => tx.tempId === tempId);
-        if (transaction && transaction.isDuplicate && transaction.duplicateInfo) {
+      
+      // Process all duplicate transactions
+      editedTransactions.forEach(transaction => {
+        if (transaction.isDuplicate && transaction.duplicateInfo) {
+          const tempId = transaction.tempId;
+          const shouldReplace = replaceDuplicates.get(tempId) || false; // Default to false (create duplicate)
+          
           duplicateActions[tempId] = {
             shouldReplace,
             originalTransactionId: transaction.duplicateInfo.original_id,
             duplicateHash: transaction.transaction_hash
           };
+          
+          console.log(`🔄 [DUPLICATE ACTION] ${tempId}: ${shouldReplace ? 'REPLACE' : 'CREATE_NEW'}`);
         }
       });
 
