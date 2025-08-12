@@ -80,12 +80,34 @@ const TransactionReviewModal = ({
         originalIndex: tx.originalIndex !== undefined ? tx.originalIndex : index
       }));
       
-      setEditedTransactions(processedTransactions);
+      // Extract recipient names from PAYBOX transactions before setting state
+      const transactionsWithRecipients = processedTransactions.map(tx => {
+        if (tx.business_name && tx.business_name.includes('PAYBOX') && tx.notes) {
+          const recipientMatch = tx.notes.match(/למי:\s*(.+?)(?:\s+(?:some|additional|notes|info|details|comment|remark)|$)/);
+          if (recipientMatch) {
+            const recipientName = recipientMatch[1].trim();
+            console.log(`🎯 [FRONTEND EXTRACTION] Found recipient: "${recipientName}" for PAYBOX transaction`);
+            
+            // Remove the "למי: [name]" part from notes
+            const pattern = new RegExp(`למי:\\s*${recipientName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s+|$)`, 'g');
+            const cleanedNotes = tx.notes.replace(pattern, '').trim();
+            
+            return {
+              ...tx,
+              recipient_name: recipientName,
+              notes: cleanedNotes || null
+            };
+          }
+        }
+        return tx;
+      });
+
+      setEditedTransactions(transactionsWithRecipients);
       setDeletedTransactionIds(new Set());
       
       // Identify duplicate transactions
       const duplicateIds = new Set();
-      processedTransactions.forEach(tx => {
+      transactionsWithRecipients.forEach(tx => {
         if (tx.isDuplicate) {
           duplicateIds.add(tx.tempId);
         }
@@ -97,7 +119,7 @@ const TransactionReviewModal = ({
       // Duplicates are now handled directly with delete button
 
       // Auto-suggest categories for business names
-      autoSuggestCategories(processedTransactions);
+      autoSuggestCategories(transactionsWithRecipients);
     }
   }, [isOpen, transactions, skipDuplicates]);
 
