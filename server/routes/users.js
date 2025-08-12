@@ -118,4 +118,62 @@ router.delete('/account', authenticateToken, async (req, res) => {
   }
 });
 
+// User Preferences API endpoints
+
+// Get all user preferences
+router.get('/preferences', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const AdditionalMethods = require('../services/supabase-modules/AdditionalMethods');
+    
+    // Get all preferences for the user - for now we'll just return the one we need
+    const hideEmptyCategories = await AdditionalMethods.getUserPreference(userId, 'hide_empty_categories');
+    
+    res.json({
+      hide_empty_categories: hideEmptyCategories !== null ? hideEmptyCategories : true
+    });
+  } catch (error) {
+    console.error('Get preferences error:', error);
+    res.status(500).json({ error: 'Failed to fetch user preferences' });
+  }
+});
+
+// Get specific user preference
+router.get('/preferences/:key', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { key } = req.params;
+    const AdditionalMethods = require('../services/supabase-modules/AdditionalMethods');
+    
+    const preferenceValue = await AdditionalMethods.getUserPreference(userId, key);
+    
+    res.json({
+      [key]: preferenceValue
+    });
+  } catch (error) {
+    console.error('Get preference error:', error);
+    res.status(500).json({ error: `Failed to fetch preference: ${req.params.key}` });
+  }
+});
+
+// Set user preference
+router.put('/preferences/:key', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { key } = req.params;
+    const { value } = req.body;
+    const AdditionalMethods = require('../services/supabase-modules/AdditionalMethods');
+    
+    await AdditionalMethods.setUserPreference(userId, key, value);
+    
+    res.json({ 
+      message: `Preference ${key} updated successfully`,
+      [key]: value 
+    });
+  } catch (error) {
+    console.error('Set preference error:', error);
+    res.status(500).json({ error: `Failed to update preference: ${req.params.key}` });
+  }
+});
+
 module.exports = router;

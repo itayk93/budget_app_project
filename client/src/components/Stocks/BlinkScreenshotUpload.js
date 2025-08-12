@@ -101,7 +101,30 @@ const BlinkScreenshotUpload = ({ cashFlowId, onTransactionsImported }) => {
 
     const handleEditTransaction = (index, field, value) => {
         const updated = [...extractedTransactions];
-        updated[index] = { ...updated[index], [field]: value };
+        const transaction = { ...updated[index], [field]: value };
+        
+        // Convert to numbers, treating empty/null/undefined as 0
+        const numValue = parseFloat(value) || 0;
+        const currentAmount = parseFloat(transaction.amount) || 0;
+        const currentPrice = parseFloat(transaction.price) || 0;
+        const currentQuantity = parseFloat(transaction.quantity) || 0;
+        
+        // Auto-calculate based on which field was changed (NEVER change amount automatically)
+        if (field === 'amount' && currentPrice > 0) {
+            // If amount changed and we have price, calculate quantity
+            transaction.quantity = parseFloat((Math.abs(numValue) / currentPrice).toFixed(4));
+        } else if (field === 'amount' && currentQuantity > 0) {
+            // If amount changed and we have quantity, calculate price per share
+            transaction.price = parseFloat((Math.abs(numValue) / currentQuantity).toFixed(4));
+        } else if (field === 'price' && numValue > 0 && currentAmount !== 0) {
+            // If price changed and we have amount, calculate quantity
+            transaction.quantity = parseFloat((Math.abs(currentAmount) / numValue).toFixed(4));
+        } else if (field === 'quantity' && numValue > 0 && currentAmount !== 0) {
+            // If quantity changed and we have amount, calculate price per share
+            transaction.price = parseFloat((Math.abs(currentAmount) / numValue).toFixed(4));
+        }
+        
+        updated[index] = transaction;
         setExtractedTransactions(updated);
     };
 
@@ -355,7 +378,7 @@ const BlinkScreenshotUpload = ({ cashFlowId, onTransactionsImported }) => {
                                                         type="number"
                                                         step="0.01"
                                                         value={transaction.amount || ''}
-                                                        onChange={(e) => handleEditTransaction(index, 'amount', parseFloat(e.target.value) || 0)}
+                                                        onChange={(e) => handleEditTransaction(index, 'amount', e.target.value)}
                                                         className="blink-form-input"
                                                     />
                                                 </div>
@@ -373,7 +396,7 @@ const BlinkScreenshotUpload = ({ cashFlowId, onTransactionsImported }) => {
                                                                 type="number"
                                                                 step="0.0001"
                                                                 value={transaction.quantity || ''}
-                                                                onChange={(e) => handleEditTransaction(index, 'quantity', parseFloat(e.target.value) || 0)}
+                                                                onChange={(e) => handleEditTransaction(index, 'quantity', e.target.value)}
                                                                 placeholder="0.5000"
                                                                 className="blink-form-input"
                                                             />
@@ -387,7 +410,7 @@ const BlinkScreenshotUpload = ({ cashFlowId, onTransactionsImported }) => {
                                                                 type="number"
                                                                 step="0.01"
                                                                 value={transaction.price || ''}
-                                                                onChange={(e) => handleEditTransaction(index, 'price', parseFloat(e.target.value) || 0)}
+                                                                onChange={(e) => handleEditTransaction(index, 'price', e.target.value)}
                                                                 placeholder="150.00"
                                                                 className="blink-form-input"
                                                             />

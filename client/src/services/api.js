@@ -98,6 +98,11 @@ export const usersAPI = {
   updateProfile: (data) => api.put('/users/profile', data),
   changePassword: (data) => api.put('/users/password', data),
   deleteAccount: (data) => api.delete('/users/account', { data }),
+  
+  // User Preferences
+  getUserPreferences: () => api.get('/users/preferences'),
+  getUserPreference: (key) => api.get(`/users/preferences/${key}`),
+  setUserPreference: (key, value) => api.put(`/users/preferences/${key}`, { value }),
 };
 
 // Categories API

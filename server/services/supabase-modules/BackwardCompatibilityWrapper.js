@@ -56,6 +56,7 @@ class BackwardCompatibleSupabaseService {
   static validateUserId = SharedUtilities.validateUserId;
   static validateAmount = SharedUtilities.validateAmount;
   static validateDateString = SharedUtilities.validateDateString;
+  static validateFlowMonth = SharedUtilities.validateFlowMonth;
   static handleSupabaseError = SharedUtilities.handleSupabaseError;
   static createSuccessResponse = SharedUtilities.createSuccessResponse;
   static createErrorResponse = SharedUtilities.createErrorResponse;

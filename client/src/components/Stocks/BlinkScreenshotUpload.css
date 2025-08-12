@@ -185,30 +185,30 @@
   background: linear-gradient(135deg, var(--color-blue) 0%, #1976d2 100%);
   color: white;
   border-bottom: none;
-  padding: var(--spacing-lg) var(--spacing-xl);
+  padding: var(--spacing-sm) var(--spacing-lg);
 }
 
 .blink-modal .modal-title {
   color: white;
-  font-size: var(--font-xl);
+  font-size: var(--font-small);
   font-weight: 600;
   margin: 0;
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
 }
 
 .blink-modal .modal-title::before {
   content: "✅";
-  font-size: var(--font-xxl);
+  font-size: var(--font-large);
 }
 
 .blink-modal .modal-close {
   color: white;
   background: rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-sm);
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
 }
 
 .blink-modal .modal-close:hover {
@@ -452,21 +452,22 @@
   justify-content: space-between;
   gap: var(--spacing-lg);
   flex-wrap: wrap;
+  padding: var(--spacing-md);
 }
 
 .blink-footer-btn {
-  padding: var(--spacing-md) var(--spacing-xl);
+  padding: var(--spacing-sm) var(--spacing-lg);
   border-radius: var(--radius-md);
-  font-size: var(--font-small);
+  font-size: var(--font-xs);
   font-weight: 600;
   cursor: pointer;
   flex: 1;
-  min-width: 120px;
+  min-width: 100px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
 }
 
 .blink-footer-btn.secondary {

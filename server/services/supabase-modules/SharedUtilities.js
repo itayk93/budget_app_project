@@ -127,6 +127,30 @@ class SharedUtilities {
     return date;
   }
 
+  static validateFlowMonth(flowMonth) {
+    if (!flowMonth || typeof flowMonth !== 'string') {
+      return false;
+    }
+    
+    const parts = flowMonth.split('-');
+    if (parts.length !== 2) {
+      return false;
+    }
+    
+    const year = parseInt(parts[0]);
+    const month = parseInt(parts[1]);
+    
+    if (year < 1900 || year > 2100) {
+      return false;
+    }
+    
+    if (month < 1 || month > 12) {
+      return false;
+    }
+    
+    return true;
+  }
+
   // ===== ERROR HANDLING UTILITIES =====
   
   static handleSupabaseError(error, operation = 'operation') {

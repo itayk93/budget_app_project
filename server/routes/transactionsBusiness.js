@@ -400,6 +400,66 @@ router.get('/categories/available', authenticateToken, async (req, res) => {
   }
 });
 
+// Get most common category for a business name
+router.get('/businesses/:businessName/most-common-category', authenticateToken, async (req, res) => {
+  try {
+    const businessName = decodeURIComponent(req.params.businessName);
+    
+    const { transactions } = await SupabaseService.getTransactions(req.user.id, { 
+      show_all: true 
+    });
+
+    // Filter transactions for this business name
+    const businessTransactions = transactions.filter(t => 
+      t.business_name && t.business_name.toLowerCase() === businessName.toLowerCase()
+    );
+
+    if (businessTransactions.length === 0) {
+      return res.json({
+        success: true,
+        business_name: businessName,
+        most_common_category: null,
+        message: 'No transactions found for this business'
+      });
+    }
+
+    // Count categories for this business
+    const categoryCount = {};
+    businessTransactions.forEach(transaction => {
+      const categoryName = transaction.category_name;
+      if (categoryName && categoryName.trim()) {
+        categoryCount[categoryName] = (categoryCount[categoryName] || 0) + 1;
+      }
+    });
+
+    // Find the most common category
+    let mostCommonCategory = null;
+    let maxCount = 0;
+    
+    Object.entries(categoryCount).forEach(([category, count]) => {
+      if (count > maxCount) {
+        maxCount = count;
+        mostCommonCategory = category;
+      }
+    });
+
+    res.json({
+      success: true,
+      business_name: businessName,
+      most_common_category: mostCommonCategory,
+      category_counts: categoryCount,
+      total_transactions: businessTransactions.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching most common category for business:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch most common category' 
+    });
+  }
+});
+
 // ===== MONGODB BUSINESS INTELLIGENCE ENDPOINTS =====
 
 // Get business intelligence from MongoDB

@@ -441,7 +441,7 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.6);
-  z-index: 1003;
+  z-index: 2100;
   backdrop-filter: blur(4px);
 }
 
@@ -454,7 +454,7 @@
   border-radius: 16px;
   box-shadow: 0 20px 64px rgba(0, 0, 0, 0.25);
   border: 2px solid #e1e5e9;
-  z-index: 1004;
+  z-index: 2101;
   width: 95vw;
   max-width: 900px;
   max-height: 90vh;
@@ -887,6 +887,333 @@
 .monthly-goal-button:hover .edit-arrow {
   color: #2196F3;
   transform: translateX(-2px);
+}
+
+/* Hide Empty Categories Toggle Container */
+.hide-empty-toggle-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Hide Empty Categories Toggle Button */
+.hide-empty-toggle-button {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e1e5e9;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 80px;
+  white-space: nowrap;
+  max-width: 400px;
+  width: 100%;
+}
+
+.hide-empty-toggle-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: #2196F3;
+}
+
+.toggle-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  flex: 1;
+}
+
+.toggle-label {
+  font-size: var(--font-md);
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
+.toggle-description {
+  font-size: var(--font-sm);
+  color: var(--gray-500);
+  font-weight: 400;
+}
+
+.toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  min-width: 40px;
+}
+
+/* Active state for the toggle button */
+.hide-empty-toggle-button.active {
+  border-color: #4CAF50;
+  background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e8 100%);
+}
+
+.hide-empty-toggle-button.active:hover {
+  border-color: #388E3C;
+}
+
+.hide-empty-toggle-button.active .toggle-label {
+  color: #2E7D32;
+}
+
+.hide-empty-toggle-button.active .toggle-icon {
+  color: #4CAF50;
+}
+
+/* Developer Features Container */
+.developer-features-container {
+  position: sticky;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  margin-top: 40px;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Developer Features Button */
+.developer-features-button {
+  background: #2196F3;
+  border: none;
+  border-radius: 25px;
+  padding: 12px 24px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+}
+
+.developer-features-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(33, 150, 243, 0.4);
+  background: #1976D2;
+}
+
+/* Developer Features Modal */
+.developer-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.developer-features-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  z-index: 2001;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow: hidden;
+}
+
+.developer-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px;
+  border-bottom: 1px solid #e1e5e9;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.developer-modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #495057;
+}
+
+.close-developer-modal {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #6c757d;
+  padding: 8px;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.close-developer-modal:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #dc3545;
+}
+
+.developer-modal-body {
+  padding: 32px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.developer-feature-section {
+  margin-bottom: 32px;
+}
+
+.developer-feature-section:last-child {
+  margin-bottom: 0;
+}
+
+.developer-feature-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #343a40;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.developer-feature-section h4::before {
+  content: '';
+  width: 4px;
+  height: 16px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border-radius: 2px;
+}
+
+.debug-info {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #e9ecef;
+}
+
+.debug-info p {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #495057;
+  font-family: 'Courier New', monospace;
+}
+
+.debug-info p:last-child {
+  margin-bottom: 0;
+}
+
+.developer-action-button {
+  background: #2196F3;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 20px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
+  transition: all 0.2s ease;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.developer-action-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+  background: #1976D2;
+}
+
+.developer-action-button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.developer-toggle-button {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border: 2px solid #e1e5e9;
+  border-radius: 12px;
+  padding: 12px 20px;
+  color: #495057;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.developer-toggle-button:hover {
+  border-color: #2196F3;
+  background: linear-gradient(135deg, #f0f8ff 0%, #e3f2fd 100%);
+}
+
+.developer-toggle-button.active {
+  background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
+  border-color: #4CAF50;
+  color: #2E7D32;
+}
+
+.developer-nav-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Mobile responsive for nav buttons */
+@media (max-width: 768px) {
+  .developer-nav-buttons {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* JSON Debug Styles */
+.debug-categories-json {
+  margin-top: 16px;
+}
+
+.debug-categories-json h5 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #343a40;
+}
+
+.json-container {
+  background: #282c34;
+  border-radius: 8px;
+  padding: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #454d55;
+}
+
+.json-display {
+  color: #abb2bf;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  direction: ltr;
+  text-align: left;
 }
 
 .progress-percentage {
@@ -2141,4 +2468,61 @@
 /* Show emergency button when modals are open */
 .modal-open .emergency-close-btn {
   display: flex;
+}
+/* Chart Tooltip Styles */
+.chart-tooltip {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-size: 14px;
+  direction: rtl;
+  text-align: right;
+}
+
+.tooltip-label {
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 6px 0;
+  font-size: 13px;
+}
+
+.tooltip-value {
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  font-size: 15px;
+}
+
+.tooltip-transactions {
+  color: #666;
+  margin: 0;
+  font-size: 12px;
+}
+
+/* Chart Container Improvements */
+.chart-container {
+  background: #fafbfc;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 10px 0;
+}
+
+/* No Data Message */
+.no-data-message {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+}
+
+.no-data-message i {
+  font-size: 48px;
+  color: #ddd;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.no-data-message p {
+  font-size: 16px;
+  margin: 0;
 }

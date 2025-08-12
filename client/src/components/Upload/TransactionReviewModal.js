@@ -99,8 +99,78 @@ const TransactionReviewModal = ({
       if (duplicateIds.size > 0 && skipDuplicates) {
         setShowDeleteDuplicatesButton(true);
       }
+
+      // Auto-suggest categories for business names
+      autoSuggestCategories(processedTransactions);
     }
   }, [isOpen, transactions, skipDuplicates]);
+
+  // Auto-suggest categories for business names
+  const autoSuggestCategories = async (transactionsToProcess) => {
+    try {
+      // Get unique business names that don't already have categories
+      const businessNamesNeedingCategories = [...new Set(
+        transactionsToProcess
+          .filter(tx => tx.business_name && !tx.category_name)
+          .map(tx => tx.business_name)
+      )];
+
+      if (businessNamesNeedingCategories.length === 0) {
+        console.log('🔍 [AUTO-CATEGORY] No business names need categories');
+        return;
+      }
+
+      console.log('🔍 [AUTO-CATEGORY] Processing business names:', businessNamesNeedingCategories);
+
+      // Fetch most common categories for each business
+      const categoryPromises = businessNamesNeedingCategories.map(async (businessName) => {
+        try {
+          const response = await fetch(`/api/transactions-business/businesses/${encodeURIComponent(businessName)}/most-common-category`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            return {
+              business_name: businessName,
+              most_common_category: data.most_common_category
+            };
+          }
+        } catch (error) {
+          console.error(`Error fetching category for ${businessName}:`, error);
+        }
+        return null;
+      });
+
+      const categoryResults = await Promise.all(categoryPromises);
+      
+      // Update transactions with suggested categories
+      setEditedTransactions(prev => 
+        prev.map(tx => {
+          if (tx.business_name && !tx.category_name) {
+            const categoryData = categoryResults.find(result => 
+              result && result.business_name === tx.business_name
+            );
+            
+            if (categoryData && categoryData.most_common_category) {
+              console.log(`🔍 [AUTO-CATEGORY] Setting ${tx.business_name} to ${categoryData.most_common_category}`);
+              return {
+                ...tx,
+                category_name: categoryData.most_common_category,
+                category_id: null
+              };
+            }
+          }
+          return tx;
+        })
+      );
+
+    } catch (error) {
+      console.error('Error in auto-suggest categories:', error);
+    }
+  };
 
   const handleTransactionChange = (tempId, field, value) => {
     setEditedTransactions(prev => 
@@ -116,27 +186,63 @@ const TransactionReviewModal = ({
     const transaction = editedTransactions.find(tx => tx.tempId === tempId);
     if (transaction) {
       setDeletedTransactionIds(prev => new Set([...prev, transaction.originalIndex]));
-      setEditedTransactions(prev => prev.filter(tx => tx.tempId !== tempId));
+      
+      // Check if this transaction has duplicate siblings before removing it
+      const transactionHash = transaction.transaction_hash;
+      const duplicateSiblings = editedTransactions.filter(tx => 
+        tx.transaction_hash === transactionHash && tx.tempId !== tempId
+      );
+      
+      console.log(`🗑️ [DELETE] Deleting transaction ${tempId}, hash: ${transactionHash}, siblings: ${duplicateSiblings.length}`);
+      
+      // Remove the transaction from editedTransactions
+      setEditedTransactions(prev => {
+        const updated = prev.filter(tx => tx.tempId !== tempId);
+        
+        // If this transaction had duplicate siblings and now there's only one left,
+        // remove the isDuplicate flag from the remaining sibling
+        if (transaction.isDuplicate && duplicateSiblings.length === 1) {
+          const remainingSibling = duplicateSiblings[0];
+          console.log(`✅ [DELETE] Removing duplicate flag from remaining sibling ${remainingSibling.tempId}`);
+          return updated.map(tx => 
+            tx.tempId === remainingSibling.tempId 
+              ? { ...tx, isDuplicate: false, duplicateInfo: null }
+              : tx
+          );
+        }
+        
+        return updated;
+      });
       
       // If it was a duplicate, update duplicate tracking
       if (transaction.isDuplicate) {
         setDuplicateTransactionIds(prev => {
           const newSet = new Set(prev);
           newSet.delete(tempId);
+          
+          // If only one duplicate sibling remains, remove it from duplicates too
+          if (duplicateSiblings.length === 1) {
+            newSet.delete(duplicateSiblings[0].tempId);
+          }
+          
           return newSet;
         });
         
-        // Check if we should show delete duplicates button
-        const remainingDuplicates = editedTransactions.filter(tx => 
-          tx.isDuplicate && tx.tempId !== tempId
-        ).length;
-        
-        if (remainingDuplicates === 0) {
-          setShowDeleteDuplicatesButton(false);
-          setSkipDuplicates(false);
-        } else if (skipDuplicates) {
-          setShowDeleteDuplicatesButton(true);
-        }
+        // Recalculate remaining duplicates after the update
+        setTimeout(() => {
+          setEditedTransactions(currentTransactions => {
+            const remainingDuplicateCount = currentTransactions.filter(tx => tx.isDuplicate).length;
+            
+            if (remainingDuplicateCount === 0) {
+              setShowDeleteDuplicatesButton(false);
+              setSkipDuplicates(false);
+            } else if (skipDuplicates) {
+              setShowDeleteDuplicatesButton(true);
+            }
+            
+            return currentTransactions;
+          });
+        }, 0);
       }
     }
   };

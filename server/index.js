@@ -90,6 +90,7 @@ const alertRoutes = require('./routes/alerts');
 const dashboardRoutes = require('./routes/dashboard');
 const monthlyGoalsRoutes = require('./routes/monthlyGoals');
 const budgetlensRoutes = require('./routes/budgetlens');
+const transactionsBusinessRoutes = require('./routes/transactionsBusiness');
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -105,6 +106,7 @@ app.use('/api/alerts', alertRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/monthly-goals', monthlyGoalsRoutes);
 app.use('/api/budgetlens', budgetlensRoutes);
+app.use('/api/transactions-business', transactionsBusinessRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

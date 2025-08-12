@@ -18,7 +18,8 @@ class AdditionalMethods {
         flowMonth = null,
         allTime = false,
         year = new Date().getFullYear(), 
-        month = new Date().getMonth() + 1 
+        month = new Date().getMonth() + 1,
+        hideEmptyCategories = false
       } = options;
 
       // If allTime is true, get data for all time instead of specific month
@@ -182,7 +183,7 @@ class AdditionalMethods {
       }
 
       // Process shared categories
-      const processedCategories = AdditionalMethods.processSharedCategories(categoryBreakdown);
+      const processedCategories = AdditionalMethods.processSharedCategories(categoryBreakdown, hideEmptyCategories);
       
       // Sort by display order - ensure we're comparing numbers, not strings
       const sortedCategories = Object.values(processedCategories)
@@ -224,7 +225,7 @@ class AdditionalMethods {
   }
 
   // Helper method to process shared categories
-  static processSharedCategories(categoryBreakdown) {
+  static processSharedCategories(categoryBreakdown, hideEmptyCategories = false) {
     const processedCategories = {};
     const sharedCategoryMap = new Map();
 
@@ -258,40 +259,48 @@ class AdditionalMethods {
         
         const sharedCategory = sharedCategoryMap.get(sharedName);
         
-        // Add this category as a sub-category
-        sharedCategory.sub_categories[category.name] = {
-          name: category.name,
-          amount: category.amount,
-          count: category.count,
-          spent: category.type === 'income' ? category.amount : -category.amount,
-          transactions: category.transactions,
-          display_order: category.display_order,
-          weekly_display: category.weekly_display,
-          monthly_target: category.monthly_target,
-          use_shared_target: category.use_shared_target
-        };
+        // Add this category as a sub-category (only if it has transactions or hideEmptyCategories is false)
+        if (!hideEmptyCategories || category.count > 0) {
+          sharedCategory.sub_categories[category.name] = {
+            name: category.name,
+            amount: category.amount,
+            count: category.count,
+            spent: category.type === 'income' ? category.amount : -category.amount,
+            transactions: category.transactions,
+            display_order: category.display_order,
+            weekly_display: category.weekly_display,
+            monthly_target: category.monthly_target,
+            use_shared_target: category.use_shared_target
+          };
         
-        // Update shared category totals
-        sharedCategory.amount += category.amount;
-        sharedCategory.count += category.count;
-        sharedCategory.transactions = sharedCategory.transactions.concat(category.transactions);
+          // Update shared category totals (only for non-empty categories)
+          sharedCategory.amount += category.amount;
+          sharedCategory.count += category.count;
+          sharedCategory.transactions = sharedCategory.transactions.concat(category.transactions);
+        }
       } else {
-        // This is a regular category (not shared)
-        processedCategories[category.name] = {
-          ...category,
-          spent: category.type === 'income' ? category.amount : -category.amount,
-          is_shared_category: false,
-          display_order: parseInt(category.display_order) || 999 // Ensure display_order is properly preserved
-        };
+        // This is a regular category (not shared) - only add if it has transactions or hideEmptyCategories is false
+        if (!hideEmptyCategories || category.count > 0) {
+          processedCategories[category.name] = {
+            ...category,
+            spent: category.type === 'income' ? category.amount : -category.amount,
+            is_shared_category: false,
+            display_order: parseInt(category.display_order) || 999 // Ensure display_order is properly preserved
+          };
+        }
       }
     });
 
-    // Add all shared categories to the processed categories
+    // Add all shared categories to the processed categories (only if they have sub-categories or hideEmptyCategories is false)
     sharedCategoryMap.forEach((sharedCategory, sharedName) => {
-      processedCategories[sharedName] = {
-        ...sharedCategory,
-        spent: sharedCategory.type === 'income' ? sharedCategory.amount : -sharedCategory.amount
-      };
+      const hasSubCategories = Object.keys(sharedCategory.sub_categories).length > 0;
+      
+      if (!hideEmptyCategories || hasSubCategories) {
+        processedCategories[sharedName] = {
+          ...sharedCategory,
+          spent: sharedCategory.type === 'income' ? sharedCategory.amount : -sharedCategory.amount
+        };
+      }
     });
 
     return processedCategories;

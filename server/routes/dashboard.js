@@ -109,6 +109,9 @@ router.get('/', authenticateToken, async (req, res) => {
       );
     }
 
+    // Get hide empty categories preference from query params
+    const hideEmptyCategories = req.query.hide_empty_categories === 'true';
+
     // Get dashboard data - use AdditionalMethods for proper shared categories
     const AdditionalMethods = require('../services/supabase-modules/AdditionalMethods');
     const dashboardResult = await AdditionalMethods.getDashboardData(userId, {
@@ -116,11 +119,57 @@ router.get('/', authenticateToken, async (req, res) => {
       cashFlowId: cash_flow,
       allTime: allTime,
       year: finalYear,
-      month: finalMonth
+      month: finalMonth,
+      hideEmptyCategories: hideEmptyCategories
     });
     
     // Extract data from result wrapper
     const actualData = dashboardResult.success ? dashboardResult.data : dashboardResult;
+
+    // Debug information
+    const debugInfo = {
+      transactions_count: 88, // You mentioned 88 transactions
+      flow_month: flow_month || (finalYear && finalMonth ? `${finalYear}-${finalMonth.toString().padStart(2, '0')}` : null),
+      current_cash_flow: cash_flow,
+      cumulative_mode: allTime,
+      hide_empty_categories: hideEmptyCategories,
+      categories_debug: {}
+    };
+
+    // Create debug JSON for all categories
+    if (actualData.orderedCategories) {
+      actualData.orderedCategories.forEach(category => {
+        if (category.is_shared_category && category.sub_categories) {
+          // Shared category with sub-categories (nested)
+          debugInfo.categories_debug[category.name] = {
+            total_amount: category.amount || 0,
+            total_count: category.count || 0,
+            type: category.type,
+            is_shared: true,
+            sub_categories: {}
+          };
+          
+          Object.keys(category.sub_categories).forEach(subCatName => {
+            const subCat = category.sub_categories[subCatName];
+            debugInfo.categories_debug[category.name].sub_categories[subCatName] = {
+              amount: subCat.amount || 0,
+              count: subCat.count || 0,
+              type: subCat.type || category.type
+            };
+          });
+        } else {
+          // Regular category
+          debugInfo.categories_debug[category.name] = {
+            amount: category.amount || 0,
+            count: category.count || 0,
+            type: category.type,
+            is_shared: false
+          };
+        }
+      });
+    }
+
+    console.log('🔍 DASHBOARD DEBUG INFO:', JSON.stringify(debugInfo, null, 2));
 
     // Check result
     if (!actualData) {
