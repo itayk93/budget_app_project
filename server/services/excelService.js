@@ -784,7 +784,7 @@ class ExcelService {
 
   // ===== IMPORT METHODS =====
   
-  static async importTransactions(transactions, forceImport = false) {
+  static async importTransactions(transactions, forceImport = false, duplicateActions = {}) {
     const results = {
       success: 0,
       duplicates: 0,
@@ -793,18 +793,44 @@ class ExcelService {
     };
     
     console.log(`[importTransactions] Importing ${transactions.length} transactions. forceImport (default): ${forceImport}`);
+    console.log(`[importTransactions] Duplicate actions:`, duplicateActions);
 
-    for (const transaction of transactions) {
+    for (let i = 0; i < transactions.length; i++) {
+      const transaction = transactions[i];
       try {
         // Log details for the specific transaction being processed
         console.log(`[importTransactions] Processing tx with hash: ${transaction.transaction_hash}, forceFlag: ${transaction.forceImport}, business_name: ${transaction.business_name}`);
-        const result = await SupabaseService.createTransaction(transaction, transaction.forceImport || forceImport);
+        
+        // Check if this transaction has duplicate actions defined
+        const tempId = `temp_${i}`; // Generate tempId similar to frontend
+        const duplicateAction = duplicateActions[tempId];
+        
+        let result;
+        if (duplicateAction && duplicateAction.shouldReplace) {
+          // Replace existing duplicate transaction
+          console.log(`🔄 [DUPLICATE REPLACE] Replacing original transaction ID: ${duplicateAction.originalTransactionId}`);
+          result = await SupabaseService.replaceTransaction(duplicateAction.originalTransactionId, transaction);
+        } else if (duplicateAction && !duplicateAction.shouldReplace) {
+          // Create new duplicate with link to original
+          console.log(`🔗 [DUPLICATE CREATE] Creating new transaction with link to original ID: ${duplicateAction.originalTransactionId}`);
+          const transactionWithLink = {
+            ...transaction,
+            notes: transaction.notes 
+              ? `${transaction.notes} (מקושר לעסקה מקורית: ${duplicateAction.originalTransactionId})`
+              : `מקושר לעסקה מקורית: ${duplicateAction.originalTransactionId}`
+          };
+          result = await SupabaseService.createTransaction(transactionWithLink, true); // Force create
+        } else {
+          // Normal processing
+          result = await SupabaseService.createTransaction(transaction, transaction.forceImport || forceImport);
+        }
         
         console.log(`[importTransactions] Result for ${transaction.business_name}:`, {
           success: result.success,
           duplicate: result.duplicate,
           transaction_id: result.transaction_id,
-          error: result.error
+          error: result.error,
+          duplicateAction: duplicateAction ? (duplicateAction.shouldReplace ? 'replace' : 'create_new') : 'none'
         });
         
         if (result.success) {

@@ -665,6 +665,55 @@ class TransactionService {
     }
   }
 
+  // Replace an existing transaction with new transaction data (for duplicate handling)
+  static async replaceTransaction(originalTransactionId, newTransactionData) {
+    try {
+      if (!originalTransactionId) {
+        return SharedUtilities.createErrorResponse('Original transaction ID is required');
+      }
+
+      // Extract and prepare the new transaction data, excluding system fields
+      const { tempId, originalIndex, isDuplicate, duplicateInfo, ...cleanData } = newTransactionData;
+      
+      // Extract recipient name if it's a PAYBOX transaction
+      const { recipientName, cleanedNotes } = this.extractRecipientName(
+        cleanData.business_name, 
+        cleanData.notes
+      );
+
+      const updateData = {
+        ...cleanData,
+        recipient_name: recipientName || cleanData.recipient_name,
+        notes: cleanedNotes !== null ? cleanedNotes : cleanData.notes,
+        updated_at: new Date().toISOString()
+      };
+
+      // Remove undefined values
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] === undefined) {
+          delete updateData[key];
+        }
+      });
+
+      console.log(`🔄 [REPLACE TRANSACTION] Updating transaction ${originalTransactionId} with:`, updateData);
+
+      const { data, error } = await supabase
+        .from('transactions')
+        .update(updateData)
+        .eq('id', originalTransactionId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      console.log(`✅ [REPLACE TRANSACTION] Successfully replaced transaction ${originalTransactionId}`);
+      return SharedUtilities.createSuccessResponse(data, 'Transaction replaced successfully');
+    } catch (error) {
+      console.error('Error replacing transaction:', error);
+      return SharedUtilities.handleSupabaseError(error, 'replace transaction');
+    }
+  }
+
   // ===== TRANSACTION DELETION =====
 
   static async deleteTransaction(transactionId) {

@@ -23,6 +23,7 @@ const TransactionReviewModal = ({
   // Duplicate handling state
   const [duplicateTransactionIds, setDuplicateTransactionIds] = useState(new Set());
   const [skipDuplicates, setSkipDuplicates] = useState(false); // Default to show duplicates in yellow for review
+  const [replaceDuplicates, setReplaceDuplicates] = useState(new Map()); // Map of tempId -> boolean (true = replace, false = create new)
 
   // Fetch categories for dropdown - using regular categories API for now
   const { data: categoriesData = [], isLoading: categoriesLoading, error: categoriesError } = useQuery(
@@ -288,10 +289,24 @@ const TransactionReviewModal = ({
           return cleanTx;
         });
 
+      // Prepare duplicate handling data
+      const duplicateActions = {};
+      replaceDuplicates.forEach((shouldReplace, tempId) => {
+        const transaction = editedTransactions.find(tx => tx.tempId === tempId);
+        if (transaction && transaction.isDuplicate && transaction.duplicateInfo) {
+          duplicateActions[tempId] = {
+            shouldReplace,
+            originalTransactionId: transaction.duplicateInfo.original_id,
+            duplicateHash: transaction.transaction_hash
+          };
+        }
+      });
+
       // Call parent's confirm handler
       await onConfirm({
         transactions: finalTransactions,
-        deletedIndices: Array.from(deletedTransactionIds)
+        deletedIndices: Array.from(deletedTransactionIds),
+        duplicateActions
       });
     } catch (error) {
       console.error('Error confirming transactions:', error);
@@ -404,6 +419,7 @@ const TransactionReviewModal = ({
                       <th>קטגוריה</th>
                       <th>מקבל</th>
                       <th>הערות</th>
+                      <th>עדכן</th>
                       <th>פעולות</th>
                     </tr>
                   </thead>
@@ -497,6 +513,28 @@ const TransactionReviewModal = ({
                             className="notes-input"
                             placeholder="הערות..."
                           />
+                        </td>
+                        <td>
+                          {isDuplicate ? (
+                            <div className="duplicate-action-checkbox">
+                              <input
+                                type="checkbox"
+                                id={`replace-${transaction.tempId}`}
+                                checked={replaceDuplicates.get(transaction.tempId) || false}
+                                onChange={(e) => {
+                                  const newMap = new Map(replaceDuplicates);
+                                  newMap.set(transaction.tempId, e.target.checked);
+                                  setReplaceDuplicates(newMap);
+                                }}
+                                className="duplicate-checkbox"
+                              />
+                              <label htmlFor={`replace-${transaction.tempId}`} className="checkbox-label">
+                                {replaceDuplicates.get(transaction.tempId) ? 'החלף' : 'כפל'}
+                              </label>
+                            </div>
+                          ) : (
+                            <span className="no-action">-</span>
+                          )}
                         </td>
                         <td>
                           <button
@@ -619,6 +657,31 @@ const TransactionReviewModal = ({
                           placeholder="הערות..."
                         />
                       </div>
+
+                      {isDuplicate && (
+                        <div className="card-field duplicate-action-mobile">
+                          <label>פעולה עבור כפילות</label>
+                          <div className="duplicate-action-checkbox mobile">
+                            <input
+                              type="checkbox"
+                              id={`replace-mobile-${transaction.tempId}`}
+                              checked={replaceDuplicates.get(transaction.tempId) || false}
+                              onChange={(e) => {
+                                const newMap = new Map(replaceDuplicates);
+                                newMap.set(transaction.tempId, e.target.checked);
+                                setReplaceDuplicates(newMap);
+                              }}
+                              className="duplicate-checkbox"
+                            />
+                            <label htmlFor={`replace-mobile-${transaction.tempId}`} className="checkbox-label">
+                              {replaceDuplicates.get(transaction.tempId) 
+                                ? 'החלף את הרשומה הקיימת' 
+                                : 'צור רשומה חדשה כפולה'
+                              }
+                            </label>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     );
                   })}

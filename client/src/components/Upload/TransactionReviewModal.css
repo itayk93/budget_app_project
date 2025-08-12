@@ -999,3 +999,84 @@
     font-size: 13px;
   }
 }
+
+/* Duplicate Action Checkbox Styles */
+.duplicate-action-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  transition: all 0.2s ease;
+}
+
+.duplicate-action-checkbox:hover {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.duplicate-action-checkbox.mobile {
+  padding: 8px 12px;
+  background: rgba(245, 158, 11, 0.05);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 8px;
+  justify-content: center;
+}
+
+.duplicate-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: #f59e0b;
+  cursor: pointer;
+}
+
+.duplicate-action-checkbox .checkbox-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #92400e;
+  cursor: pointer;
+  user-select: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.duplicate-action-checkbox.mobile .checkbox-label {
+  font-size: 13px;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 500;
+}
+
+.no-action {
+  color: #9ca3af;
+  font-size: 12px;
+  text-align: center;
+  display: block;
+}
+
+.duplicate-action-mobile {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.duplicate-action-mobile label {
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 4px;
+}
+
+@media (max-width: 768px) {
+  .duplicate-action-checkbox.mobile {
+    padding: 10px 16px;
+    background: rgba(245, 158, 11, 0.08);
+    margin-top: 4px;
+  }
+  
+  .duplicate-action-mobile label {
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+}

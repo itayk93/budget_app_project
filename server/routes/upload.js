@@ -584,7 +584,7 @@ router.post('/check-duplicates', authenticateToken, async (req, res) => {
 // Multi-step upload: Step 4 - Finalize import
 router.post('/finalize', authenticateToken, async (req, res) => {
   try {
-    const { uploadId, selectedCurrency, duplicateResolutions, cashFlowId, transactions: reviewedTransactions, deletedIndices, fileSource } = req.body;
+    const { uploadId, selectedCurrency, duplicateResolutions, cashFlowId, transactions: reviewedTransactions, deletedIndices, fileSource, duplicateActions } = req.body;
     const session = uploadSessions.get(uploadId);
 
     if (!session || session.userId !== req.user.id) {
@@ -674,7 +674,8 @@ router.post('/finalize', authenticateToken, async (req, res) => {
     // Import transactions
     const importResult = await ExcelService.importTransactions(
       finalTransactions, 
-      session.forceImport
+      session.forceImport,
+      duplicateActions // Pass duplicate actions for handling replace vs create new
     );
 
     // Clean up file

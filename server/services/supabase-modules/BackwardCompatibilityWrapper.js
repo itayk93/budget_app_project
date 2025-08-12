@@ -95,6 +95,7 @@ class BackwardCompatibleSupabaseService {
   };
   static updateTransaction = unwrapResponse(TransactionService.updateTransaction, null);
   static updateTransactionFlowMonth = unwrapResponse(TransactionService.updateTransactionFlowMonth, null);
+  static replaceTransaction = unwrapResponse(TransactionService.replaceTransaction, null);
   static deleteTransaction = unwrapResponse(TransactionService.deleteTransaction, null);
 
   // ===== CATEGORY MANAGEMENT (unwrap responses) =====
