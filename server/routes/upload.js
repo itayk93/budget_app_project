@@ -619,6 +619,17 @@ router.post('/finalize', authenticateToken, async (req, res) => {
     // Check if we have reviewed transactions from the modal
     if (reviewedTransactions && Array.isArray(reviewedTransactions)) {
       console.log('🔄 Using reviewed transactions from modal:', reviewedTransactions.length);
+      // Debug: Check recipient_name data
+      reviewedTransactions.forEach((tx, index) => {
+        if (tx.business_name && tx.business_name.includes('PAYBOX')) {
+          console.log(`🎯 [DEBUG RECIPIENT] Transaction ${index}:`, {
+            business_name: tx.business_name,
+            recipient_name: tx.recipient_name,
+            amount: tx.amount,
+            notes: tx.notes
+          });
+        }
+      });
       transactions = reviewedTransactions;
     } else if (selectedCurrency && processedData.currencyGroups) {
       // Handle different currency group structures

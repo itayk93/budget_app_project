@@ -803,8 +803,31 @@ class ExcelService {
         console.log(`[importTransactions] Processing tx with hash: ${transaction.transaction_hash}, forceFlag: ${transaction.forceImport}, business_name: ${transaction.business_name}`);
         
         // Check if this transaction has duplicate actions defined
-        const tempId = `temp_${i}`; // Generate tempId similar to frontend
-        const duplicateAction = duplicateActions[tempId];
+        // First try the consecutive tempId (temp_0, temp_1, temp_2...)
+        let tempId = `temp_${i}`;
+        let duplicateAction = duplicateActions[tempId];
+        
+        // If not found, search by transaction hash in duplicateActions
+        if (!duplicateAction) {
+          const txHash = transaction.transaction_hash;
+          for (const [actionTempId, actionData] of Object.entries(duplicateActions)) {
+            if (actionData.duplicateHash === txHash) {
+              tempId = actionTempId;
+              duplicateAction = actionData;
+              break;
+            }
+          }
+        }
+        
+        // Debug duplicate actions
+        if (transaction.business_name && transaction.business_name.includes('PAYBOX')) {
+          console.log(`🎯 [DEBUG DUPLICATE ACTION] Transaction ${i} (${tempId}):`, {
+            business_name: transaction.business_name,
+            recipient_name: transaction.recipient_name,
+            duplicateAction: duplicateAction,
+            availableActions: Object.keys(duplicateActions)
+          });
+        }
         
         let result;
         if (duplicateAction && duplicateAction.shouldReplace) {

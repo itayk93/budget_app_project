@@ -546,8 +546,24 @@ const Upload = () => {
         transactions: reviewData.transactions,
         deletedIndices: reviewData.deletedIndices,
         cashFlowId: selectedCashFlow,
-        fileSource: reviewFileSource
+        fileSource: reviewFileSource,
+        duplicateActions: reviewData.duplicateActions || {}
       };
+      
+      // Debug: Check recipient_name in transactions being sent
+      reviewData.transactions.forEach((tx, index) => {
+        if (tx.business_name && tx.business_name.includes('PAYBOX')) {
+          console.log(`🎯 [FRONTEND DEBUG] Sending transaction ${index}:`, {
+            business_name: tx.business_name,
+            recipient_name: tx.recipient_name,
+            amount: tx.amount,
+            notes: tx.notes
+          });
+        }
+      });
+      
+      // Debug: Check duplicateActions being sent
+      console.log(`🎯 [FRONTEND DEBUG] Sending duplicateActions:`, reviewData.duplicateActions);
       
       finalImportMutation.mutate(finalData);
     } catch (error) {
