@@ -96,10 +96,10 @@ const TransactionReviewModal = ({
           // If original file notes are null/empty, don't extract recipient
           if (!notesToProcess) {
             console.log(`⚠️ [DUPLICATE FIX] Original file has no notes - skipping recipient extraction`);
-            // Clear any existing recipient_name since the new file doesn't have recipient info
+            // Keep existing recipient_name if user has manually entered it, or clear if it was auto-extracted
             return {
               ...tx,
-              recipient_name: null,
+              recipient_name: tx.recipient_name || null, // Preserve manual entry or clear auto-extracted
               notes: notesToProcess // Use original file notes (null/empty)
             };
           }

@@ -489,11 +489,25 @@ class TransactionService {
         }
       }
 
-      // Extract recipient name from notes before processing
-      const recipientInfo = this.extractRecipientName(
-        transactionData.business_name,
-        transactionData.notes
-      );
+      // Only extract recipient name if user didn't manually provide one
+      let finalRecipientName = transactionData.recipient_name;
+      let finalNotes = transactionData.notes;
+      
+      if (!transactionData.recipient_name && transactionData.business_name && transactionData.business_name.includes('PAYBOX') && transactionData.notes) {
+        // Only auto-extract if user didn't provide recipient_name manually
+        const recipientInfo = this.extractRecipientName(
+          transactionData.business_name,
+          transactionData.notes
+        );
+        finalRecipientName = recipientInfo.recipientName;
+        finalNotes = recipientInfo.cleanedNotes;
+        
+        if (recipientInfo.recipientName) {
+          console.log(`🎯 [AUTO-EXTRACT] Auto-extracted recipient_name: "${recipientInfo.recipientName}"`);
+        }
+      } else if (transactionData.recipient_name) {
+        console.log(`👤 [MANUAL ENTRY] Using manually entered recipient_name: "${transactionData.recipient_name}"`);
+      }
 
       // Prepare transaction data
       const processedData = {
@@ -502,14 +516,14 @@ class TransactionService {
         amount: SharedUtilities.validateAmount(transactionData.amount || 0),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        // Add recipient name and cleaned notes
-        recipient_name: recipientInfo.recipientName,
-        notes: recipientInfo.cleanedNotes
+        // Use manual or extracted recipient name
+        recipient_name: finalRecipientName,
+        notes: finalNotes
       };
 
-      if (recipientInfo.recipientName) {
-        console.log(`🎯 [TRANSACTION CREATION] Added recipient_name: "${recipientInfo.recipientName}"`);
-        console.log(`🧹 [TRANSACTION CREATION] Cleaned notes: "${recipientInfo.cleanedNotes}"`);
+      if (finalRecipientName) {
+        console.log(`🎯 [TRANSACTION CREATION] Added recipient_name: "${finalRecipientName}"`);
+        console.log(`🧹 [TRANSACTION CREATION] Final notes: "${finalNotes}"`);
       }
 
       // Handle payment date processing
@@ -593,31 +607,39 @@ class TransactionService {
         return SharedUtilities.createErrorResponse('Transaction ID is required');
       }
 
-      // Extract recipient name if business_name or notes are being updated
-      let recipientInfo = null;
-      if (updateData.business_name || updateData.notes) {
-        // If updating business_name or notes, extract recipient info
-        recipientInfo = this.extractRecipientName(
+      // Only extract recipient name if user didn't manually provide one
+      let finalRecipientName = updateData.recipient_name;
+      let finalNotes = updateData.notes;
+      
+      // Only auto-extract if:
+      // 1. User didn't provide recipient_name manually
+      // 2. It's a PAYBOX transaction 
+      // 3. There are notes to extract from
+      if (!updateData.recipient_name && updateData.business_name && updateData.business_name.includes('PAYBOX') && updateData.notes) {
+        const recipientInfo = this.extractRecipientName(
           updateData.business_name,
           updateData.notes
         );
+        finalRecipientName = recipientInfo.recipientName;
+        finalNotes = recipientInfo.cleanedNotes;
+        
+        if (recipientInfo.recipientName) {
+          console.log(`🎯 [UPDATE AUTO-EXTRACT] Auto-extracted recipient_name: "${recipientInfo.recipientName}"`);
+        }
+      } else if (updateData.recipient_name) {
+        console.log(`👤 [UPDATE MANUAL] Using manually entered recipient_name: "${updateData.recipient_name}"`);
       }
 
       // Prepare update data
       const processedUpdateData = {
         ...updateData,
+        recipient_name: finalRecipientName,
+        notes: finalNotes,
         updated_at: new Date().toISOString()
       };
-
-      // Add recipient info if extracted
-      if (recipientInfo) {
-        processedUpdateData.recipient_name = recipientInfo.recipientName;
-        processedUpdateData.notes = recipientInfo.cleanedNotes;
-        
-        if (recipientInfo.recipientName) {
-          console.log(`🎯 [TRANSACTION UPDATE] Updated recipient_name: "${recipientInfo.recipientName}"`);
-          console.log(`🧹 [TRANSACTION UPDATE] Cleaned notes: "${recipientInfo.cleanedNotes}"`);
-        }
+      
+      if (finalRecipientName) {
+        console.log(`🎯 [TRANSACTION UPDATE] Final recipient_name: "${finalRecipientName}"`);
       }
 
       // Handle amount validation if provided
@@ -707,9 +729,9 @@ class TransactionService {
           console.log(`🎯 [REPLACE] Extracted recipient "${recipientName}" from new transaction notes`);
         }
       } else if (cleanData.business_name && cleanData.business_name.includes('PAYBOX')) {
-        // PAYBOX transaction with no notes - clear recipient data
-        console.log(`🧹 [REPLACE] PAYBOX transaction with no notes - clearing recipient data`);
-        finalRecipientName = null;
+        // PAYBOX transaction with no notes - preserve manual recipient entry
+        console.log(`🧹 [REPLACE] PAYBOX transaction with no notes - preserving manual recipient entry`);
+        finalRecipientName = cleanData.recipient_name; // Keep what user manually entered
         finalNotes = cleanData.notes;
       } else {
         // Non-PAYBOX transaction - preserve as-is
