@@ -793,8 +793,10 @@ class TransactionService {
           // Fall through to original logic below
         } else {
           console.log(`🎯 [REPLACE STRATEGY] Replacing child duplicate ${childToReplace.id} instead of parent ${originalTransactionId}`);
-          // Replace the child duplicate instead of the parent
-          return await this.replaceTransaction(childToReplace.id, newTransactionData);
+          // Replace the child duplicate instead of the parent (recursive call)
+          const recursiveResult = await this.replaceTransaction(childToReplace.id, newTransactionData);
+          console.log(`🔄 [RECURSIVE REPLACE] Result from child replacement:`, recursiveResult);
+          return recursiveResult;
         }
       }
 

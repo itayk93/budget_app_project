@@ -11,6 +11,11 @@ const BankScraperPage = () => {
     const [transactions, setTransactions] = useState([]);
     const [logs, setLogs] = useState([]);
     const [setupRequired, setSetupRequired] = useState(false);
+    const [editingConfig, setEditingConfig] = useState(null);
+    const [editForm, setEditForm] = useState({
+        configName: '',
+        credentials: {}
+    });
 
     // New configuration form state
     const [newConfig, setNewConfig] = useState({
@@ -197,6 +202,45 @@ const BankScraperPage = () => {
         }
     };
 
+    const handleEditConfig = (config) => {
+        setEditingConfig(config);
+        setEditForm({
+            configName: config.config_name,
+            credentials: {}
+        });
+    };
+
+    const handleUpdateConfig = async (e) => {
+        e.preventDefault();
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_BASE_URL}/bank-scraper/configs/${editingConfig.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(editForm)
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                await fetchConfigs();
+                setEditingConfig(null);
+                setEditForm({ configName: '', credentials: {} });
+                alert('קונפיגורציה עודכנה בהצלחה!');
+            } else {
+                alert(`שגיאה: ${data.error}`);
+            }
+        } catch (error) {
+            console.error('Error updating config:', error);
+            alert('שגיאה בעדכון הקונפיגורציה');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const toggleConfig = async (configId) => {
         try {
             const token = localStorage.getItem('token');
@@ -217,8 +261,11 @@ const BankScraperPage = () => {
         }
     };
 
-    const renderCredentialsForm = () => {
-        const selectedBankType = bankTypes[newConfig.bankType];
+    const renderCredentialsForm = (isEdit = false) => {
+        const config = isEdit ? editForm : newConfig;
+        const setConfig = isEdit ? setEditForm : setNewConfig;
+        const selectedBankType = bankTypes[isEdit ? editingConfig.bank_type : newConfig.bankType];
+        
         if (!selectedBankType) return null;
 
         return selectedBankType.credentials.map(field => (
@@ -226,15 +273,16 @@ const BankScraperPage = () => {
                 <label>{getFieldLabel(field)}:</label>
                 <input
                     type={field.includes('password') || field.includes('Password') ? 'password' : 'text'}
-                    value={newConfig.credentials[field] || ''}
-                    onChange={(e) => setNewConfig({
-                        ...newConfig,
+                    value={config.credentials[field] || ''}
+                    onChange={(e) => setConfig({
+                        ...config,
                         credentials: {
-                            ...newConfig.credentials,
+                            ...config.credentials,
                             [field]: e.target.value
                         }
                     })}
-                    required
+                    required={!isEdit} // Only required for new configs
+                    placeholder={isEdit ? 'השאר ריק אם לא רוצה לשנות' : ''}
                 />
             </div>
         ));
@@ -257,8 +305,8 @@ const BankScraperPage = () => {
     return (
         <div className="bank-scraper-page">
             <div className="page-header">
-                <h1>Israeli Bank Scraper - סקרייפר הבנקים הישראלי</h1>
-                <p>כלי לייבוא אוטומטי של נתוני חשבון מכל הבנקים הישראליים הגדולים</p>
+                <h1>כורה נתוני הבנקים הישראליים</h1>
+                <p>כלי לכריית נתונים ויבוא אוטומטי של נתוני חשבון מכל הבנקים הישראליים</p>
             </div>
 
             <div className="tabs">
@@ -278,7 +326,7 @@ const BankScraperPage = () => {
                     className={activeTab === 'logs' ? 'active' : ''}
                     onClick={() => setActiveTab('logs')}
                 >
-                    יומני ריצה
+                    יומני כריה
                 </button>
                 <button 
                     className={activeTab === 'guide' ? 'active' : ''}
@@ -330,8 +378,9 @@ const BankScraperPage = () => {
                             </button>
                         </div>
 
-                        {showAddForm && (
+                        {showAddForm && !editingConfig && (
                             <div className="add-config-form">
+                                <h3>הוספת קונפיגורציה חדשה</h3>
                                 <form onSubmit={handleAddConfig}>
                                     <div className="form-group">
                                         <label>שם הקונפיגורציה:</label>
@@ -380,6 +429,44 @@ const BankScraperPage = () => {
                             </div>
                         )}
 
+                        {editingConfig && (
+                            <div className="edit-config-form">
+                                <h3>עריכת קונפיגורציה: {editingConfig.config_name}</h3>
+                                <form onSubmit={handleUpdateConfig}>
+                                    <div className="form-group">
+                                        <label>שם הקונפיגורציה:</label>
+                                        <input
+                                            type="text"
+                                            value={editForm.configName}
+                                            onChange={(e) => setEditForm({...editForm, configName: e.target.value})}
+                                            placeholder="שם חדש לקונפיגורציה"
+                                            required
+                                        />
+                                    </div>
+                                    
+                                    <div className="bank-info">
+                                        <p><strong>בנק:</strong> {bankTypes[editingConfig.bank_type]?.name}</p>
+                                        <p className="note">פרטי הכניסה - השאר ריק אם לא רוצה לשנות</p>
+                                    </div>
+
+                                    {renderCredentialsForm(true)}
+
+                                    <div className="form-actions">
+                                        <button type="submit" className="btn-primary" disabled={loading}>
+                                            {loading ? 'מעדכן...' : 'עדכן קונפיגורציה'}
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            className="btn-secondary"
+                                            onClick={() => setEditingConfig(null)}
+                                        >
+                                            ביטול
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        )}
+
                         <div className="configs-list">
                             {loading ? (
                                 <div className="loading">טוען...</div>
@@ -399,7 +486,7 @@ const BankScraperPage = () => {
                                         
                                         <div className="config-details">
                                             <p><strong>בנק:</strong> {bankTypes[config.bank_type]?.name}</p>
-                                            <p><strong>סקריפה אחרונה:</strong> {config.last_scrape_date ? new Date(config.last_scrape_date).toLocaleString('he-IL') : 'מעולם לא רץ'}</p>
+                                            <p><strong>כריה אחרונה:</strong> {config.last_scrape_date ? new Date(config.last_scrape_date).toLocaleString('he-IL') : 'מעולם לא רץ'}</p>
                                             <p><strong>נוצר:</strong> {new Date(config.created_at).toLocaleString('he-IL')}</p>
                                         </div>
 
@@ -409,7 +496,14 @@ const BankScraperPage = () => {
                                                 onClick={() => handleRunScraper(config.id)}
                                                 disabled={loading || !config.is_active}
                                             >
-                                                הרץ סקריפה
+                                                הרץ כריית נתונים
+                                            </button>
+                                            <button 
+                                                className="btn-secondary"
+                                                onClick={() => handleEditConfig(config)}
+                                                disabled={editingConfig || showAddForm}
+                                            >
+                                                ערוך
                                             </button>
                                             <button 
                                                 className="btn-secondary"

@@ -835,20 +835,22 @@ class ExcelService {
           console.log(`🔄 [DUPLICATE REPLACE] Replacing original transaction ID: ${duplicateAction.originalTransactionId}`);
           result = await SupabaseService.replaceTransaction(duplicateAction.originalTransactionId, transaction);
           
+          console.log(`🔍 [REPLACE RESULT] Full result object:`, JSON.stringify(result, null, 2));
+          
           // For replace operations, mark as success regardless of duplicate flag
-          if (result.success) {
+          if (result && result.success) {
             results.replaced++;
             console.log(`✅ [IMPORT REPLACED] Transaction ${transaction.business_name} replaced with ID: ${result.data?.id}`);
             continue; // Skip to next transaction
           } else {
             results.errors++;
-            console.log(`❌ [IMPORT REPLACE ERROR] Failed to replace ${transaction.business_name}: ${result.error}`);
+            console.log(`❌ [IMPORT REPLACE ERROR] Failed to replace ${transaction.business_name}. Result:`, result);
             results.details.push({
               business_name: transaction.business_name,
               amount: transaction.amount,
               payment_date: transaction.payment_date,
               status: 'error',
-              error: result.error
+              error: result?.error || 'Unknown replacement error'
             });
             continue; // Skip to next transaction
           }
