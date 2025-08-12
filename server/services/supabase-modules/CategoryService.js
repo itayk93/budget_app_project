@@ -398,8 +398,8 @@ class CategoryService {
         .from('transactions')
         .select('category_name, category_id')
         .eq('business_name', businessName)
-        .not('category_name', 'is', null)
-        .not('category_id', 'is', null);
+        .not('category_name', 'is', null);
+        // Removed category_id NOT NULL check to handle legacy data where category_id might be NULL
 
       // Add user filter if provided
       if (userId) {
