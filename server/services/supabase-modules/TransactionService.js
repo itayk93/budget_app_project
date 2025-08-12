@@ -353,6 +353,89 @@ class TransactionService {
     }
   }
 
+  // ===== DUPLICATE CHAIN MANAGEMENT =====
+  
+  static async findLastDuplicateInChain(originalTransactionId) {
+    try {
+      // Find all transactions in the duplicate chain starting from the original
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('id, duplicate_parent_id, created_at')
+        .or(`id.eq.${originalTransactionId},duplicate_parent_id.eq.${originalTransactionId}`)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      if (!data || data.length === 0) return null;
+      
+      // Find the most recent transaction that has this original as its parent
+      // or traverse the chain to find the last duplicate
+      let currentId = originalTransactionId;
+      let lastDuplicate = null;
+      
+      // Keep looking for duplicates that reference the current transaction
+      while (true) {
+        const duplicate = data.find(tx => tx.duplicate_parent_id === currentId);
+        if (!duplicate) break;
+        
+        lastDuplicate = duplicate;
+        currentId = duplicate.id;
+      }
+      
+      return lastDuplicate;
+    } catch (error) {
+      console.error('Error finding last duplicate in chain:', error);
+      return null;
+    }
+  }
+  
+  static async getNextDuplicateNumber(rootTransactionId) {
+    try {
+      // Count all duplicates in this chain by finding all transactions 
+      // that have this root as their ultimate parent
+      const { data, error } = await supabase
+        .rpc('count_duplicate_chain', { root_transaction_id: rootTransactionId });
+      
+      if (error) {
+        console.log('RPC function not available, using manual count');
+        // Fallback: manual traversal
+        const { data: allTransactions, error: fetchError } = await supabase
+          .from('transactions')
+          .select('id, duplicate_parent_id')
+          .or(`id.eq.${rootTransactionId},duplicate_parent_id.eq.${rootTransactionId}`);
+        
+        if (fetchError) throw fetchError;
+        
+        // Count how many have this root as parent (directly or indirectly)
+        let count = 0;
+        const visited = new Set();
+        const queue = [rootTransactionId];
+        
+        while (queue.length > 0) {
+          const currentId = queue.shift();
+          if (visited.has(currentId)) continue;
+          visited.add(currentId);
+          
+          // Find all children of current transaction
+          const children = allTransactions.filter(tx => tx.duplicate_parent_id === currentId);
+          children.forEach(child => {
+            if (!visited.has(child.id)) {
+              queue.push(child.id);
+              count++;
+            }
+          });
+        }
+        
+        return count + 1; // Next duplicate number
+      }
+      
+      return (data || 0) + 1; // Next duplicate number
+    } catch (error) {
+      console.error('Error getting next duplicate number:', error);
+      return 1; // Default to first duplicate
+    }
+  }
+
   // ===== RECIPIENT NAME EXTRACTION =====
   
   static extractRecipientName(businessName, notes) {
@@ -428,56 +511,28 @@ class TransactionService {
       // Check if we found an existing transaction (existingResult.success means we got data)
       if (existingResult && existingResult.success && existingResult.data) {
         if (forceImport) {
-          console.log(`⚠️ Duplicate detected, but forceImport is true. Creating new transaction with unique hash`);
+          console.log(`⚠️ Duplicate detected, but forceImport is true. Creating new duplicate with parent linkage`);
           
-          // If the note doesn't already contain duplicate information, add it
-          if (!transactionData.notes || !transactionData.notes.includes('כפילות של עסקה')) {
-            const originalTxId = existingResult.data.id;
-            console.log(`🔄 [FORCE IMPORT] Original transaction ID: ${originalTxId}, business_name: ${existingResult.data.business_name}`);
-            
-            // Add a note to signify this is an intentional duplicate
-            const originalNote = transactionData.notes ? `${transactionData.notes}\n` : '';
-            transactionData.notes = `${originalNote}כפילות של עסקה ${originalTxId}`;
-            console.log(`📝 [FORCE IMPORT] Added duplicate note: ${transactionData.notes}`);
-          }
+          // Find the most recent duplicate in the chain to link to
+          const parentTransaction = await this.findLastDuplicateInChain(existingResult.data.id);
+          const parentId = parentTransaction ? parentTransaction.id : existingResult.data.id;
           
-          // Regenerate the hash with the new note to ensure it's unique.
+          // Get the duplicate number for this chain
+          const duplicateNumber = await this.getNextDuplicateNumber(parentId);
+          
+          console.log(`🔗 [DUPLICATE CREATE] Parent ID: ${parentId}, Duplicate number: ${duplicateNumber}`);
+          
+          // Add duplicate numbering to notes to ensure unique hash
+          const originalNote = transactionData.notes ? `${transactionData.notes} ` : '';
+          transactionData.notes = `${originalNote}כפילות ${duplicateNumber}`;
+          console.log(`📝 [DUPLICATE CREATE] Added duplicate note: ${transactionData.notes}`);
+          
+          // Set the duplicate parent ID
+          transactionData.duplicate_parent_id = parentId;
+          
+          // Regenerate the hash with the new note to ensure it's unique
           transactionData.transaction_hash = this.generateTransactionHash(transactionData);
-          console.log(`🔑 [FORCE IMPORT] Generated new hash with note: ${transactionData.transaction_hash}`);
-          
-          // Check if the new hash is also a duplicate and make it unique if needed
-          let attempt = 1;
-          let newHash = transactionData.transaction_hash;
-          while (true) {
-            const existingWithNewHash = await this.getTransactionByHash(
-              transactionData.user_id,
-              newHash,
-              transactionData.cash_flow_id
-            );
-            
-            if (!existingWithNewHash || !existingWithNewHash.success || !existingWithNewHash.data) {
-              // Hash is unique, use it
-              transactionData.transaction_hash = newHash;
-              console.log(`✅ [FORCE IMPORT] Found unique hash after ${attempt} attempts: ${newHash}`);
-              break;
-            }
-            
-            // Hash is still a duplicate, add attempt number to make it unique
-            attempt++;
-            const baseNote = transactionData.notes.replace(/ \(\d+\)$/, ''); // Remove any existing attempt number
-            transactionData.notes = `${baseNote} (${attempt})`;
-            newHash = this.generateTransactionHash(transactionData);
-            console.log(`🔄 [FORCE IMPORT] Attempt ${attempt}, new hash: ${newHash}`);
-            
-            // Safety check to prevent infinite loop
-            if (attempt > 10) {
-              // Add timestamp to make it truly unique
-              transactionData.notes = `${baseNote} (${Date.now()})`;
-              transactionData.transaction_hash = this.generateTransactionHash(transactionData);
-              console.log(`🛑 [FORCE IMPORT] Using timestamp fallback: ${transactionData.transaction_hash}`);
-              break;
-            }
-          }
+          console.log(`🔑 [DUPLICATE CREATE] Generated new hash with duplicate note: ${transactionData.transaction_hash}`);
 
         } else {
           // It's a duplicate and we're not forcing, so return a duplicate error

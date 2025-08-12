@@ -835,15 +835,10 @@ class ExcelService {
           console.log(`🔄 [DUPLICATE REPLACE] Replacing original transaction ID: ${duplicateAction.originalTransactionId}`);
           result = await SupabaseService.replaceTransaction(duplicateAction.originalTransactionId, transaction);
         } else if (duplicateAction && !duplicateAction.shouldReplace) {
-          // Create new duplicate with link to original
-          console.log(`🔗 [DUPLICATE CREATE] Creating new transaction with link to original ID: ${duplicateAction.originalTransactionId}`);
-          const transactionWithLink = {
-            ...transaction,
-            notes: transaction.notes 
-              ? `${transaction.notes} (מקושר לעסקה מקורית: ${duplicateAction.originalTransactionId})`
-              : `מקושר לעסקה מקורית: ${duplicateAction.originalTransactionId}`
-          };
-          result = await SupabaseService.createTransaction(transactionWithLink, true); // Force create
+          // Create new duplicate with proper parent linkage (handled by TransactionService)
+          console.log(`🔗 [DUPLICATE CREATE] Creating new duplicate transaction linked to original ID: ${duplicateAction.originalTransactionId}`);
+          // The TransactionService will handle setting duplicate_parent_id and adding "כפילות N" to notes
+          result = await SupabaseService.createTransaction(transaction, true); // Force create with duplicate handling
         } else {
           // Normal processing
           result = await SupabaseService.createTransaction(transaction, transaction.forceImport || forceImport);
