@@ -763,6 +763,41 @@ class TransactionService {
         return SharedUtilities.createErrorResponse('Original transaction ID is required');
       }
 
+      // First, check if this transaction is a parent (has duplicates pointing to it)
+      const { data: dependentTransactions, error: checkError } = await supabase
+        .from('transactions')
+        .select('id, duplicate_parent_id')
+        .eq('duplicate_parent_id', originalTransactionId);
+
+      if (checkError) {
+        console.error('Error checking dependent transactions:', checkError);
+      }
+
+      const hasChildren = dependentTransactions && dependentTransactions.length > 0;
+      
+      if (hasChildren) {
+        console.log(`⚠️ [REPLACE LOGIC] Transaction ${originalTransactionId} has ${dependentTransactions.length} child duplicates. Using smart replacement strategy.`);
+        
+        // Strategy: Find the most recent child duplicate and replace IT instead of the parent
+        // This preserves the parent-child relationship structure
+        const { data: childToReplace, error: childError } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('duplicate_parent_id', originalTransactionId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (childError || !childToReplace) {
+          console.log(`⚠️ [REPLACE FALLBACK] Could not find child to replace, will try direct update despite constraints`);
+          // Fall through to original logic below
+        } else {
+          console.log(`🎯 [REPLACE STRATEGY] Replacing child duplicate ${childToReplace.id} instead of parent ${originalTransactionId}`);
+          // Replace the child duplicate instead of the parent
+          return await this.replaceTransaction(childToReplace.id, newTransactionData);
+        }
+      }
+
       // Extract and prepare the new transaction data, excluding system fields
       const { tempId, originalIndex, isDuplicate, duplicateInfo, ...cleanData } = newTransactionData;
       
@@ -817,7 +852,14 @@ class TransactionService {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // If we still get a foreign key constraint error, it means this is a parent that we can't modify
+        if (error.code === '23503') {
+          console.log(`🚫 [REPLACE ERROR] Cannot update parent transaction ${originalTransactionId} due to foreign key constraints`);
+          return SharedUtilities.createErrorResponse('Cannot replace parent transaction that has duplicate children. Please try again or contact support.');
+        }
+        throw error;
+      }
       
       console.log(`✅ [REPLACE TRANSACTION] Successfully replaced transaction ${originalTransactionId}`);
       return SharedUtilities.createSuccessResponse(data, 'Transaction replaced successfully');
