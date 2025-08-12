@@ -5,18 +5,31 @@ const { supabase } = require('../config/supabase');
 const ENCRYPTION_KEY = process.env.BANK_SCRAPER_ENCRYPTION_KEY || 'default-key-change-in-production';
 
 class IsraeliBankScraperService {
-    // Encrypt sensitive data before storing
+    // Encrypt sensitive data before storing  
     encryptCredentials(credentials) {
-        const cipher = crypto.createCipher('aes-256-cbc', ENCRYPTION_KEY);
+        const algorithm = 'aes-256-cbc';
+        const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
+        const iv = crypto.randomBytes(16);
+        
+        const cipher = crypto.createCipheriv(algorithm, key, iv);
         let encrypted = cipher.update(JSON.stringify(credentials), 'utf8', 'hex');
         encrypted += cipher.final('hex');
-        return encrypted;
+        
+        // Prepend IV to encrypted data
+        return iv.toString('hex') + ':' + encrypted;
     }
 
     // Decrypt credentials when retrieving
     decryptCredentials(encryptedCredentials) {
-        const decipher = crypto.createDecipher('aes-256-cbc', ENCRYPTION_KEY);
-        let decrypted = decipher.update(encryptedCredentials, 'hex', 'utf8');
+        const algorithm = 'aes-256-cbc';
+        const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
+        
+        const textParts = encryptedCredentials.split(':');
+        const iv = Buffer.from(textParts.shift(), 'hex');
+        const encryptedText = textParts.join(':');
+        
+        const decipher = crypto.createDecipheriv(algorithm, key, iv);
+        let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
         decrypted += decipher.final('utf8');
         return JSON.parse(decrypted);
     }
