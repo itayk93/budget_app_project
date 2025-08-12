@@ -1,26 +1,33 @@
+/* Clean Black & White Design for Bank Data Mining */
 .bank-scraper-page {
     min-height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #f8f9fa;
     padding: 20px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     direction: rtl;
+    color: #212529;
 }
 
 .page-header {
     text-align: center;
     margin-bottom: 30px;
-    color: white;
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
 }
 
 .page-header h1 {
-    font-size: 2.5em;
+    font-size: 2.2em;
     margin-bottom: 10px;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    color: #212529;
+    font-weight: 600;
 }
 
 .page-header p {
-    font-size: 1.2em;
-    opacity: 0.9;
+    font-size: 1.1em;
+    color: #6c757d;
     max-width: 600px;
     margin: 0 auto;
 }
@@ -29,96 +36,152 @@
     display: flex;
     justify-content: center;
     margin-bottom: 30px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 10px;
+    background: white;
+    border-radius: 8px;
     padding: 5px;
-    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
 }
 
 .tabs button {
     background: transparent;
     border: none;
     padding: 12px 24px;
-    color: white;
+    color: #6c757d;
     cursor: pointer;
-    border-radius: 8px;
+    border-radius: 6px;
     font-size: 16px;
     font-weight: 500;
-    transition: all 0.3s ease;
-    margin: 0 5px;
+    transition: all 0.2s ease;
+    margin: 0 2px;
 }
 
 .tabs button:hover {
-    background: rgba(255,255,255,0.1);
+    background: #f8f9fa;
+    color: #495057;
 }
 
 .tabs button.active {
-    background: white;
-    color: #667eea;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    background: #212529;
+    color: white;
+    font-weight: 600;
 }
 
 .tab-content {
     background: white;
-    border-radius: 15px;
+    border-radius: 8px;
     padding: 30px;
     min-height: 500px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
 }
 
-/* Configs Tab Styles */
+/* Setup Required Banner */
+.setup-required-banner {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.setup-required-banner h3 {
+    color: #856404;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.3em;
+}
+
+.setup-required-banner p {
+    color: #856404;
+    margin-bottom: 15px;
+}
+
+.setup-steps {
+    background: rgba(255,255,255,0.7);
+    border-radius: 6px;
+    padding: 15px;
+    margin: 15px 0;
+    text-align: right;
+}
+
+.setup-steps ol {
+    text-align: right;
+    padding-right: 20px;
+    margin: 0;
+}
+
+.setup-steps li {
+    margin-bottom: 5px;
+    color: #856404;
+    font-size: 14px;
+}
+
+/* Section Headers */
 .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 25px;
     padding-bottom: 15px;
-    border-bottom: 2px solid #eee;
+    border-bottom: 1px solid #e9ecef;
 }
 
 .section-header h2 {
-    color: #333;
-    font-size: 1.8em;
+    color: #212529;
+    font-size: 1.6em;
     margin: 0;
+    font-weight: 600;
 }
 
+/* Buttons */
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #212529;
     color: white;
     border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
+    padding: 10px 20px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
-    font-weight: 600;
-    transition: all 0.3s ease;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
 }
 
 .btn-primary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    background: #495057;
+    transform: translateY(-1px);
 }
 
 .btn-primary:disabled {
-    opacity: 0.6;
+    background: #6c757d;
     cursor: not-allowed;
+    transform: none;
 }
 
 .btn-secondary {
-    background: #f8f9fa;
+    background: white;
     color: #495057;
     border: 1px solid #dee2e6;
     padding: 8px 16px;
     border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
-    margin-left: 10px;
-    transition: all 0.3s ease;
+    margin-left: 8px;
+    transition: all 0.2s ease;
 }
 
-.btn-secondary:hover {
-    background: #e9ecef;
+.btn-secondary:hover:not(:disabled) {
+    background: #f8f9fa;
     border-color: #adb5bd;
+}
+
+.btn-secondary:disabled {
+    background: #f8f9fa;
+    color: #6c757d;
+    cursor: not-allowed;
 }
 
 .btn-danger {
@@ -129,8 +192,8 @@
     border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
-    margin-left: 10px;
-    transition: all 0.3s ease;
+    margin-left: 8px;
+    transition: all 0.2s ease;
 }
 
 .btn-danger:hover {
@@ -138,13 +201,23 @@
     transform: translateY(-1px);
 }
 
-/* Add Config Form */
-.add-config-form {
+/* Forms */
+.add-config-form,
+.edit-config-form {
     background: #f8f9fa;
-    border: 2px dashed #dee2e6;
-    border-radius: 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
     padding: 25px;
     margin-bottom: 25px;
+}
+
+.add-config-form h3,
+.edit-config-form h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #212529;
+    font-size: 1.3em;
+    font-weight: 600;
 }
 
 .form-group {
@@ -153,27 +226,48 @@
 
 .form-group label {
     display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
+    margin-bottom: 6px;
+    font-weight: 500;
     color: #495057;
+    font-size: 14px;
 }
 
 .form-group input,
 .form-group select {
     width: 100%;
-    padding: 10px 15px;
-    border: 1px solid #dee2e6;
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
     border-radius: 6px;
     font-size: 14px;
-    transition: border-color 0.3s ease;
+    transition: border-color 0.2s ease;
     direction: rtl;
+    background: white;
 }
 
 .form-group input:focus,
 .form-group select:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+    border-color: #495057;
+    box-shadow: 0 0 0 2px rgba(73, 80, 87, 0.1);
+}
+
+.bank-info {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    border: 1px solid #e9ecef;
+}
+
+.bank-info p {
+    margin: 8px 0;
+    font-size: 14px;
+}
+
+.bank-info .note {
+    color: #6c757d;
+    font-style: italic;
+    font-size: 13px;
 }
 
 .form-actions {
@@ -181,6 +275,8 @@
     justify-content: flex-end;
     gap: 10px;
     margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
 }
 
 /* Config Cards */
@@ -193,15 +289,14 @@
 .config-card {
     background: white;
     border: 1px solid #e9ecef;
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 20px;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
 }
 
 .config-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
 }
 
 .config-header {
@@ -213,26 +308,29 @@
 
 .config-header h3 {
     margin: 0;
-    color: #333;
-    font-size: 1.3em;
+    color: #212529;
+    font-size: 1.2em;
+    font-weight: 600;
 }
 
 .config-status .status {
-    padding: 4px 12px;
-    border-radius: 20px;
+    padding: 4px 10px;
+    border-radius: 12px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     text-transform: uppercase;
 }
 
 .config-status .status.active {
     background: #d4edda;
     color: #155724;
+    border: 1px solid #c3e6cb;
 }
 
 .config-status .status.inactive {
     background: #f8d7da;
     color: #721c24;
+    border: 1px solid #f5c6cb;
 }
 
 .config-details {
@@ -241,8 +339,12 @@
 }
 
 .config-details p {
-    margin: 8px 0;
+    margin: 6px 0;
     font-size: 14px;
+}
+
+.config-details strong {
+    color: #495057;
 }
 
 .config-actions {
@@ -252,7 +354,7 @@
 }
 
 .config-actions button {
-    font-size: 12px;
+    font-size: 13px;
     padding: 6px 12px;
 }
 
@@ -261,7 +363,7 @@
     overflow-x: auto;
     background: white;
     border-radius: 8px;
-    border: 1px solid #dee2e6;
+    border: 1px solid #e9ecef;
 }
 
 .transactions-table table {
@@ -272,18 +374,18 @@
 
 .transactions-table th {
     background: #f8f9fa;
-    padding: 15px 10px;
+    padding: 12px 10px;
     text-align: right;
     font-weight: 600;
     color: #495057;
-    border-bottom: 2px solid #dee2e6;
+    border-bottom: 1px solid #e9ecef;
     position: sticky;
     top: 0;
 }
 
 .transactions-table td {
-    padding: 12px 10px;
-    border-bottom: 1px solid #f1f3f4;
+    padding: 10px;
+    border-bottom: 1px solid #f8f9fa;
     vertical-align: middle;
 }
 
@@ -302,10 +404,10 @@
 }
 
 .status {
-    padding: 4px 8px;
-    border-radius: 12px;
+    padding: 3px 8px;
+    border-radius: 10px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
 }
 
 .status.completed {
@@ -326,11 +428,11 @@
 
 .log-entry {
     background: white;
-    border: 1px solid #dee2e6;
+    border: 1px solid #e9ecef;
     border-radius: 8px;
     margin-bottom: 15px;
     padding: 15px;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 .log-entry.success {
@@ -380,17 +482,19 @@
     padding: 20px;
     background: #f8f9fa;
     border-radius: 8px;
+    border: 1px solid #e9ecef;
 }
 
 .guide-section.warning {
     background: #fff3cd;
-    border: 1px solid #ffeaa7;
+    border-color: #ffeaa7;
 }
 
 .guide-section h3 {
-    color: #333;
+    color: #212529;
     margin-top: 0;
     margin-bottom: 15px;
+    font-weight: 600;
 }
 
 .guide-section ul,
@@ -400,76 +504,6 @@
 
 .guide-section li {
     margin-bottom: 8px;
-}
-
-/* Setup Required Banner */
-.setup-required-banner {
-    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-    border: 2px solid #ffc107;
-    border-radius: 12px;
-    padding: 25px;
-    margin-bottom: 25px;
-    text-align: center;
-}
-
-.setup-required-banner h3 {
-    color: #856404;
-    margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 1.5em;
-}
-
-.setup-required-banner p {
-    color: #856404;
-    margin-bottom: 20px;
-    font-size: 16px;
-    line-height: 1.5;
-}
-
-.setup-steps {
-    background: rgba(255,255,255,0.8);
-    border-radius: 8px;
-    padding: 20px;
-    margin: 20px 0;
-    text-align: right;
-}
-
-.setup-steps strong {
-    display: block;
-    margin-bottom: 15px;
-    color: #856404;
-    font-size: 16px;
-}
-
-.setup-steps ol {
-    text-align: right;
-    padding-right: 20px;
-    margin: 0;
-}
-
-.setup-steps li {
-    margin-bottom: 8px;
-    color: #856404;
-    line-height: 1.4;
-}
-
-.setup-steps a {
-    color: #007bff;
-    text-decoration: none;
-    font-weight: 600;
-}
-
-.setup-steps a:hover {
-    text-decoration: underline;
-}
-
-.setup-steps code {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
     color: #495057;
 }
 
@@ -478,7 +512,7 @@
     text-align: center;
     padding: 40px;
     color: #6c757d;
-    font-size: 18px;
+    font-size: 16px;
 }
 
 .no-data {
@@ -492,21 +526,22 @@
 /* Responsive Design */
 @media (max-width: 768px) {
     .bank-scraper-page {
-        padding: 10px;
+        padding: 15px;
     }
     
     .tabs {
         flex-wrap: wrap;
-        gap: 10px;
+        gap: 5px;
     }
     
     .tabs button {
         flex: 1;
-        min-width: 120px;
+        min-width: 100px;
+        font-size: 14px;
     }
     
     .tab-content {
-        padding: 20px;
+        padding: 20px 15px;
     }
     
     .section-header {
@@ -523,12 +558,12 @@
         justify-content: center;
     }
     
-    .transactions-table {
-        font-size: 12px;
+    .form-actions {
+        flex-direction: column;
+        gap: 10px;
     }
     
-    .transactions-table th,
-    .transactions-table td {
-        padding: 8px 5px;
+    .form-actions button {
+        width: 100%;
     }
 }

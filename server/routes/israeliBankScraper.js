@@ -173,6 +173,35 @@ router.delete('/configs/:configId', async (req, res) => {
     }
 });
 
+// Update configuration
+router.put('/configs/:configId', async (req, res) => {
+    try {
+        const { configId } = req.params;
+        const { configName, credentials } = req.body;
+        const userId = req.user.id;
+
+        const result = await israeliBankScraperService.updateConfig(
+            parseInt(configId),
+            userId,
+            configName,
+            credentials
+        );
+
+        if (result.success) {
+            res.json({
+                success: true,
+                message: 'Configuration updated successfully',
+                config: result.config
+            });
+        } else {
+            res.status(400).json(result);
+        }
+    } catch (error) {
+        console.error('Error updating config:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // Toggle configuration active status
 router.put('/configs/:configId/toggle', async (req, res) => {
     try {

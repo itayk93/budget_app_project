@@ -362,6 +362,70 @@ class IsraeliBankScraperService {
         }
     }
 
+    // Update configuration
+    async updateConfig(configId, userId, configName, credentials) {
+        try {
+            // Verify user owns the config
+            const { data: config } = await supabase
+                .from('bank_scraper_configs')
+                .select('*')
+                .eq('id', configId)
+                .eq('user_id', userId)
+                .single();
+
+            if (!config) {
+                throw new Error('Configuration not found');
+            }
+
+            const updateData = {};
+            
+            // Update config name if provided
+            if (configName && configName !== config.config_name) {
+                updateData.config_name = configName;
+                updateData.updated_at = new Date().toISOString();
+            }
+
+            // Update credentials if provided
+            if (credentials && Object.keys(credentials).length > 0) {
+                // Filter out empty credentials
+                const filteredCredentials = Object.fromEntries(
+                    Object.entries(credentials).filter(([key, value]) => value && value.trim() !== '')
+                );
+                
+                if (Object.keys(filteredCredentials).length > 0) {
+                    // Decrypt existing credentials
+                    const existingCredentials = this.decryptCredentials(config.credentials_encrypted);
+                    
+                    // Merge with new credentials
+                    const mergedCredentials = { ...existingCredentials, ...filteredCredentials };
+                    
+                    // Encrypt and update
+                    updateData.credentials_encrypted = this.encryptCredentials(mergedCredentials);
+                    updateData.updated_at = new Date().toISOString();
+                }
+            }
+
+            if (Object.keys(updateData).length === 0) {
+                return { success: true, message: 'No changes to update', config: config };
+            }
+
+            const { data: updatedConfig, error } = await supabase
+                .from('bank_scraper_configs')
+                .update(updateData)
+                .eq('id', configId)
+                .eq('user_id', userId)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return { success: true, config: updatedConfig };
+            
+        } catch (error) {
+            console.error('Error updating config:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
     // Toggle configuration active status
     async toggleConfig(configId, userId) {
         try {
