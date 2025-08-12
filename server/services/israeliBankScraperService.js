@@ -90,7 +90,17 @@ class IsraeliBankScraperService {
                 .eq('user_id', userId)
                 .order('created_at', { ascending: false });
 
-            if (error) throw error;
+            if (error) {
+                if (error.code === '42P01') {
+                    // Table doesn't exist
+                    return { 
+                        success: false, 
+                        error: 'הטבלאות של Bank Scraper לא נוצרו עדיין. אנא צור את הטבלאות ב-Supabase Dashboard לפי המדריך.',
+                        needsSetup: true
+                    };
+                }
+                throw error;
+            }
             return { success: true, configs: data };
         } catch (error) {
             console.error('Error getting user configs:', error);

@@ -10,6 +10,7 @@ const BankScraperPage = () => {
     const [selectedConfig, setSelectedConfig] = useState(null);
     const [transactions, setTransactions] = useState([]);
     const [logs, setLogs] = useState([]);
+    const [setupRequired, setSetupRequired] = useState(false);
 
     // New configuration form state
     const [newConfig, setNewConfig] = useState({
@@ -55,6 +56,9 @@ const BankScraperPage = () => {
             const data = await response.json();
             if (data.success) {
                 setConfigs(data.configs);
+                setSetupRequired(false);
+            } else if (data.needsSetup) {
+                setSetupRequired(true);
             }
         } catch (error) {
             console.error('Error fetching configs:', error);
@@ -278,6 +282,34 @@ const BankScraperPage = () => {
             </div>
 
             <div className="tab-content">
+                {setupRequired && (
+                    <div className="setup-required-banner">
+                        <h3>🔧 נדרשת הגדרה חד פעמית</h3>
+                        <p>
+                            הטבלאות של Israeli Bank Scraper לא נוצרו עדיין במסד הנתונים. 
+                            יש ליצור אותן פעם אחת ב-Supabase Dashboard.
+                        </p>
+                        <div className="setup-steps">
+                            <strong>שלבי ההגדרה:</strong>
+                            <ol>
+                                <li>גש ל-<a href="https://app.supabase.com" target="_blank" rel="noopener noreferrer">Supabase Dashboard</a></li>
+                                <li>בחר את הפרויקט שלך</li>
+                                <li>עבור ל-<strong>"SQL Editor"</strong></li>
+                                <li>לחץ על <strong>"New Query"</strong></li>
+                                <li>העתק את הקוד מהקובץ <code>sql/israeli_bank_scraper_tables.sql</code></li>
+                                <li>לחץ על <strong>"Run"</strong></li>
+                                <li>רענן את הדף הזה</li>
+                            </ol>
+                        </div>
+                        <button 
+                            className="btn-primary"
+                            onClick={() => window.location.reload()}
+                        >
+                            רענן דף לאחר יצירת הטבלאות
+                        </button>
+                    </div>
+                )}
+
                 {activeTab === 'configs' && (
                     <div className="configs-tab">
                         <div className="section-header">
@@ -285,6 +317,7 @@ const BankScraperPage = () => {
                             <button 
                                 className="btn-primary"
                                 onClick={() => setShowAddForm(!showAddForm)}
+                                disabled={setupRequired}
                             >
                                 הוסף קונפיגורציה חדשה
                             </button>
