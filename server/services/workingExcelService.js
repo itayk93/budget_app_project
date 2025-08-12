@@ -50,21 +50,22 @@ class WorkingExcelService {
   }
 
   // Get category by business name with auto-categorization
-  async getCategoryByBusinessName(businessName, amount = null, sourceType = null) {
+  async getCategoryByBusinessName(businessName, amount = null, sourceType = null, userId = null) {
     if (!businessName) return null;
     
     // Check cache first
-    if (this.businessCategoryCache.has(businessName)) {
-      return this.businessCategoryCache.get(businessName);
+    const cacheKey = `${businessName}_${userId}`;
+    if (this.businessCategoryCache.has(cacheKey)) {
+      return this.businessCategoryCache.get(cacheKey);
     }
     
     try {
-      // Call the SupabaseService auto-categorization
-      const autoCategory = await SupabaseService.getAutoCategoryForBusiness(businessName, amount, sourceType);
+      // Call the SupabaseService auto-categorization with userId
+      const autoCategory = await SupabaseService.getAutoCategoryForBusiness(businessName, amount, sourceType, userId);
       
       if (autoCategory) {
         // Cache the result
-        this.businessCategoryCache.set(businessName, autoCategory);
+        this.businessCategoryCache.set(cacheKey, autoCategory);
         console.log(`Auto-categorized "${businessName}" as "${autoCategory}"`);
         return autoCategory;
       }
@@ -415,7 +416,7 @@ class WorkingExcelService {
   }
 
   // Enhanced map_sheet function based on Flask logic
-  async mapSheet(rawData, fileSource, uploadId = null) {
+  async mapSheet(rawData, fileSource, uploadId = null, userId = null) {
     logger.info('UPLOAD', `Starting sheet mapping for ${rawData.length} rows`, {
       uploadId,
       fileSource,
@@ -459,7 +460,7 @@ class WorkingExcelService {
     for (let rowIndex = 0; rowIndex < rawData.length; rowIndex++) {
       const row = rawData[rowIndex];
       try {
-        const mappedRow = await this.mapRowAdvanced(row, columnAnalysis, fileSource, uploadId, rowIndex);
+        const mappedRow = await this.mapRowAdvanced(row, columnAnalysis, fileSource, uploadId, rowIndex, userId);
         if (mappedRow && this.isValidTransaction(mappedRow)) {
           mappedTransactions.push(mappedRow);
           validTransactions++;
@@ -524,7 +525,7 @@ class WorkingExcelService {
     return analysis;
   }
 
-  async mapRowAdvanced(row, columnAnalysis, fileSource, uploadId = null, rowIndex = null) {
+  async mapRowAdvanced(row, columnAnalysis, fileSource, uploadId = null, rowIndex = null, userId = null) {
     const mapped = {
       source_type: 'creditCard',
       flow_month: null,
@@ -717,7 +718,7 @@ class WorkingExcelService {
     // Apply auto-categorization if no category was found in the Excel and business name exists
     if (!mapped.category_name && mapped.business_name) {
       try {
-        const autoCategory = await this.getCategoryByBusinessName(mapped.business_name, mapped.amount, fileSource);
+        const autoCategory = await this.getCategoryByBusinessName(mapped.business_name, mapped.amount, fileSource, userId);
         if (autoCategory) {
           mapped.category_name = autoCategory;
           console.log(`Auto-categorized "${mapped.business_name}" as "${autoCategory}" in mapRowAdvanced`);
@@ -728,7 +729,7 @@ class WorkingExcelService {
     }
     
     // Post-processing based on file source
-    await this.applyFileSourceLogic(mapped, fileSource);
+    await this.applyFileSourceLogic(mapped, fileSource, userId);
     
     return mapped;
   }
@@ -802,11 +803,11 @@ class WorkingExcelService {
     return 'ILS'; // Default
   }
 
-  async applyFileSourceLogic(mapped, fileSource) {
+  async applyFileSourceLogic(mapped, fileSource, userId = null) {
     // Apply auto-categorization for non-BudgetLens files if no category is set
     if (fileSource !== 'budgetlens' && !mapped.category_name && mapped.business_name) {
       try {
-        const autoCategory = await this.getCategoryByBusinessName(mapped.business_name, mapped.amount, fileSource);
+        const autoCategory = await this.getCategoryByBusinessName(mapped.business_name, mapped.amount, fileSource, userId);
         if (autoCategory) {
           mapped.category_name = autoCategory;
           console.log(`Auto-categorized "${mapped.business_name}" as "${autoCategory}" in applyFileSourceLogic`);
@@ -1105,7 +1106,7 @@ class WorkingExcelService {
     return { format: 'generic', confidence: 0.5 };
   }
 
-  async applyFormatProcessing(data, formatDetection, paymentMethod, paymentIdentifier) {
+  async applyFormatProcessing(data, formatDetection, paymentMethod, paymentIdentifier, userId = null) {
     console.log('🔧 Applying format processing:', formatDetection.format);
     console.log('📊 Total rows to process:', data.length);
     
@@ -1117,7 +1118,7 @@ class WorkingExcelService {
         if (process.env.DEBUG === 'true') {
             console.log(`🔍 Processing row ${i + 1}:`, row);
         }
-        const transaction = await this.processRow(row, formatDetection, paymentMethod, paymentIdentifier);
+        const transaction = await this.processRow(row, formatDetection, paymentMethod, paymentIdentifier, userId);
         if (process.env.DEBUG === 'true') {
             console.log(`📝 Transaction result for row ${i + 1}:`, transaction);
         }
@@ -1145,7 +1146,7 @@ class WorkingExcelService {
     return processedTransactions;
   }
 
-  async processRow(row, formatDetection, paymentMethod, paymentIdentifier) {
+  async processRow(row, formatDetection, paymentMethod, paymentIdentifier, userId = null) {
     // Store format detection for use in date parsing
     this.currentFormatDetection = formatDetection;
     const df = {};
@@ -1494,6 +1495,27 @@ class WorkingExcelService {
                     const flowMonth = chargeDate.subtract(1, 'month').format('YYYY-MM');
                     df.flow_month = flowMonth;
                     console.log(`🔍 [WorkingExcelService] Calculated flow_month for Max: ${df.flow_month} from charge_date: ${df.charge_date}`);
+                    
+                    // CRITICAL: Fix payment_date for Max installments
+                    if (df.transaction_type && df.transaction_type.includes('תשלומים')) {
+                        const originalPaymentDate = moment(df.payment_date, 'YYYY-MM-DD', true);
+                        const flowMonthDate = moment(flowMonth + '-01', 'YYYY-MM-DD');
+                        
+                        console.log(`💳 [MAX] Installment detected for ${df.business_name}:`);
+                        console.log(`   Original payment date: ${df.payment_date}`);
+                        console.log(`   Charge date: ${df.charge_date}`);
+                        console.log(`   Flow month: ${flowMonth}`);
+                        
+                        // Check if payment_date month is different from flow month
+                        if (originalPaymentDate.format('YYYY-MM') !== flowMonth) {
+                            // Keep same day, but change to flow month
+                            const adjustedDate = moment(flowMonth + '-' + originalPaymentDate.format('DD'), 'YYYY-MM-DD');
+                            df.payment_date = adjustedDate.format('YYYY-MM-DD');
+                            console.log(`   ✅ Adjusted payment date: ${df.payment_date}`);
+                        } else {
+                            console.log(`   ✅ Payment date already in correct month, no adjustment needed`);
+                        }
+                    }
                 } else {
                     // Fallback to payment_date if charge_date is invalid
                     df.flow_month = paymentDate.format('YYYY-MM');
@@ -1524,35 +1546,35 @@ class WorkingExcelService {
         if (formatDetection.format.toLowerCase() === 'isracard') {
             // Try to find category based on business name from existing transactions
             if (df.business_name) {
-                df.category_name = await this.getCategoryByBusinessName(df.business_name, df.amount, formatDetection.format) || 'הוצאות משתנות';
+                df.category_name = await this.getCategoryByBusinessName(df.business_name, df.amount, formatDetection.format, userId) || 'הוצאות משתנות';
             } else {
                 df.category_name = 'הוצאות משתנות';
             }
         } else if (formatDetection.format.toLowerCase() === 'max') {
             // For Max files, use auto-categorization based on business name with 90% confidence
             if (df.business_name) {
-                df.category_name = await this.getCategoryByBusinessName(df.business_name, df.amount, formatDetection.format) || 'הוצאות משתנות';
+                df.category_name = await this.getCategoryByBusinessName(df.business_name, df.amount, formatDetection.format, userId) || 'הוצאות משתנות';
             } else {
                 df.category_name = 'הוצאות משתנות';
             }
         } else if (formatDetection.format.toLowerCase() === 'cal') {
             // For Cal files, use auto-categorization based on business name with 90% confidence
             if (df.business_name) {
-                df.category_name = await this.getCategoryByBusinessName(df.business_name, df.amount, formatDetection.format) || 'הוצאות משתנות';
+                df.category_name = await this.getCategoryByBusinessName(df.business_name, df.amount, formatDetection.format, userId) || 'הוצאות משתנות';
             } else {
                 df.category_name = 'הוצאות משתנות';
             }
         } else if (formatDetection.format.toLowerCase() === 'bank_yahav') {
             // For Bank Yahav files, use auto-categorization based on business name
             if (df.business_name) {
-                df.category_name = await this.getCategoryByBusinessName(df.business_name, df.amount, formatDetection.format) || 'הוצאות משתנות';
+                df.category_name = await this.getCategoryByBusinessName(df.business_name, df.amount, formatDetection.format, userId) || 'הוצאות משתנות';
             } else {
                 df.category_name = 'הוצאות משתנות';
             }
         } else if (formatDetection.format.toLowerCase() !== 'budgetlens') {
             // Apply auto-categorization for all non-BudgetLens files
             if (df.business_name) {
-                df.category_name = await this.getCategoryByBusinessName(df.business_name, df.amount, formatDetection.format) || 'הוצאות משתנות';
+                df.category_name = await this.getCategoryByBusinessName(df.business_name, df.amount, formatDetection.format, userId) || 'הוצאות משתנות';
             } else {
                 df.category_name = 'הוצאות משתנות';
             }
@@ -3405,7 +3427,7 @@ class WorkingExcelService {
         const end = Math.min(start + batchSize, rawData.length);
         const batch = rawData.slice(start, end);
         
-        const batchProcessed = await this.applyFormatProcessing(batch, formatDetection, paymentMethod, paymentIdentifier);
+        const batchProcessed = await this.applyFormatProcessing(batch, formatDetection, paymentMethod, paymentIdentifier, userId);
         processedData = processedData.concat(batchProcessed);
         
         // Update progress

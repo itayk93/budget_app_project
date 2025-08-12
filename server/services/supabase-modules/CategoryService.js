@@ -386,18 +386,25 @@ class CategoryService {
 
   // ===== BUSINESS-CATEGORY MAPPING =====
 
-  static async getMostFrequentCategoryForBusiness(businessName) {
+  static async getMostFrequentCategoryForBusiness(businessName, userId = null) {
     try {
       if (!businessName) {
         return null;
       }
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('transactions')
         .select('category_name, category_id')
         .eq('business_name', businessName)
         .not('category_name', 'is', null)
         .not('category_id', 'is', null);
+
+      // Add user filter if provided
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -432,17 +439,20 @@ class CategoryService {
     }
   }
 
-  static async getAutoCategoryForBusiness(businessName, amount, sourceType = null) {
+  static async getAutoCategoryForBusiness(businessName, amount, sourceType = null, userId = null) {
     try {
       if (!businessName) {
         return null;
       }
 
       // First try to get the most frequent category for this business
-      const frequentCategory = await this.getMostFrequentCategoryForBusiness(businessName);
+      const frequentCategory = await this.getMostFrequentCategoryForBusiness(businessName, userId);
       
       if (frequentCategory) {
+        console.log(`🎯 [AUTO-CATEGORY] Found frequent category for "${businessName}": "${frequentCategory}"`);
         return frequentCategory;
+      } else {
+        console.log(`🔍 [AUTO-CATEGORY] No frequent category found for "${businessName}", using patterns`);
       }
 
       // If no frequent category found, use business name patterns or amount-based logic
