@@ -22,7 +22,7 @@ const TransactionReviewModal = ({
   
   // Duplicate handling state
   const [duplicateTransactionIds, setDuplicateTransactionIds] = useState(new Set());
-  const [skipDuplicates, setSkipDuplicates] = useState(true); // Default to skip duplicates
+  const [skipDuplicates, setSkipDuplicates] = useState(false); // Default to show duplicates in yellow for review
   const [showDeleteDuplicatesButton, setShowDeleteDuplicatesButton] = useState(false);
 
   // Fetch categories for dropdown - using regular categories API for now
