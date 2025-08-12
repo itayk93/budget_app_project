@@ -1134,14 +1134,16 @@ const Upload = () => {
                       <span className="stat-label">יובאו בהצלחה:</span>
                       <span className="stat-value success">{uploadResult.stats?.imported?.toLocaleString() || 0}</span>
                     </div>
+                    {uploadResult.stats?.replaced > 0 && (
+                      <div className="stat-item">
+                        <span className="stat-label">הוחלפו:</span>
+                        <span className="stat-value success">{uploadResult.stats?.replaced?.toLocaleString() || 0}</span>
+                      </div>
+                    )}
                     {uploadResult.stats?.duplicates > 0 && (
                       <div className="stat-item">
-                        <span className="stat-label">
-                          {uploadResult.stats?.replaced > 0 ? 'כפילויות (הוחלפו):' : 'כפילויות (לא יובאו):'}
-                        </span>
-                        <span className={`stat-value ${uploadResult.stats?.replaced > 0 ? 'success' : 'warning'}`}>
-                          {uploadResult.stats?.duplicates?.toLocaleString() || 0}
-                        </span>
+                        <span className="stat-label">כפילויות (לא יובאו):</span>
+                        <span className="stat-value warning">{uploadResult.stats?.duplicates?.toLocaleString() || 0}</span>
                       </div>
                     )}
                     {uploadResult.stats?.errors > 0 && (

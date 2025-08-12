@@ -906,6 +906,8 @@ async function processUploadAsync(uploadId) {
           isDuplicate: isDup,
           duplicateInfo: isDup ? {
             ...existingDuplicate,
+            // Ensure we have the original transaction ID for replacement operations
+            original_id: existingDuplicate?.existing?.id || existingDuplicate?.existingTransactions?.[0]?.id || existingDuplicate?.id,
             // Preserve original file data for comparison and potential replacement
             original_notes: transaction.notes,
             original_recipient_name: transaction.recipient_name,

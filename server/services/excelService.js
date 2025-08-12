@@ -834,6 +834,24 @@ class ExcelService {
           // Replace existing duplicate transaction
           console.log(`🔄 [DUPLICATE REPLACE] Replacing original transaction ID: ${duplicateAction.originalTransactionId}`);
           result = await SupabaseService.replaceTransaction(duplicateAction.originalTransactionId, transaction);
+          
+          // For replace operations, mark as success regardless of duplicate flag
+          if (result.success) {
+            results.replaced++;
+            console.log(`✅ [IMPORT REPLACED] Transaction ${transaction.business_name} replaced with ID: ${result.data?.id}`);
+            continue; // Skip to next transaction
+          } else {
+            results.errors++;
+            console.log(`❌ [IMPORT REPLACE ERROR] Failed to replace ${transaction.business_name}: ${result.error}`);
+            results.details.push({
+              business_name: transaction.business_name,
+              amount: transaction.amount,
+              payment_date: transaction.payment_date,
+              status: 'error',
+              error: result.error
+            });
+            continue; // Skip to next transaction
+          }
         } else if (duplicateAction && !duplicateAction.shouldReplace) {
           // Create new duplicate with proper parent linkage (handled by TransactionService)
           console.log(`🔗 [DUPLICATE CREATE] Creating new duplicate transaction linked to original ID: ${duplicateAction.originalTransactionId}`);
@@ -853,28 +871,16 @@ class ExcelService {
         });
         
         if (result.success) {
-          if (duplicateAction && duplicateAction.shouldReplace) {
-            results.replaced++;
-            console.log(`✅ [IMPORT REPLACED] Transaction ${transaction.business_name} replaced with ID: ${result.transaction_id}`);
-          } else {
-            results.success++;
-            console.log(`✅ [IMPORT SUCCESS] Transaction ${transaction.business_name} imported with ID: ${result.transaction_id}`);
-          }
+          results.success++;
+          console.log(`✅ [IMPORT SUCCESS] Transaction ${transaction.business_name} imported with ID: ${result.transaction_id}`);
         } else if (result.duplicate) {
-          if (duplicateAction && duplicateAction.shouldReplace) {
-            // This means the replace operation was attempted but the system still marked it as duplicate
-            // Count it as replaced since user wanted to replace
-            results.replaced++;
-            console.log(`✅ [IMPORT REPLACED] Transaction ${transaction.business_name} replaced (system marked as duplicate but user requested replace)`);
-          } else {
-            results.duplicates++;
-            console.log(`⚠️ [IMPORT DUPLICATE] Transaction ${transaction.business_name} marked as duplicate`);
-          }
+          results.duplicates++;
+          console.log(`⚠️ [IMPORT DUPLICATE] Transaction ${transaction.business_name} marked as duplicate`);
           results.details.push({
             business_name: transaction.business_name,
             amount: transaction.amount,
             payment_date: transaction.payment_date,
-            status: duplicateAction && duplicateAction.shouldReplace ? 'replaced' : 'duplicate'
+            status: 'duplicate'
           });
         } else {
           results.errors++;
