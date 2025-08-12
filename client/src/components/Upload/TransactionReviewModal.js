@@ -84,13 +84,29 @@ const TransactionReviewModal = ({
       // Extract recipient names from PAYBOX transactions before setting state
       const transactionsWithRecipients = processedTransactions.map(tx => {
         if (tx.business_name && tx.business_name.includes('PAYBOX') && tx.notes) {
-          const recipientMatch = tx.notes.match(/למי:\s*(.+?)(?:\s+(?:some|additional|notes|info|details|comment|remark)|$)/);
+          // Try multiple patterns for recipient extraction
+          let recipientMatch = null;
+          let pattern = null;
+          let recipientName = null;
+          
+          // Pattern 1: "למי: [name]"
+          recipientMatch = tx.notes.match(/למי:\s*(.+?)(?:\s+(?:some|additional|notes|info|details|comment|remark)|$)/);
           if (recipientMatch) {
-            const recipientName = recipientMatch[1].trim();
-            console.log(`🎯 [FRONTEND EXTRACTION] Found recipient: "${recipientName}" for PAYBOX transaction`);
-            
-            // Remove the "למי: [name]" part from notes
-            const pattern = new RegExp(`למי:\\s*${recipientName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s+|$)`, 'g');
+            recipientName = recipientMatch[1].trim();
+            pattern = new RegExp(`למי:\\s*${recipientName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s+|$)`, 'g');
+            console.log(`🎯 [FRONTEND EXTRACTION] Found recipient with "למי:" pattern: "${recipientName}"`);
+          } else {
+            // Pattern 2: "שובר ל-[name]" or "שוברים ל-[name]" or "שוברים לקניה ב-[name]"
+            recipientMatch = tx.notes.match(/שוברי?ם?\s+ל(?:קניה\s+ב)?-(.+?)(?:\s+|$)/);
+            if (recipientMatch) {
+              recipientName = recipientMatch[1].trim();
+              pattern = new RegExp(`שוברי?ם?\\s+ל(?:קניה\\s+ב)?-${recipientName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s+|$)`, 'g');
+              console.log(`🎯 [FRONTEND EXTRACTION] Found recipient with "שובר/שוברים" pattern: "${recipientName}"`);
+            }
+          }
+          
+          if (recipientName) {
+            // Clean the notes by removing the recipient pattern
             const cleanedNotes = tx.notes.replace(pattern, '').trim();
             
             return {

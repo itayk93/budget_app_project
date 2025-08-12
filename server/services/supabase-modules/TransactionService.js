@@ -358,15 +358,29 @@ class TransactionService {
   static extractRecipientName(businessName, notes) {
     // Check if this is a PAYBOX transaction and has recipient info in notes
     if (businessName && businessName.includes('PAYBOX') && notes) {
-      // Match Hebrew or English names after "למי:" - stop at common English words that indicate additional info
-      const recipientMatch = notes.match(/למי:\s*(.+?)(?:\s+(?:some|additional|notes|info|details|comment|remark)|$)/);
+      // Try multiple patterns for recipient extraction
+      let recipientMatch = null;
+      let pattern = null;
+      let recipientName = null;
+      
+      // Pattern 1: "למי: [name]"
+      recipientMatch = notes.match(/למי:\s*(.+?)(?:\s+(?:some|additional|notes|info|details|comment|remark)|$)/);
       if (recipientMatch) {
-        const recipientName = recipientMatch[1].trim();
-        
-        console.log(`🎯 [RECIPIENT EXTRACTION] Found recipient: "${recipientName}" for PAYBOX transaction`);
-        
-        // Remove the entire "למי: [name]" part from notes
-        const pattern = new RegExp(`למי:\\s*${recipientName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s+|$)`, 'g');
+        recipientName = recipientMatch[1].trim();
+        pattern = new RegExp(`למי:\\s*${recipientName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s+|$)`, 'g');
+        console.log(`🎯 [RECIPIENT EXTRACTION] Found recipient with "למי:" pattern: "${recipientName}"`);
+      } else {
+        // Pattern 2: "שובר ל-[name]" or "שוברים ל-[name]" or "שוברים לקניה ב-[name]"
+        recipientMatch = notes.match(/שוברי?ם?\s+ל(?:קניה\s+ב)?-(.+?)(?:\s+|$)/);
+        if (recipientMatch) {
+          recipientName = recipientMatch[1].trim();
+          pattern = new RegExp(`שוברי?ם?\\s+ל(?:קניה\\s+ב)?-${recipientName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s+|$)`, 'g');
+          console.log(`🎯 [RECIPIENT EXTRACTION] Found recipient with "שובר/שוברים" pattern: "${recipientName}"`);
+        }
+      }
+      
+      if (recipientName) {
+        // Clean the notes by removing the recipient pattern
         const cleanedNotes = notes.replace(pattern, '').trim();
         
         return {
