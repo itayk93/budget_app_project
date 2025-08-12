@@ -53,24 +53,31 @@ class WorkingExcelService {
   async getCategoryByBusinessName(businessName, amount = null, sourceType = null, userId = null) {
     if (!businessName) return null;
     
+    console.log(`🔍 [getCategoryByBusinessName] Called with: businessName="${businessName}", amount=${amount}, sourceType="${sourceType}", userId=${userId}`);
+    
     // Check cache first
     const cacheKey = `${businessName}_${userId}`;
     if (this.businessCategoryCache.has(cacheKey)) {
-      return this.businessCategoryCache.get(cacheKey);
+      const cachedCategory = this.businessCategoryCache.get(cacheKey);
+      console.log(`🎯 [getCategoryByBusinessName] Cache hit: "${businessName}" -> "${cachedCategory}"`);
+      return cachedCategory;
     }
     
     try {
       // Call the SupabaseService auto-categorization with userId
+      console.log(`🔍 [getCategoryByBusinessName] Calling SupabaseService.getAutoCategoryForBusiness...`);
       const autoCategory = await SupabaseService.getAutoCategoryForBusiness(businessName, amount, sourceType, userId);
       
       if (autoCategory) {
         // Cache the result
         this.businessCategoryCache.set(cacheKey, autoCategory);
-        console.log(`Auto-categorized "${businessName}" as "${autoCategory}"`);
+        console.log(`✅ [getCategoryByBusinessName] Auto-categorized "${businessName}" as "${autoCategory}"`);
         return autoCategory;
+      } else {
+        console.log(`❌ [getCategoryByBusinessName] No auto-category found for "${businessName}"`);
       }
     } catch (error) {
-      console.warn(`Error getting auto category for business ${businessName}:`, error);
+      console.warn(`❌ [getCategoryByBusinessName] Error getting auto category for business ${businessName}:`, error);
     }
     
     return null;

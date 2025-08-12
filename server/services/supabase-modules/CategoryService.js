@@ -392,6 +392,8 @@ class CategoryService {
         return null;
       }
 
+      console.log(`🔍 [getMostFrequentCategoryForBusiness] Searching for business: "${businessName}", userId: ${userId}`);
+
       let query = supabase
         .from('transactions')
         .select('category_name, category_id')
@@ -402,13 +404,19 @@ class CategoryService {
       // Add user filter if provided
       if (userId) {
         query = query.eq('user_id', userId);
+        console.log(`🔍 [getMostFrequentCategoryForBusiness] Added userId filter: ${userId}`);
+      } else {
+        console.log(`⚠️ [getMostFrequentCategoryForBusiness] No userId provided - searching across all users`);
       }
 
       const { data, error } = await query;
 
       if (error) throw error;
 
+      console.log(`🔍 [getMostFrequentCategoryForBusiness] Query result: ${data ? data.length : 0} transactions found`);
+
       if (!data || data.length === 0) {
+        console.log(`❌ [getMostFrequentCategoryForBusiness] No transactions found for business: "${businessName}"`);
         return null;
       }
 
@@ -421,6 +429,8 @@ class CategoryService {
         }
       });
 
+      console.log(`🔍 [getMostFrequentCategoryForBusiness] Category frequency for "${businessName}":`, categoryFrequency);
+
       // Find most frequent category
       let mostFrequentCategory = null;
       let maxCount = 0;
@@ -432,6 +442,7 @@ class CategoryService {
         }
       }
 
+      console.log(`✅ [getMostFrequentCategoryForBusiness] Most frequent category for "${businessName}": "${mostFrequentCategory}" (${maxCount} occurrences)`);
       return mostFrequentCategory;
     } catch (error) {
       console.error('Error getting most frequent category for business:', error);
