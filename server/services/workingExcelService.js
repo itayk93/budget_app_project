@@ -2444,7 +2444,10 @@ class WorkingExcelService {
             fileSource,
             paymentMethodOverride,
             paymentIdentifierOverride,
-            fileProgressCallback
+            fileProgressCallback,
+            null, // uploadId
+            {}, // dateFilterOptions
+            userId
           );
 
           if (!conversionResult.success) {
@@ -2859,7 +2862,7 @@ class WorkingExcelService {
 
   // Exact implementation of Flask's process_multiple_files_standalone function
   async processMultipleFilesStandalone(filesList, fileSource, paymentMethodOverride = null, 
-                                      paymentIdentifierOverride = null, removeDuplicates = false) {
+                                      paymentIdentifierOverride = null, removeDuplicates = false, userId = null) {
     const path = require('path');
     const fs = require('fs');
 
@@ -2891,7 +2894,11 @@ class WorkingExcelService {
           filePath,
           fileSource,
           paymentMethodOverride,
-          paymentIdentifierOverride
+          paymentIdentifierOverride,
+          null, // progressCallback
+          null, // uploadId
+          {}, // dateFilterOptions
+          userId
         );
 
         if (!conversionResult.success) {
@@ -3056,7 +3063,8 @@ class WorkingExcelService {
         fileSource,
         paymentMethod,
         paymentIdentifier,
-        false // Don't remove duplicates here - let the review step handle it
+        false, // Don't remove duplicates here - let the review step handle it
+        userId
       );
 
       if (progressCallback) {
@@ -3176,7 +3184,7 @@ class WorkingExcelService {
       }
 
       // Step 1: Convert file to structured data with progress tracking
-      const conversionResult = await this.convert_file_to_df_large(filePath, fileSource, paymentMethod, paymentIdentifier, progressCallback, uploadId, dateFilterOptions);
+      const conversionResult = await this.convert_file_to_df_large(filePath, fileSource, paymentMethod, paymentIdentifier, progressCallback, uploadId, dateFilterOptions, userId);
       
       if (!conversionResult.success) {
         throw new Error(conversionResult.error);
@@ -3333,7 +3341,7 @@ class WorkingExcelService {
   }
 
   // Optimized conversion for large files with batch processing
-  async convert_file_to_df_large(filePath, fileSource = 'other', paymentMethod = null, paymentIdentifier = null, progressCallback = null, uploadId = null, dateFilterOptions = {}) {
+  async convert_file_to_df_large(filePath, fileSource = 'other', paymentMethod = null, paymentIdentifier = null, progressCallback = null, uploadId = null, dateFilterOptions = {}, userId = null) {
     try {
       console.log('🔄 Starting large file conversion...', { filePath, fileSource });
       
@@ -4160,7 +4168,7 @@ class WorkingExcelService {
       console.log('🔄 Processing file for export only:', { filePath, fileSource });
 
       // Read and process the file
-      const conversionResult = await this.convert_file_to_df_large(filePath, fileSource, paymentMethod, paymentIdentifier);
+      const conversionResult = await this.convert_file_to_df_large(filePath, fileSource, paymentMethod, paymentIdentifier, null, null, {}, userId);
       
       if (!conversionResult.success) {
         throw new Error(conversionResult.error);
