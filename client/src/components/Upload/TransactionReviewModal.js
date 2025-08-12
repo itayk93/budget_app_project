@@ -335,18 +335,6 @@ const TransactionReviewModal = ({
                     </svg>
                     מחק כפילויות ({duplicateTransactionIds.size})
                   </button>
- 
-                      className="action-button compact delete-duplicates"
-                      onClick={handleDeleteAllDuplicates}
-                      title="מחק את כל הכפילויות לצמיתות"
-                    >
-                      <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" />
-                        <path fillRule="evenodd" d="M10 5a2 2 0 00-2 2v6a2 2 0 004 0V7a2 2 0 00-2-2zM8 7a2 2 0 012-2h2a2 2 0 012 2v6a2 2 0 01-2 2H10a2 2 0 01-2-2V7zM5 4a1 1 0 011-1h8a1 1 0 110 2v10a2 2 0 01-2 2H8a2 2 0 01-2-2V5a1 1 0 01-1-1z" clipRule="evenodd" />
-                      </svg>
-                      מחק כפילויות ({duplicateTransactionIds.size})
-                    </button>
-                  )}
                 </>
               )}
             </div>
