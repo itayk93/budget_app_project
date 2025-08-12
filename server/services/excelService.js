@@ -38,6 +38,9 @@ class ExcelService {
         case 'isracard':
           transactions = await this.processIsracardData(jsonData, userId, cashFlowId);
           break;
+        case 'max_credit':
+          transactions = await this.processMaxCreditData(jsonData, userId, cashFlowId);
+          break;
         case 'leumi':
           transactions = await this.processLeumiData(jsonData, userId, cashFlowId);
           break;
@@ -85,6 +88,12 @@ class ExcelService {
     // Israeli bank detection patterns
     if (headerString.includes('עסקה') && headerString.includes('סכום') && headerString.includes('תאריך עסקה')) {
       return 'isracard';
+    }
+
+    // Max credit card detection - includes both תאריך עסקה and תאריך חיוב columns
+    if (headerString.includes('תאריך עסקה') && headerString.includes('תאריך חיוב') && 
+        headerString.includes('שם בית העסק') && headerString.includes('סוג עסקה')) {
+      return 'max_credit';
     }
     
     if (headerString.includes('תאריך') && headerString.includes('תיאור') && headerString.includes('זכות')) {
@@ -163,6 +172,110 @@ class ExcelService {
       }
     }
     
+    return transactions;
+  }
+
+  static async processMaxCreditData(jsonData, userId, cashFlowId) {
+    const transactions = [];
+    const headers = jsonData[0];
+    
+    console.log('🔍 [MAX] Processing Max credit card data with headers:', headers);
+    
+    // Find column indexes for Max format
+    const businessNameCol = this.findColumnIndex(headers, ['שם בית העסק']);
+    const transactionDateCol = this.findColumnIndex(headers, ['תאריך עסקה']);
+    const chargeDateCol = this.findColumnIndex(headers, ['תאריך חיוב']);
+    const amountCol = this.findColumnIndex(headers, ['סכום חיוב']);
+    const currencyCol = this.findColumnIndex(headers, ['מטבע חיוב']);
+    const categoryCol = this.findColumnIndex(headers, ['קטגוריה']);
+    const transactionTypeCol = this.findColumnIndex(headers, ['סוג עסקה']);
+    const cardCol = this.findColumnIndex(headers, ['4 ספרות אחרונות של כרטיס האשראי']);
+    const notesCol = this.findColumnIndex(headers, ['הערות']);
+    
+    console.log('🔍 [MAX] Column mapping:', {
+      businessNameCol, transactionDateCol, chargeDateCol, amountCol, 
+      currencyCol, categoryCol, transactionTypeCol
+    });
+    
+    for (let i = 1; i < jsonData.length; i++) {
+      const row = jsonData[i];
+      
+      if (!row || row.length === 0) continue;
+      
+      try {
+        const businessName = this.cleanString(row[businessNameCol]);
+        const amount = this.parseAmount(row[amountCol]);
+        const transactionDate = this.parseDate(row[transactionDateCol]);
+        const chargeDate = this.parseDate(row[chargeDateCol]);
+        const transactionType = this.cleanString(row[transactionTypeCol]);
+        
+        if (!businessName || amount === null || amount === undefined || !transactionDate || !chargeDate) {
+          console.log(`⚠️ [MAX] Skipping row ${i}: missing required data`);
+          continue;
+        }
+        
+        // Apply Max-specific logic for installment payment date correction
+        let finalPaymentDate = transactionDate;
+        
+        // Check if this is an installment payment
+        if (transactionType && transactionType.includes('תשלומים')) {
+          // Calculate the flow month from charge date (one month back)
+          const chargeDateObj = new Date(chargeDate);
+          const flowMonth = new Date(chargeDateObj.getFullYear(), chargeDateObj.getMonth() - 1, 1);
+          
+          console.log(`💳 [MAX] Installment detected for ${businessName}:`);
+          console.log(`   Original transaction date: ${transactionDate}`);
+          console.log(`   Charge date: ${chargeDate}`);
+          console.log(`   Flow month: ${flowMonth.getFullYear()}-${(flowMonth.getMonth() + 1).toString().padStart(2, '0')}`);
+          
+          // If transaction date is not in the same month as flow month, adjust it
+          const transactionDateObj = new Date(transactionDate);
+          const transactionMonth = transactionDateObj.getMonth();
+          const transactionYear = transactionDateObj.getFullYear();
+          
+          if (transactionYear !== flowMonth.getFullYear() || transactionMonth !== flowMonth.getMonth()) {
+            // Keep the same day, but change to flow month
+            const adjustedDate = new Date(flowMonth.getFullYear(), flowMonth.getMonth(), transactionDateObj.getDate());
+            finalPaymentDate = adjustedDate.toISOString().split('T')[0];
+            
+            console.log(`   ✅ Adjusted payment date: ${finalPaymentDate}`);
+          } else {
+            console.log(`   ✅ Transaction date already in correct month, no adjustment needed`);
+          }
+        }
+        
+        const transaction = {
+          user_id: userId,
+          cash_flow_id: cashFlowId,
+          business_name: businessName,
+          amount: -Math.abs(amount), // Max expenses are negative
+          payment_date: finalPaymentDate,
+          charge_date: chargeDate,
+          currency: this.cleanString(row[currencyCol]) || 'ILS',
+          payment_method: `Max Credit Card ****${this.cleanString(row[cardCol]) || 'XXXX'}`,
+          source_type: 'max_credit_import',
+          category_name: this.cleanString(row[categoryCol]) || null,
+          notes: this.cleanString(row[notesCol]) || null,
+          transaction_type: transactionType
+        };
+        
+        // Apply auto-categorization if no category provided
+        if (!transaction.category_name) {
+          const autoCategory = await SupabaseService.getAutoCategoryForBusiness(businessName, transaction.amount, 'max_credit');
+          transaction.category_name = autoCategory || 'הוצאות משתנות';
+        }
+        
+        // Generate transaction hash
+        transaction.transaction_hash = SupabaseService.generateTransactionHash(transaction);
+        
+        transactions.push(transaction);
+        
+      } catch (error) {
+        console.log(`⚠️ [MAX] Error processing row ${i}:`, error.message);
+      }
+    }
+    
+    console.log(`✅ [MAX] Processed ${transactions.length} Max credit card transactions`);
     return transactions;
   }
   
@@ -517,6 +630,9 @@ class ExcelService {
       switch (fileFormat) {
         case 'isracard':
           transactions = await this.processIsracardData(jsonData, userId, cashFlowId);
+          break;
+        case 'max_credit':
+          transactions = await this.processMaxCreditData(jsonData, userId, cashFlowId);
           break;
         case 'leumi':
           transactions = await this.processLeumiData(jsonData, userId, cashFlowId);
