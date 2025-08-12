@@ -135,17 +135,40 @@ class IsraeliBankScraperService {
                 companyId: CompanyTypes[config.bank_type],
                 startDate: startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Default: last 30 days
                 combineInstallments: false,
-                showBrowser: false // Set to true for debugging
+                showBrowser: true, // Show browser for debugging
+                timeout: 60000, // 60 seconds timeout
+                executablePath: null, // Use system Chrome
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-accelerated-2d-canvas',
+                    '--no-first-run',
+                    '--no-zygote',
+                    '--disable-gpu'
+                ]
             };
 
             if (endDate) {
                 options.endDate = new Date(endDate);
             }
 
+            console.log(`🚀 Starting scraper for ${config.bank_type} (Config ID: ${configId})`);
+            console.log(`📅 Date range: ${options.startDate.toISOString().split('T')[0]} to ${options.endDate ? options.endDate.toISOString().split('T')[0] : 'now'}`);
+            
             const startTime = Date.now();
             const scraper = createScraper(options);
+            
+            console.log(`🔧 Scraper created, starting scrape...`);
             const scrapeResult = await scraper.scrape(credentials);
             const executionTime = Math.round((Date.now() - startTime) / 1000);
+            
+            console.log(`✅ Scrape completed in ${executionTime} seconds`);
+            console.log(`📊 Result:`, scrapeResult.success ? 'SUCCESS' : `FAILED - ${scrapeResult.errorType}`);
+            
+            if (scrapeResult.success && scrapeResult.accounts) {
+                console.log(`🏦 Found ${scrapeResult.accounts.length} accounts with total ${scrapeResult.accounts.reduce((sum, acc) => sum + acc.txns.length, 0)} transactions`);
+            }
 
             // Log the scraping attempt
             await this.logScrapeAttempt(configId, scrapeResult.success, scrapeResult.errorType, scrapeResult.errorMessage, scrapeResult.accounts?.length || 0, executionTime);
@@ -180,9 +203,25 @@ class IsraeliBankScraperService {
             }
 
         } catch (error) {
-            console.error('Error running scraper:', error);
-            await this.logScrapeAttempt(configId, false, 'UNKNOWN_ERROR', error.message, 0, 0);
-            return { success: false, error: error.message };
+            console.error('❌ Error running scraper:', error);
+            
+            // Try to determine error type
+            let errorType = 'UNKNOWN_ERROR';
+            if (error.message.includes('timeout') || error.message.includes('Navigation timeout')) {
+                errorType = 'TIMEOUT';
+            } else if (error.message.includes('invalid') || error.message.includes('password')) {
+                errorType = 'INVALID_PASSWORD';
+            } else if (error.message.includes('blocked') || error.message.includes('captcha')) {
+                errorType = 'ACCOUNT_BLOCKED';
+            }
+            
+            await this.logScrapeAttempt(configId, false, errorType, error.message, 0, 0);
+            return { 
+                success: false, 
+                error: error.message,
+                errorType: errorType,
+                suggestion: this.getErrorSuggestion(errorType)
+            };
         }
     }
 
@@ -351,6 +390,18 @@ class IsraeliBankScraperService {
             console.error('Error toggling config:', error);
             return { success: false, error: error.message };
         }
+    }
+
+    // Get error suggestion based on error type
+    getErrorSuggestion(errorType) {
+        const suggestions = {
+            'TIMEOUT': 'נסה שוב מאוחר יותר. ייתכן שאתר הבנק עמוס או שהחיבור איטי.',
+            'INVALID_PASSWORD': 'בדוק את פרטי הכניסה. ייתכן שהסיסמה השתנתה או שהחשבון נחסם.',
+            'ACCOUNT_BLOCKED': 'החשבון עלול להיות חסום. פנה לבנק לבירור או נסה שוב מאוחר יותר.',
+            'CHANGE_PASSWORD': 'הבנק דורש שינוי סיסמה. התחבר לאתר הבנק ושנה את הסיסמה.',
+            'UNKNOWN_ERROR': 'שגיאה לא ידועה. בדוק את החיבור לאינטרנט ונסה שוב.'
+        };
+        return suggestions[errorType] || suggestions['UNKNOWN_ERROR'];
     }
 }
 

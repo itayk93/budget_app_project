@@ -118,7 +118,14 @@ const BankScraperPage = () => {
                 alert(data.message);
                 await fetchConfigs();
             } else {
-                alert(`שגיאה: ${data.error || data.errorMessage}`);
+                let errorMessage = `שגיאה: ${data.error || data.errorMessage}`;
+                if (data.suggestion) {
+                    errorMessage += `\n\nהמלצה: ${data.suggestion}`;
+                }
+                if (data.errorType === 'TIMEOUT') {
+                    errorMessage += '\n\nהסקריפה רצה עם דפדפן פתוח כדי שתוכל לראות מה קורה.';
+                }
+                alert(errorMessage);
             }
         } catch (error) {
             console.error('Error running scraper:', error);
