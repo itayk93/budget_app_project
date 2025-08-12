@@ -836,6 +836,14 @@ class TransactionService {
         updated_at: new Date().toISOString()
       };
 
+      // For replacement operations, ensure the hash is unique by regenerating it
+      // This prevents unique constraint violations when replacing duplicates
+      if (updateData.transaction_hash) {
+        const newHash = this.generateTransactionHash(updateData);
+        updateData.transaction_hash = newHash;
+        console.log(`🔑 [REPLACE HASH] Generated new unique hash: ${newHash} (was: ${cleanData.transaction_hash})`);
+      }
+
       // Remove undefined values
       Object.keys(updateData).forEach(key => {
         if (updateData[key] === undefined) {
