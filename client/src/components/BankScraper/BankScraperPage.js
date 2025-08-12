@@ -122,6 +122,10 @@ const BankScraperPage = () => {
             if (data.success) {
                 alert(data.message);
                 await fetchConfigs();
+                // Automatically switch to transactions tab and load them
+                setActiveTab('transactions');
+                setSelectedConfig(configId);
+                await fetchTransactions(configId);
             } else {
                 let errorMessage = `שגיאה: ${data.error || data.errorMessage}`;
                 if (data.suggestion) {
@@ -144,17 +148,22 @@ const BankScraperPage = () => {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            const response = await fetch(`${API_BASE_URL}/bank-scraper/configs/${configId}/transactions`, {
+            const response = await fetch(`${API_BASE_URL}/bank-scraper/configs/${configId}/transactions?limit=100`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
             const data = await response.json();
             if (data.success) {
-                setTransactions(data.transactions);
+                setTransactions(data.transactions || []);
+                console.log(`✅ Loaded ${data.transactions?.length || 0} transactions for config ${configId}`);
+            } else {
+                console.error('Error loading transactions:', data.error);
+                setTransactions([]);
             }
         } catch (error) {
             console.error('Error fetching transactions:', error);
+            setTransactions([]);
         } finally {
             setLoading(false);
         }
@@ -559,46 +568,65 @@ const BankScraperPage = () => {
 
                         <div className="transactions-list">
                             {loading ? (
-                                <div className="loading">טוען...</div>
+                                <div className="loading">טוען עסקאות...</div>
                             ) : transactions.length === 0 ? (
                                 <div className="no-data">
-                                    {selectedConfig ? 'אין עסקאות עבור הקונפיגורציה הנבחרת' : 'בחר קונפיגורציה לצפייה בעסקאות'}
+                                    {selectedConfig ? 
+                                        'אין עסקאות עבור הקונפיגורציה הנבחרת. נסה להריץ כריית נתונים.' : 
+                                        'בחר קונפיגורציה לצפייה בעסקאות'
+                                    }
                                 </div>
                             ) : (
-                                <div className="transactions-table">
-                                    <table>
-                                        <thead>
-                                            <tr>
-                                                <th>תאריך</th>
-                                                <th>תיאור</th>
-                                                <th>סכום</th>
-                                                <th>מטבע</th>
-                                                <th>חשבון</th>
-                                                <th>סטטוס</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {transactions.map(txn => (
-                                                <tr key={txn.id}>
-                                                    <td>{new Date(txn.transaction_date).toLocaleDateString('he-IL')}</td>
-                                                    <td>{txn.description}</td>
-                                                    <td className={txn.charged_amount < 0 ? 'negative' : 'positive'}>
-                                                        {txn.charged_amount.toLocaleString('he-IL', { 
-                                                            minimumFractionDigits: 2, 
-                                                            maximumFractionDigits: 2 
-                                                        })}
-                                                    </td>
-                                                    <td>{txn.original_currency}</td>
-                                                    <td>{txn.account_number}</td>
-                                                    <td>
-                                                        <span className={`status ${txn.status}`}>
-                                                            {txn.status === 'completed' ? 'הושלם' : 'ממתין'}
-                                                        </span>
-                                                    </td>
+                                <div>
+                                    <div className="transactions-summary">
+                                        <p><strong>נמצאו {transactions.length} עסקאות</strong></p>
+                                        <p>סך הכל: {transactions.reduce((sum, txn) => sum + txn.charged_amount, 0).toLocaleString('he-IL', { 
+                                            minimumFractionDigits: 2, 
+                                            maximumFractionDigits: 2 
+                                        })} ₪</p>
+                                    </div>
+                                    <div className="transactions-table">
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>תאריך</th>
+                                                    <th>תיאור</th>
+                                                    <th>סכום</th>
+                                                    <th>מטבע</th>
+                                                    <th>חשבון</th>
+                                                    <th>סטטוס</th>
+                                                    <th>הערות</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody>
+                                                {transactions.map(txn => (
+                                                    <tr key={txn.id}>
+                                                        <td>{new Date(txn.transaction_date).toLocaleDateString('he-IL')}</td>
+                                                        <td title={txn.description}>{txn.description}</td>
+                                                        <td className={txn.charged_amount < 0 ? 'negative' : 'positive'}>
+                                                            {txn.charged_amount.toLocaleString('he-IL', { 
+                                                                minimumFractionDigits: 2, 
+                                                                maximumFractionDigits: 2 
+                                                            })} ₪
+                                                        </td>
+                                                        <td>{txn.original_currency}</td>
+                                                        <td>{txn.account_number}</td>
+                                                        <td>
+                                                            <span className={`status ${txn.status}`}>
+                                                                {txn.status === 'completed' ? 'הושלם' : 'ממתין'}
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            {txn.memo && <small>{txn.memo}</small>}
+                                                            {txn.transaction_type === 'installments' && 
+                                                                <small>תשלום {txn.installment_number}/{txn.total_installments}</small>
+                                                            }
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             )}
                         </div>

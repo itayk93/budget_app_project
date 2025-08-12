@@ -170,13 +170,11 @@ class IsraeliBankScraperService {
                 console.log(`🏦 Found ${scrapeResult.accounts.length} accounts with total ${scrapeResult.accounts.reduce((sum, acc) => sum + acc.txns.length, 0)} transactions`);
             }
 
-            // Log the scraping attempt
-            await this.logScrapeAttempt(configId, scrapeResult.success, scrapeResult.errorType, scrapeResult.errorMessage, scrapeResult.accounts?.length || 0, executionTime);
-
             if (scrapeResult.success) {
                 // Store transactions and accounts
                 let totalTransactions = 0;
                 for (const account of scrapeResult.accounts) {
+                    console.log(`💾 Storing account ${account.accountNumber} with ${account.txns.length} transactions`);
                     await this.storeAccountData(configId, account);
                     totalTransactions += account.txns.length;
                 }
@@ -186,6 +184,11 @@ class IsraeliBankScraperService {
                     .from('bank_scraper_configs')
                     .update({ last_scrape_date: new Date().toISOString() })
                     .eq('id', configId);
+
+                console.log(`✅ Successfully stored ${totalTransactions} transactions from ${scrapeResult.accounts.length} accounts`);
+
+                // Log the scraping attempt
+                await this.logScrapeAttempt(configId, scrapeResult.success, scrapeResult.errorType, scrapeResult.errorMessage, totalTransactions, executionTime);
 
                 return {
                     success: true,
@@ -241,26 +244,41 @@ class IsraeliBankScraperService {
             }
 
             // Store transactions
+            let storedCount = 0;
             for (const txn of account.txns) {
-                await supabase
-                    .from('bank_scraper_transactions')
-                    .upsert({
-                        config_id: configId,
-                        transaction_identifier: txn.identifier?.toString() || null,
-                        account_number: account.accountNumber,
-                        transaction_date: txn.date,
-                        processed_date: txn.processedDate || null,
-                        original_amount: txn.originalAmount,
-                        original_currency: txn.originalCurrency,
-                        charged_amount: txn.chargedAmount,
-                        description: txn.description,
-                        memo: txn.memo || null,
-                        transaction_type: txn.type || 'normal',
-                        status: txn.status || 'completed',
-                        installment_number: txn.installments?.number || null,
-                        total_installments: txn.installments?.total || null
-                    });
+                try {
+                    const { data, error } = await supabase
+                        .from('bank_scraper_transactions')
+                        .upsert({
+                            config_id: configId,
+                            transaction_identifier: txn.identifier?.toString() || null,
+                            account_number: account.accountNumber,
+                            transaction_date: txn.date,
+                            processed_date: txn.processedDate || null,
+                            original_amount: txn.originalAmount,
+                            original_currency: txn.originalCurrency,
+                            charged_amount: txn.chargedAmount,
+                            description: txn.description,
+                            memo: txn.memo || null,
+                            transaction_type: txn.type || 'normal',
+                            status: txn.status || 'completed',
+                            installment_number: txn.installments?.number || null,
+                            total_installments: txn.installments?.total || null
+                        })
+                        .select();
+                    
+                    if (error) {
+                        console.error('Error storing transaction:', error, txn);
+                    } else {
+                        storedCount++;
+                    }
+                } catch (error) {
+                    console.error('Exception storing transaction:', error, txn);
+                }
             }
+            console.log(`💾 Successfully stored ${storedCount}/${account.txns.length} transactions for account ${account.accountNumber}`);
+            
+            return storedCount;
         } catch (error) {
             console.error('Error storing account data:', error);
             throw error;
@@ -288,17 +306,22 @@ class IsraeliBankScraperService {
     // Get scraped transactions for a configuration
     async getScrapedTransactions(configId, userId, limit = 100, offset = 0) {
         try {
+            console.log(`🔍 Getting transactions for config ${configId}, user ${userId}`);
+            
             // Verify user owns the config
             const { data: config } = await supabase
                 .from('bank_scraper_configs')
-                .select('id')
+                .select('id, config_name')
                 .eq('id', configId)
                 .eq('user_id', userId)
                 .single();
 
             if (!config) {
+                console.log(`❌ Configuration ${configId} not found for user ${userId}`);
                 throw new Error('Configuration not found');
             }
+
+            console.log(`✅ Configuration found: ${config.config_name}`);
 
             const { data, error } = await supabase
                 .from('bank_scraper_transactions')
@@ -307,8 +330,13 @@ class IsraeliBankScraperService {
                 .order('transaction_date', { ascending: false })
                 .range(offset, offset + limit - 1);
 
-            if (error) throw error;
-            return { success: true, transactions: data };
+            if (error) {
+                console.error('❌ Error querying transactions:', error);
+                throw error;
+            }
+
+            console.log(`✅ Found ${data?.length || 0} transactions for config ${configId}`);
+            return { success: true, transactions: data || [] };
         } catch (error) {
             console.error('Error getting scraped transactions:', error);
             return { success: false, error: error.message };
