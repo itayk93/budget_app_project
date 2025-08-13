@@ -132,6 +132,55 @@ const Upload = () => {
     }
   }, []);
 
+  // Check for bank scraper data in sessionStorage on component mount
+  useEffect(() => {
+    const checkBankScraperData = () => {
+      try {
+        const bankScraperData = sessionStorage.getItem('bankScraperTransactions');
+        if (bankScraperData) {
+          console.log('🏦 Bank scraper data found in sessionStorage, auto-opening approval modal');
+          const data = JSON.parse(bankScraperData);
+          
+          // Validate the data structure
+          if (data.transactions && Array.isArray(data.transactions) && data.transactions.length > 0) {
+            console.log(`✅ Found ${data.transactions.length} bank scraper transactions from ${data.configName || 'Unknown'}`);
+            
+            // Set the transactions for review
+            setReviewTransactions(data.transactions);
+            setReviewFileSource(data.source || 'bank_scraper');
+            
+            // Auto-select the account number as payment method if available
+            if (data.accountNumber) {
+              setPaymentIdentifier(data.accountNumber);
+            }
+            
+            // Set file source to bank scraper
+            setFileSource('bank_scraper');
+            
+            // Open the transaction review modal
+            setShowTransactionReview(true);
+            
+            // Clear the session storage data since we've processed it
+            sessionStorage.removeItem('bankScraperTransactions');
+            
+            console.log('🎯 Transaction approval modal opened automatically for bank scraper data');
+          } else {
+            console.log('⚠️ Invalid bank scraper data structure, ignoring');
+            sessionStorage.removeItem('bankScraperTransactions');
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error processing bank scraper data from sessionStorage:', error);
+        // Clear invalid data
+        sessionStorage.removeItem('bankScraperTransactions');
+      }
+    };
+    
+    // Small delay to ensure component is fully mounted
+    const timer = setTimeout(checkBankScraperData, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Fetch latest transaction date when cash flow is selected
   const fetchLatestTransactionDate = async (cashFlowId, sourceType = null) => {
     if (!cashFlowId) {
@@ -861,6 +910,7 @@ const Upload = () => {
                       <option value="max">מקס</option>
                       <option value="americanexpress">American Express</option>
                       <option value="blink">blink</option>
+                      <option value="bank_scraper">Bank Scraper</option>
                     </select>
                   </div>
                   <div className="form-group">

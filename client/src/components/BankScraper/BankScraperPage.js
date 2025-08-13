@@ -300,6 +300,18 @@ const BankScraperPage = () => {
                 window.location.href = '/upload';
                 
             } else {
+                // Check if it's an account number missing error
+                if (data.error && data.error.includes('מספר חשבון')) {
+                    const shouldEdit = window.confirm(`${data.error}\n\nהאם תרצה לערוך את הקונפיגורציה כדי להוסיף את מספר החשבון?`);
+                    if (shouldEdit) {
+                        // Find and edit this config
+                        const config = configs.find(c => c.id === configId);
+                        if (config) {
+                            handleEditConfig(config);
+                        }
+                        return;
+                    }
+                }
                 alert(`שגיאה: ${data.error}`);
             }
         } catch (error) {

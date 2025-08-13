@@ -572,7 +572,12 @@ class IsraeliBankScraperService {
         // Validate required DB credentials
         if (!dbCredentials.username || !dbCredentials.nationalID || !dbCredentials.accountNumber) {
             console.error(`❌ Missing required DB credentials. Found: ${Object.keys(dbCredentials).join(', ')}`);
-            throw new Error('Missing username, nationalID or accountNumber in database credentials for Yahav. Please ensure these are saved in the configuration.');
+            const missingFields = [];
+            if (!dbCredentials.username) missingFields.push('שם משתמש');
+            if (!dbCredentials.nationalID) missingFields.push('תעודת זהות');
+            if (!dbCredentials.accountNumber) missingFields.push('מספר חשבון');
+            
+            throw new Error(`חסרים שדות נדרשים בקונפיגורציה: ${missingFields.join(', ')}. אנא ערוך את הקונפיגורציה והוסף את מספר החשבון (${dbCredentials.accountNumber ? 'קיים' : 'חסר'}).`);
         }
 
         const hybridCredentials = {
@@ -712,9 +717,29 @@ class IsraeliBankScraperService {
                 throw new Error('Configuration not found');
             }
 
-            // Get account number from credentials
-            const credentials = this.getCredentialsForBank(config.bank_type, config.credentials_encrypted);
-            const accountNumber = credentials.accountNumber;
+            let accountNumber;
+            
+            try {
+                // Try to get account number from credentials
+                const credentials = this.getCredentialsForBank(config.bank_type, config.credentials_encrypted);
+                accountNumber = credentials.accountNumber;
+            } catch (error) {
+                console.log(`⚠️ Could not get account number from credentials: ${error.message}`);
+                
+                // Fallback: try to extract account number from existing transactions
+                const { data: existingTransactions } = await supabase
+                    .from('bank_scraper_transactions')
+                    .select('account_number')
+                    .eq('config_id', configId)
+                    .limit(1);
+                
+                if (existingTransactions && existingTransactions.length > 0) {
+                    accountNumber = existingTransactions[0].account_number;
+                    console.log(`📋 Using account number from existing transactions: ${accountNumber}`);
+                } else {
+                    throw new Error('לא ניתן למצוא מספר חשבון. אנא ערוך את הקונפיגורציה והוסף את מספר החשבון.');
+                }
+            }
             
             if (!accountNumber) {
                 throw new Error('Account number not found in configuration');
