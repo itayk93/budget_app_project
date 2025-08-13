@@ -815,11 +815,13 @@ class IsraeliBankScraperService {
     cleanBusinessName(description) {
         if (!description) return 'עסקה ללא תיאור';
         
-        // Remove RTL marks and other formatting characters
+        // Remove RTL marks and other formatting characters, replace slashes with spaces
         return description
             .replace(/[\u200E\u200F\u202A\u202B\u202C\u202D\u202E\u061C]/g, '')
             .replace(/[()[\]{}]/g, '')
             .replace(/^[‫]+|[‫]+$/g, '') // Remove leading/trailing Hebrew punctuation
+            .replace(/\//g, ' ') // Replace slashes with spaces
+            .replace(/\s+/g, ' ') // Replace multiple spaces with single space
             .trim();
     }
 

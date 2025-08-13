@@ -132,22 +132,70 @@ const Upload = () => {
     }
   }, []);
 
+  // Clean business names - replace slashes with spaces
+  const cleanBusinessNames = (transactions) => {
+    return transactions.map(txn => ({
+      ...txn,
+      business_name: txn.business_name ? txn.business_name.replace(/\//g, ' ').trim() : txn.business_name
+    }));
+  };
+
+  // Check for duplicates using the existing upload API
+  const checkForDuplicates = async (transactions, fileSource, paymentIdentifier) => {
+    try {
+      console.log('🔍 Checking for duplicates in bank scraper transactions...');
+      
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      
+      // Create a temporary file-like object for the API
+      const transactionsBlob = new Blob([JSON.stringify(transactions)], { type: 'application/json' });
+      formData.append('file', transactionsBlob, 'bank_scraper_transactions.json');
+      formData.append('cashFlowId', selectedCashFlow);
+      formData.append('fileSource', fileSource || 'bank_scraper');
+      formData.append('paymentIdentifier', paymentIdentifier || '');
+      formData.append('forceImport', 'false');
+      formData.append('bankScraperMode', 'true'); // Flag to indicate this is from bank scraper
+      
+      const response = await fetch('/api/upload/initiate', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log(`✅ Duplicate check completed: ${result.has_duplicates ? 'Found duplicates' : 'No duplicates'}`);
+        return result;
+      } else {
+        console.error('❌ Duplicate check failed:', result.error);
+        return null;
+      }
+    } catch (error) {
+      console.error('❌ Error checking duplicates:', error);
+      return null;
+    }
+  };
+
   // Check for bank scraper data in sessionStorage on component mount
   useEffect(() => {
-    const checkBankScraperData = () => {
+    const checkBankScraperData = async () => {
       try {
         const bankScraperData = sessionStorage.getItem('bankScraperTransactions');
         if (bankScraperData) {
-          console.log('🏦 Bank scraper data found in sessionStorage, auto-opening approval modal');
+          console.log('🏦 Bank scraper data found in sessionStorage, processing...');
           const data = JSON.parse(bankScraperData);
           
           // Validate the data structure
           if (data.transactions && Array.isArray(data.transactions) && data.transactions.length > 0) {
             console.log(`✅ Found ${data.transactions.length} bank scraper transactions from ${data.configName || 'Unknown'}`);
             
-            // Set the transactions for review
-            setReviewTransactions(data.transactions);
-            setReviewFileSource(data.source || 'bank_scraper');
+            // Clean business names - replace slashes with spaces
+            const cleanedTransactions = cleanBusinessNames(data.transactions);
+            console.log('🧹 Cleaned business names (replaced / with spaces)');
             
             // Auto-select the account number as payment method if available
             if (data.accountNumber) {
@@ -157,13 +205,38 @@ const Upload = () => {
             // Set file source to bank scraper
             setFileSource('bank_scraper');
             
-            // Open the transaction review modal
-            setShowTransactionReview(true);
+            // Check for duplicates if cash flow is selected
+            if (selectedCashFlow) {
+              console.log('🔍 Checking for duplicates before opening modal...');
+              const duplicateResult = await checkForDuplicates(cleanedTransactions, 'bank_scraper', data.accountNumber);
+              
+              if (duplicateResult && duplicateResult.has_duplicates) {
+                console.log('⚠️ Duplicates found, using system duplicate handling');
+                // Use the system's duplicate handling mechanism
+                if (duplicateResult.transactions) {
+                  setReviewTransactions(duplicateResult.transactions);
+                  setReviewFileSource('bank_scraper');
+                  setShowTransactionReview(true);
+                }
+              } else {
+                // No duplicates, proceed normally
+                console.log('✅ No duplicates found, opening transaction review modal');
+                setReviewTransactions(cleanedTransactions);
+                setReviewFileSource(data.source || 'bank_scraper');
+                setShowTransactionReview(true);
+              }
+            } else {
+              // No cash flow selected, just open the modal with cleaned transactions
+              console.log('ℹ️ No cash flow selected, opening modal without duplicate check');
+              setReviewTransactions(cleanedTransactions);
+              setReviewFileSource(data.source || 'bank_scraper');
+              setShowTransactionReview(true);
+            }
             
             // Clear the session storage data since we've processed it
             sessionStorage.removeItem('bankScraperTransactions');
             
-            console.log('🎯 Transaction approval modal opened automatically for bank scraper data');
+            console.log('🎯 Transaction processing completed');
           } else {
             console.log('⚠️ Invalid bank scraper data structure, ignoring');
             sessionStorage.removeItem('bankScraperTransactions');
@@ -176,10 +249,10 @@ const Upload = () => {
       }
     };
     
-    // Small delay to ensure component is fully mounted
-    const timer = setTimeout(checkBankScraperData, 100);
+    // Small delay to ensure component is fully mounted and cash flow is available
+    const timer = setTimeout(checkBankScraperData, 500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [selectedCashFlow]); // Add selectedCashFlow as dependency
 
   // Fetch latest transaction date when cash flow is selected
   const fetchLatestTransactionDate = async (cashFlowId, sourceType = null) => {
