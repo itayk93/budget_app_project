@@ -17,6 +17,23 @@ router.get('/bank-types', async (req, res) => {
     }
 });
 
+// Test ENV credentials for a specific bank (debugging endpoint)
+router.get('/test-env/:bankType', async (req, res) => {
+    try {
+        const { bankType } = req.params;
+        const result = israeliBankScraperService.testEnvCredentials(bankType);
+        
+        if (result.success) {
+            res.json(result);
+        } else {
+            res.status(400).json(result);
+        }
+    } catch (error) {
+        console.error('Error testing ENV credentials:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // Create new scraper configuration
 router.post('/configs', async (req, res) => {
     try {

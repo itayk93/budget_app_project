@@ -127,8 +127,8 @@ class IsraeliBankScraperService {
                 throw new Error('Configuration is disabled');
             }
 
-            // Decrypt credentials
-            const credentials = this.decryptCredentials(config.credentials_encrypted);
+            // Get credentials - use ENV if configured for this bank type
+            const credentials = this.getCredentialsForBank(config.bank_type, config.credentials_encrypted);
 
             // Set up scraper options
             const options = {
@@ -494,6 +494,105 @@ class IsraeliBankScraperService {
             'UNKNOWN_ERROR': 'שגיאה לא ידועה. בדוק את החיבור לאינטרנט ונסה שוב.'
         };
         return suggestions[errorType] || suggestions['UNKNOWN_ERROR'];
+    }
+
+    // Get credentials for a bank - use ENV if configured, otherwise decrypt stored credentials
+    getCredentialsForBank(bankType, encryptedCredentials) {
+        const envCredentialsEnabled = process.env.BANK_ENV_CREDENTIALS_ENABLED === 'true';
+        const allowedBanks = process.env.BANK_ENV_ALLOWED_BANKS ? 
+            process.env.BANK_ENV_ALLOWED_BANKS.split(',').map(b => b.trim()) : [];
+
+        console.log(`🔐 Getting credentials for ${bankType}, ENV enabled: ${envCredentialsEnabled}, Allowed: [${allowedBanks.join(', ')}]`);
+
+        // Check if ENV credentials are enabled for this bank type
+        if (envCredentialsEnabled && allowedBanks.includes(bankType)) {
+            console.log(`🌍 Using ENV credentials for ${bankType}`);
+            return this.getEnvCredentials(bankType);
+        }
+
+        console.log(`🔒 Using encrypted stored credentials for ${bankType}`);
+        return this.decryptCredentials(encryptedCredentials);
+    }
+
+    // Get credentials from environment variables
+    getEnvCredentials(bankType) {
+        const credentials = {};
+
+        switch (bankType) {
+            case 'yahav':
+                credentials.username = process.env.YAHAV_BANK_USERNAME;
+                credentials.password = process.env.YAHAV_BANK_PASSWORD;
+                credentials.nationalID = process.env.YAHAV_BANK_NATIONAL_ID;
+                break;
+            
+            case 'hapoalim':
+                credentials.userCode = process.env.HAPOALIM_BANK_USER_CODE;
+                credentials.password = process.env.HAPOALIM_BANK_PASSWORD;
+                break;
+            
+            case 'leumi':
+                credentials.username = process.env.LEUMI_BANK_USERNAME;
+                credentials.password = process.env.LEUMI_BANK_PASSWORD;
+                break;
+            
+            // Add more banks as needed
+            default:
+                throw new Error(`ENV credentials not configured for bank type: ${bankType}`);
+        }
+
+        // Validate that required credentials are present
+        const missingCredentials = Object.entries(credentials)
+            .filter(([key, value]) => !value || value.trim() === '' || value.includes('your_') || value.includes('_here'))
+            .map(([key]) => key);
+
+        if (missingCredentials.length > 0) {
+            throw new Error(`Missing or invalid ENV credentials for ${bankType}: ${missingCredentials.join(', ')}. Please update your .env file with actual values.`);
+        }
+
+        console.log(`✅ Successfully loaded ENV credentials for ${bankType} with fields: ${Object.keys(credentials).join(', ')}`);
+        return credentials;
+    }
+
+    // Check if a bank is configured to use ENV credentials
+    isBankUsingEnvCredentials(bankType) {
+        const envCredentialsEnabled = process.env.BANK_ENV_CREDENTIALS_ENABLED === 'true';
+        const allowedBanks = process.env.BANK_ENV_ALLOWED_BANKS ? 
+            process.env.BANK_ENV_ALLOWED_BANKS.split(',').map(b => b.trim()) : [];
+        
+        return envCredentialsEnabled && allowedBanks.includes(bankType);
+    }
+
+    // Test ENV credentials configuration (for debugging)
+    testEnvCredentials(bankType) {
+        try {
+            if (!this.isBankUsingEnvCredentials(bankType)) {
+                return {
+                    success: false,
+                    message: `ENV credentials not enabled for ${bankType}`,
+                    details: {
+                        envEnabled: process.env.BANK_ENV_CREDENTIALS_ENABLED,
+                        allowedBanks: process.env.BANK_ENV_ALLOWED_BANKS
+                    }
+                };
+            }
+
+            const credentials = this.getEnvCredentials(bankType);
+            return {
+                success: true,
+                message: `ENV credentials successfully loaded for ${bankType}`,
+                fields: Object.keys(credentials),
+                details: {
+                    envEnabled: process.env.BANK_ENV_CREDENTIALS_ENABLED,
+                    allowedBanks: process.env.BANK_ENV_ALLOWED_BANKS
+                }
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message,
+                error: error.message
+            };
+        }
     }
 }
 

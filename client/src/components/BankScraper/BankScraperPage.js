@@ -420,7 +420,18 @@ const BankScraperPage = () => {
                                         </select>
                                     </div>
 
-                                    {renderCredentialsForm()}
+                                    {newConfig.bankType === 'yahav' && (
+                                        <div className="bank-info" style={{background: '#e7f3ff', borderColor: '#0066cc'}}>
+                                            <p><strong>🌍 בנק יהב - מוגדר לשימוש ב-ENV</strong></p>
+                                            <p className="note">
+                                                פרטי הכניסה לבנק יהב נטענים ממשתני הסביבה (ENV) ולא מהטופס הזה.
+                                                <br />
+                                                אם אתה רוצה לשנות פרטי כניסה, ערוך את קובץ ה-.env ואתחל את השרת.
+                                            </p>
+                                        </div>
+                                    )}
+                                    
+                                    {newConfig.bankType && newConfig.bankType !== 'yahav' && renderCredentialsForm()}
 
                                     <div className="form-actions">
                                         <button type="submit" className="btn-primary" disabled={loading}>
@@ -455,10 +466,21 @@ const BankScraperPage = () => {
                                     
                                     <div className="bank-info">
                                         <p><strong>בנק:</strong> {bankTypes[editingConfig.bank_type]?.name}</p>
-                                        <p className="note">פרטי הכניסה - השאר ריק אם לא רוצה לשנות</p>
+                                        {editingConfig.bank_type === 'yahav' ? (
+                                            <div style={{background: '#e7f3ff', padding: '10px', borderRadius: '6px', marginTop: '10px'}}>
+                                                <p><strong>🌍 בנק יהב - מוגדר לשימוש ב-ENV</strong></p>
+                                                <p className="note">
+                                                    פרטי הכניסה נטענים ממשתני הסביבה. לא ניתן לערוך דרך הממשק.
+                                                    <br />
+                                                    לשינוי פרטים, ערוך את קובץ ה-.env ואתחל את השרת.
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <p className="note">פרטי הכניסה - השאר ריק אם לא רוצה לשנות</p>
+                                        )}
                                     </div>
 
-                                    {renderCredentialsForm(true)}
+                                    {editingConfig.bank_type !== 'yahav' && renderCredentialsForm(true)}
 
                                     <div className="form-actions">
                                         <button type="submit" className="btn-primary" disabled={loading}>
@@ -742,6 +764,22 @@ const BankScraperPage = () => {
                                 <li>ניתן למחוק קונפיגורציות בכל עת</li>
                                 <li>ניתן להשבית קונפיגורציות באופן זמני</li>
                             </ul>
+                        </div>
+
+                        <div className="guide-section" style={{background: '#e7f3ff', borderColor: '#0066cc'}}>
+                            <h3>🌍 אחסון פרטי כניסה ב-ENV (בנק יהב):</h3>
+                            <p>
+                                בנק יהב מוגדר לאחסון מאובטח של פרטי הכניסה במשתני הסביבה במקום במסד הנתונים.
+                            </p>
+                            <ul>
+                                <li><strong>אבטחה מוגברת:</strong> פרטי הכניסה נשמרים במשתני הסביבה של השרת</li>
+                                <li><strong>הגדרה חד פעמית:</strong> צריך לערוך את קובץ ה-.env פעם אחת בלבד</li>
+                                <li><strong>ללא צורך בעריכה:</strong> אין צורך לערוך פרטי כניסה דרך הממשק</li>
+                                <li><strong>מדריך מפורט:</strong> ראה קובץ BANK_YAHAV_ENV_SETUP_HE.md להוראות</li>
+                            </ul>
+                            <p className="note">
+                                <strong>שימו לב:</strong> לאחר עריכת ה-.env, יש להפעיל מחדש את השרת.
+                            </p>
                         </div>
 
                         <div className="guide-section">
