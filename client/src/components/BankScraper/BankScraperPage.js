@@ -274,27 +274,49 @@ const BankScraperPage = () => {
         const config = isEdit ? editForm : newConfig;
         const setConfig = isEdit ? setEditForm : setNewConfig;
         const selectedBankType = bankTypes[isEdit ? editingConfig.bank_type : newConfig.bankType];
+        const currentBankType = isEdit ? editingConfig.bank_type : newConfig.bankType;
         
         if (!selectedBankType) return null;
 
-        return selectedBankType.credentials.map(field => (
-            <div key={field} className="form-group">
-                <label>{getFieldLabel(field)}:</label>
-                <input
-                    type={field.includes('password') || field.includes('Password') ? 'password' : 'text'}
-                    value={config.credentials[field] || ''}
-                    onChange={(e) => setConfig({
-                        ...config,
-                        credentials: {
-                            ...config.credentials,
-                            [field]: e.target.value
-                        }
-                    })}
-                    required={!isEdit} // Only required for new configs
-                    placeholder={isEdit ? 'השאר ריק אם לא רוצה לשנות' : ''}
-                />
-            </div>
-        ));
+        return selectedBankType.credentials.map(field => {
+            // For Yahav bank, don't show password field since it comes from ENV
+            if (currentBankType === 'yahav' && field === 'password') {
+                return (
+                    <div key={field} className="form-group">
+                        <label>{getFieldLabel(field)}:</label>
+                        <input
+                            type="password"
+                            value="••••••••••••"
+                            disabled
+                            style={{background: '#f8f9fa', color: '#6c757d'}}
+                            title="הסיסמה נטענת ממשתני הסביבה (ENV)"
+                        />
+                        <small style={{color: '#6c757d', fontSize: '12px'}}>
+                            🔒 הסיסמה נטענת מ-ENV (YAHAV_BANK_PASSWORD)
+                        </small>
+                    </div>
+                );
+            }
+
+            return (
+                <div key={field} className="form-group">
+                    <label>{getFieldLabel(field)}:</label>
+                    <input
+                        type={field.includes('password') || field.includes('Password') ? 'password' : 'text'}
+                        value={config.credentials[field] || ''}
+                        onChange={(e) => setConfig({
+                            ...config,
+                            credentials: {
+                                ...config.credentials,
+                                [field]: e.target.value
+                            }
+                        })}
+                        required={!isEdit && !(currentBankType === 'yahav' && field === 'password')} // Password not required for Yahav
+                        placeholder={isEdit ? 'השאר ריק אם לא רוצה לשנות' : ''}
+                    />
+                </div>
+            );
+        });
     };
 
     const getFieldLabel = (field) => {
@@ -421,17 +443,17 @@ const BankScraperPage = () => {
                                     </div>
 
                                     {newConfig.bankType === 'yahav' && (
-                                        <div className="bank-info" style={{background: '#e7f3ff', borderColor: '#0066cc'}}>
-                                            <p><strong>🌍 בנק יהב - מוגדר לשימוש ב-ENV</strong></p>
+                                        <div className="bank-info" style={{background: '#fff3cd', borderColor: '#ffeaa7'}}>
+                                            <p><strong>🔒 בנק יהב - מצב היברידי (ENV + DB)</strong></p>
                                             <p className="note">
-                                                פרטי הכניסה לבנק יהב נטענים ממשתני הסביבה (ENV) ולא מהטופס הזה.
+                                                הזן כאן שם משתמש ותעודת זהות. הסיסמה נטענת ממשתני הסביבה (ENV).
                                                 <br />
-                                                אם אתה רוצה לשנות פרטי כניסה, ערוך את קובץ ה-.env ואתחל את השרת.
+                                                לשינוי סיסמה: ערוך YAHAV_BANK_PASSWORD בקובץ .env ואתחל את השרת.
                                             </p>
                                         </div>
                                     )}
                                     
-                                    {newConfig.bankType && newConfig.bankType !== 'yahav' && renderCredentialsForm()}
+                                    {newConfig.bankType && renderCredentialsForm()}
 
                                     <div className="form-actions">
                                         <button type="submit" className="btn-primary" disabled={loading}>
@@ -467,12 +489,12 @@ const BankScraperPage = () => {
                                     <div className="bank-info">
                                         <p><strong>בנק:</strong> {bankTypes[editingConfig.bank_type]?.name}</p>
                                         {editingConfig.bank_type === 'yahav' ? (
-                                            <div style={{background: '#e7f3ff', padding: '10px', borderRadius: '6px', marginTop: '10px'}}>
-                                                <p><strong>🌍 בנק יהב - מוגדר לשימוש ב-ENV</strong></p>
+                                            <div style={{background: '#fff3cd', padding: '10px', borderRadius: '6px', marginTop: '10px'}}>
+                                                <p><strong>🔒 בנק יהב - מצב היברידי (ENV + DB)</strong></p>
                                                 <p className="note">
-                                                    פרטי הכניסה נטענים ממשתני הסביבה. לא ניתן לערוך דרך הממשק.
+                                                    ניתן לערוך שם משתמש ותעודת זהות כאן. הסיסמה נטענת מ-ENV.
                                                     <br />
-                                                    לשינוי פרטים, ערוך את קובץ ה-.env ואתחל את השרת.
+                                                    לשינוי סיסמה: ערוך YAHAV_BANK_PASSWORD בקובץ .env ואתחל את השרת.
                                                 </p>
                                             </div>
                                         ) : (
@@ -480,7 +502,7 @@ const BankScraperPage = () => {
                                         )}
                                     </div>
 
-                                    {editingConfig.bank_type !== 'yahav' && renderCredentialsForm(true)}
+                                    {renderCredentialsForm(true)}
 
                                     <div className="form-actions">
                                         <button type="submit" className="btn-primary" disabled={loading}>
@@ -766,19 +788,19 @@ const BankScraperPage = () => {
                             </ul>
                         </div>
 
-                        <div className="guide-section" style={{background: '#e7f3ff', borderColor: '#0066cc'}}>
-                            <h3>🌍 אחסון פרטי כניסה ב-ENV (בנק יהב):</h3>
+                        <div className="guide-section" style={{background: '#fff3cd', borderColor: '#ffeaa7'}}>
+                            <h3>🔒 מצב היברידי - בנק יהב (ENV + DB):</h3>
                             <p>
-                                בנק יהב מוגדר לאחסון מאובטח של פרטי הכניסה במשתני הסביבה במקום במסד הנתונים.
+                                בנק יהב מוגדר למצב היברידי מאובטח: הסיסמה נשמרת ב-ENV, שם המשתמש ותעודת הזהות במסד הנתונים.
                             </p>
                             <ul>
-                                <li><strong>אבטחה מוגברת:</strong> פרטי הכניסה נשמרים במשתני הסביבה של השרת</li>
-                                <li><strong>הגדרה חד פעמית:</strong> צריך לערוך את קובץ ה-.env פעם אחת בלבד</li>
-                                <li><strong>ללא צורך בעריכה:</strong> אין צורך לערוך פרטי כניסה דרך הממשק</li>
-                                <li><strong>מדריך מפורט:</strong> ראה קובץ BANK_YAHAV_ENV_SETUP_HE.md להוראות</li>
+                                <li><strong>סיסמה ב-ENV:</strong> הסיסמה נשמרת במשתני הסביבה (YAHAV_BANK_PASSWORD)</li>
+                                <li><strong>שם משתמש ות"ז במסד נתונים:</strong> ניתן לערוך דרך הממשק הרגיל</li>
+                                <li><strong>אבטחה כפולה:</strong> הסיסמה הרגישה ביותר מוגנת ברמת השרת</li>
+                                <li><strong>גמישות:</strong> ניתן לעדכן שם משתמש ות"ז בקלות דרך הממשק</li>
                             </ul>
                             <p className="note">
-                                <strong>שימו לב:</strong> לאחר עריכת ה-.env, יש להפעיל מחדש את השרת.
+                                <strong>לשינוי סיסמה:</strong> ערוך את YAHAV_BANK_PASSWORD בקובץ .env והפעל מחדש את השרת.
                             </p>
                         </div>
 

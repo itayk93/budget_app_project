@@ -496,7 +496,7 @@ class IsraeliBankScraperService {
         return suggestions[errorType] || suggestions['UNKNOWN_ERROR'];
     }
 
-    // Get credentials for a bank - use ENV if configured, otherwise decrypt stored credentials
+    // Get credentials for a bank - use hybrid ENV+DB approach for Yahav, otherwise decrypt stored credentials
     getCredentialsForBank(bankType, encryptedCredentials) {
         const envCredentialsEnabled = process.env.BANK_ENV_CREDENTIALS_ENABLED === 'true';
         const allowedBanks = process.env.BANK_ENV_ALLOWED_BANKS ? 
@@ -504,17 +504,49 @@ class IsraeliBankScraperService {
 
         console.log(`🔐 Getting credentials for ${bankType}, ENV enabled: ${envCredentialsEnabled}, Allowed: [${allowedBanks.join(', ')}]`);
 
-        // Check if ENV credentials are enabled for this bank type
-        if (envCredentialsEnabled && allowedBanks.includes(bankType)) {
-            console.log(`🌍 Using ENV credentials for ${bankType}`);
-            return this.getEnvCredentials(bankType);
+        // Check if ENV credentials are enabled for this bank type (Yahav hybrid mode)
+        if (envCredentialsEnabled && allowedBanks.includes(bankType) && bankType === 'yahav') {
+            console.log(`🌍 Using hybrid ENV+DB credentials for ${bankType}`);
+            return this.getHybridCredentials(bankType, encryptedCredentials);
         }
 
         console.log(`🔒 Using encrypted stored credentials for ${bankType}`);
         return this.decryptCredentials(encryptedCredentials);
     }
 
-    // Get credentials from environment variables
+    // Get hybrid credentials - password from ENV, username/nationalID from database (for Yahav)
+    getHybridCredentials(bankType, encryptedCredentials) {
+        if (bankType !== 'yahav') {
+            throw new Error(`Hybrid credentials only supported for Yahav bank, not ${bankType}`);
+        }
+
+        // Get username and nationalID from encrypted database credentials
+        const dbCredentials = this.decryptCredentials(encryptedCredentials);
+        
+        // Get password from ENV
+        const envPassword = process.env.YAHAV_BANK_PASSWORD;
+        
+        // Validate ENV password
+        if (!envPassword || envPassword.trim() === '' || envPassword.includes('your_') || envPassword.includes('_here')) {
+            throw new Error('Missing or invalid YAHAV_BANK_PASSWORD in ENV. Please update your .env file with actual password.');
+        }
+
+        // Validate required DB credentials
+        if (!dbCredentials.username || !dbCredentials.nationalID) {
+            throw new Error('Missing username or nationalID in database credentials for Yahav. Please ensure these are saved in the configuration.');
+        }
+
+        const hybridCredentials = {
+            username: dbCredentials.username,
+            password: envPassword, // From ENV
+            nationalID: dbCredentials.nationalID
+        };
+
+        console.log(`✅ Successfully loaded hybrid credentials for ${bankType}: username + nationalID from DB, password from ENV`);
+        return hybridCredentials;
+    }
+
+    // Get credentials from environment variables (full ENV mode - kept for other banks if needed)
     getEnvCredentials(bankType) {
         const credentials = {};
 
@@ -576,16 +608,44 @@ class IsraeliBankScraperService {
                 };
             }
 
-            const credentials = this.getEnvCredentials(bankType);
-            return {
-                success: true,
-                message: `ENV credentials successfully loaded for ${bankType}`,
-                fields: Object.keys(credentials),
-                details: {
-                    envEnabled: process.env.BANK_ENV_CREDENTIALS_ENABLED,
-                    allowedBanks: process.env.BANK_ENV_ALLOWED_BANKS
+            if (bankType === 'yahav') {
+                // Test hybrid mode for Yahav
+                const envPassword = process.env.YAHAV_BANK_PASSWORD;
+                
+                if (!envPassword || envPassword.trim() === '' || envPassword.includes('your_') || envPassword.includes('_here')) {
+                    return {
+                        success: false,
+                        message: 'Missing or invalid YAHAV_BANK_PASSWORD in ENV',
+                        error: 'Please update your .env file with actual password'
+                    };
                 }
-            };
+
+                return {
+                    success: true,
+                    message: `Hybrid mode successfully configured for ${bankType}`,
+                    mode: 'hybrid',
+                    description: 'Password from ENV, username+nationalID from database',
+                    envFields: ['password'],
+                    dbFields: ['username', 'nationalID'],
+                    details: {
+                        envEnabled: process.env.BANK_ENV_CREDENTIALS_ENABLED,
+                        allowedBanks: process.env.BANK_ENV_ALLOWED_BANKS
+                    }
+                };
+            } else {
+                // Test full ENV mode for other banks
+                const credentials = this.getEnvCredentials(bankType);
+                return {
+                    success: true,
+                    message: `Full ENV credentials successfully loaded for ${bankType}`,
+                    mode: 'full_env',
+                    fields: Object.keys(credentials),
+                    details: {
+                        envEnabled: process.env.BANK_ENV_CREDENTIALS_ENABLED,
+                        allowedBanks: process.env.BANK_ENV_ALLOWED_BANKS
+                    }
+                };
+            }
         } catch (error) {
             return {
                 success: false,
