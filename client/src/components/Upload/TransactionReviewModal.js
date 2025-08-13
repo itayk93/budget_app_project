@@ -26,9 +26,9 @@ const TransactionReviewModal = ({
   const [skipDuplicates, setSkipDuplicates] = useState(false); // Default to show duplicates in yellow for review
   const [replaceDuplicates, setReplaceDuplicates] = useState(new Map()); // Map of tempId -> boolean (true = replace, false = create new)
   
-  // Foreign currency transfer state
-  const [isForeignTransferModalOpen, setIsForeignTransferModalOpen] = useState(false);
-  const [selectedTransactionForTransfer, setSelectedTransactionForTransfer] = useState(null);
+  // Foreign currency copy state
+  const [isForeignCopyModalOpen, setIsForeignCopyModalOpen] = useState(false);
+  const [selectedTransactionForCopy, setSelectedTransactionForCopy] = useState(null);
   const [targetCashFlowId, setTargetCashFlowId] = useState('');
   const [foreignCurrency, setForeignCurrency] = useState('');
   const [foreignAmount, setForeignAmount] = useState('');
@@ -431,22 +431,22 @@ const TransactionReviewModal = ({
     return null;
   };
 
-  // Handle foreign currency transfer
-  const handleForeignTransfer = (transaction) => {
+  // Handle foreign currency copy
+  const handleForeignCopy = (transaction) => {
     const detectedCurrency = detectForeignCurrency(transaction.business_name);
-    setSelectedTransactionForTransfer(transaction);
+    setSelectedTransactionForCopy(transaction);
     setForeignCurrency(detectedCurrency || 'USD');
     setForeignAmount('');
     setExchangeRate('');
     setTargetCashFlowId('');
-    setIsForeignTransferModalOpen(true);
+    setIsForeignCopyModalOpen(true);
   };
 
   // Handle foreign amount change and calculate exchange rate
   const handleForeignAmountChange = (value) => {
     setForeignAmount(value);
-    if (value && selectedTransactionForTransfer) {
-      const originalAmount = Math.abs(parseFloat(selectedTransactionForTransfer.amount));
+    if (value && selectedTransactionForCopy) {
+      const originalAmount = Math.abs(parseFloat(selectedTransactionForCopy.amount));
       const foreignAmountNum = parseFloat(value);
       
       if (foreignAmountNum > 0) {
@@ -456,15 +456,15 @@ const TransactionReviewModal = ({
     }
   };
 
-  // Submit foreign currency transfer
-  const handleForeignTransferSubmit = () => {
-    if (!selectedTransactionForTransfer || !targetCashFlowId || !foreignAmount || !exchangeRate) {
+  // Submit foreign currency copy
+  const handleForeignCopySubmit = () => {
+    if (!selectedTransactionForCopy || !targetCashFlowId || !foreignAmount || !exchangeRate) {
       alert('אנא מלא את כל השדות הנדרשים');
       return;
     }
 
     const copyData = {
-      transaction_id: selectedTransactionForTransfer.id || selectedTransactionForTransfer.tempId,
+      transaction_id: selectedTransactionForCopy.id || selectedTransactionForCopy.tempId,
       target_cash_flow_id: targetCashFlowId,
       category_name: 'הכנסות משתנות',
       foreign_currency: foreignCurrency,
@@ -476,7 +476,7 @@ const TransactionReviewModal = ({
     transactionsAPI.recordAsIncome(copyData)
       .then(() => {
         alert(`✅ העסקה הועתקה בהצלחה לתזרים היעד כהכנסה של ${foreignAmount} ${foreignCurrency}`);
-        setIsForeignTransferModalOpen(false);
+        setIsForeignCopyModalOpen(false);
       })
       .catch((error) => {
         console.error('❌ Error copying transaction:', error);
@@ -609,8 +609,8 @@ const TransactionReviewModal = ({
                               <button
                                 type="button"
                                 className="foreign-currency-btn"
-                                onClick={() => handleForeignTransfer(transaction)}
-                                title={`זוהה מטבע זר: ${detectForeignCurrency(transaction.business_name)} - לחץ להעברה לתזרים אחר`}
+                                onClick={() => handleForeignCopy(transaction)}
+                                title={`זוהה מטבע זר: ${detectForeignCurrency(transaction.business_name)} - לחץ להעתקה לתזרים אחר`}
                                 style={{
                                   background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
                                   border: 'none',
@@ -888,23 +888,23 @@ const TransactionReviewModal = ({
         </div>
       </div>
 
-      {/* Foreign Currency Transfer Modal */}
+      {/* Foreign Currency Copy Modal */}
       <Modal
-        isOpen={isForeignTransferModalOpen}
+        isOpen={isForeignCopyModalOpen}
         onClose={() => {
-          setIsForeignTransferModalOpen(false);
-          setSelectedTransactionForTransfer(null);
+          setIsForeignCopyModalOpen(false);
+          setSelectedTransactionForCopy(null);
           setTargetCashFlowId('');
           setForeignCurrency('');
           setForeignAmount('');
           setExchangeRate('');
         }}
-        title="העברת עסקה עם מטבע זר לתזרים אחר"
+        title="העתקת עסקה עם מטבע זר לתזרים אחר"
       >
-        {selectedTransactionForTransfer && (
+        {selectedTransactionForCopy && (
           <div>
             <p style={{marginBottom: '1rem'}}>
-              זוהה מטבע זר בשם העסק. העבר את העסקה לתזרים המתאים:
+              זוהה מטבע זר בשם העסק. העתק את העסקה לתזרים המתאים:
             </p>
             
             <div className="form-group" style={{marginBottom: '1rem'}}>
@@ -976,8 +976,8 @@ const TransactionReviewModal = ({
             )}
 
             <div style={{margin: '1rem 0', padding: '12px', backgroundColor: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '4px'}}>
-              <div><strong>עסקה:</strong> {selectedTransactionForTransfer.business_name}</div>
-              <div><strong>סכום מקורי:</strong> {Math.abs(parseFloat(selectedTransactionForTransfer.amount)).toLocaleString()} ₪</div>
+              <div><strong>עסקה:</strong> {selectedTransactionForCopy.business_name}</div>
+              <div><strong>סכום מקורי:</strong> {Math.abs(parseFloat(selectedTransactionForCopy.amount)).toLocaleString()} ₪</div>
               <div><strong>העסקה תועתק כ:</strong> הכנסה של {foreignAmount} {foreignCurrency} בתזרים היעד</div>
             </div>
 
@@ -990,17 +990,17 @@ const TransactionReviewModal = ({
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={() => setIsForeignTransferModalOpen(false)}
+                onClick={() => setIsForeignCopyModalOpen(false)}
               >
                 ביטול
               </button>
               <button
                 type="button"
                 className="btn btn-primary"
-                onClick={handleForeignTransferSubmit}
+                onClick={handleForeignCopySubmit}
                 disabled={!targetCashFlowId || !foreignAmount || !exchangeRate}
               >
-                העבר לתזרים
+                העתק לתזרים
               </button>
             </div>
           </div>
