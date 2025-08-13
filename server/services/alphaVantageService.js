@@ -5,7 +5,7 @@
  */
 
 const axios = require('axios');
-const { getSupabase } = require('../config/supabase');
+const { adminClient } = require('../config/supabase');
 
 class AlphaVantageService {
     constructor() {
@@ -248,7 +248,8 @@ class AlphaVantageService {
      */
     async checkMissingDates(symbol, daysBack = 365) {
         try {
-            const supabase = getSupabase();
+            // Use admin client for stock prices (global data that bypasses RLS)
+            const supabase = adminClient;
             const endDate = new Date();
             const startDate = new Date();
             startDate.setDate(startDate.getDate() - daysBack);
@@ -371,7 +372,8 @@ class AlphaVantageService {
             }
 
             // Insert into database using upsert to handle duplicates
-            const supabase = getSupabase();
+            // Use admin client for stock prices (global data that bypasses RLS)
+            const supabase = adminClient;
             const { data, error } = await supabase
                 .from('stock_prices')
                 .upsert(records, { 
@@ -420,7 +422,8 @@ class AlphaVantageService {
      */
     async getLatestPriceFromDb(symbol) {
         try {
-            const supabase = getSupabase();
+            // Use admin client for stock prices (global data that bypasses RLS)
+            const supabase = adminClient;
             const { data, error } = await supabase
                 .from('stock_prices')
                 .select('*')
@@ -514,7 +517,8 @@ class AlphaVantageService {
      */
     async getHistoricalData(symbol, period = '1y') {
         try {
-            const supabase = getSupabase();
+            // Use admin client for stock prices (global data that bypasses RLS)
+            const supabase = adminClient;
             
             // Calculate date range based on period
             const endDate = new Date();

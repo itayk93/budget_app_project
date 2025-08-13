@@ -6,7 +6,7 @@
 
 const yahooFinanceService = require('./yahooFinanceService');
 const alphaVantageService = require('./alphaVantageService');
-const { getSupabase } = require('../config/supabase');
+const { adminClient } = require('../config/supabase');
 
 class StockPriceService {
     constructor() {
@@ -234,8 +234,8 @@ class StockPriceService {
             }
 
             // Insert into database using upsert to handle duplicates
-            const supabase = getSupabase();
-            const { data, error } = await supabase
+            // Use admin client for stock prices (global data that bypasses RLS)
+            const { data, error } = await adminClient
                 .from('stock_prices')
                 .upsert(records, { 
                     onConflict: 'stock_symbol,price_date',

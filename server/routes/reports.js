@@ -5,7 +5,7 @@ const { createClient } = require('@supabase/supabase-js');
 const router = express.Router();
 
 // Initialize Supabase client
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 // Get monthly report
 router.get('/monthly/:year/:month', authenticateToken, async (req, res) => {

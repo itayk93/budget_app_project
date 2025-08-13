@@ -4,7 +4,7 @@
  * ~200 lines - Handles all user-related database operations
  */
 
-const { supabase } = require('../../config/supabase');
+const { adminClient } = require('../../config/supabase');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const SharedUtilities = require('./SharedUtilities');
@@ -20,7 +20,8 @@ class UserService {
       // Hash password
       const passwordHash = await bcrypt.hash(password, 10);
       
-      const { data, error } = await supabase
+      // Use admin client for user management operations (bypasses RLS)
+      const { data, error } = await adminClient
         .from('users')
         .insert([{
           username,
@@ -50,7 +51,8 @@ class UserService {
         return SharedUtilities.createErrorResponse('Email is required');
       }
 
-      const { data, error } = await supabase
+      // Use admin client for user management operations (bypasses RLS)
+      const { data, error } = await adminClient
         .from('users')
         .select('*')
         .eq('email', email)
@@ -70,7 +72,8 @@ class UserService {
         return SharedUtilities.createErrorResponse('Username is required');
       }
 
-      const { data, error } = await supabase
+      // Use admin client for user management operations (bypasses RLS)
+      const { data, error } = await adminClient
         .from('users')
         .select('*')
         .eq('username', username)
@@ -100,7 +103,8 @@ class UserService {
       }
 
       console.log(`🔍 Looking up user with valid UUID: ${id}`);
-      const { data, error } = await supabase
+      // Use admin client for user management operations (bypasses RLS)
+      const { data, error } = await adminClient
         .from('users')
         .select('*')
         .eq('id', id)
@@ -149,7 +153,8 @@ class UserService {
       
       updateData.updated_at = new Date().toISOString();
       
-      const { data, error } = await supabase
+      // Use admin client for user management operations (bypasses RLS)
+      const { data, error } = await adminClient
         .from('users')
         .update(updateData)
         .eq('id', userId)

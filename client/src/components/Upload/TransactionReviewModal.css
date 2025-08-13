@@ -494,7 +494,6 @@
   background: white;
   border: 1px solid #e5e7eb;
   color: #374151;
-  transform: translateY(4px);
 }
 
 .btn-secondary:hover:not(:disabled) {
@@ -508,13 +507,11 @@
   border-color: #2563eb;
   font-weight: 600;
   box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
-  transform: translateY(-10px);
 }
 
 .btn-primary:hover:not(:disabled) {
   background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
   border-color: #1d4ed8;
-  transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
 }
 

@@ -121,8 +121,8 @@
 /* Section Headers */
 .section-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
     margin-bottom: 25px;
     padding-bottom: 15px;
     border-bottom: 1px solid #e9ecef;
@@ -131,16 +131,22 @@
 .section-header h2 {
     color: #212529;
     font-size: 1.6em;
-    margin: 0;
+    margin: 0 0 15px 0;
     font-weight: 600;
 }
 
-/* Buttons */
-.btn-primary {
-    background: #212529;
-    color: white;
+.section-header .btn-primary {
+    padding: 6px 12px;
+    font-size: 13px;
+    margin-left: 0;
+}
+
+/* Buttons - Uniform Design */
+.btn-primary,
+.btn-secondary,
+.btn-danger {
     border: none;
-    padding: 10px 20px;
+    padding: 8px 16px;
     border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
@@ -148,6 +154,12 @@
     transition: all 0.2s ease;
     text-decoration: none;
     display: inline-block;
+    margin-left: 8px;
+}
+
+.btn-primary {
+    background: #212529;
+    color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -165,12 +177,6 @@
     background: white;
     color: #495057;
     border: 1px solid #dee2e6;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    margin-left: 8px;
-    transition: all 0.2s ease;
 }
 
 .btn-secondary:hover:not(:disabled) {
@@ -187,13 +193,6 @@
 .btn-danger {
     background: #dc3545;
     color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    margin-left: 8px;
-    transition: all 0.2s ease;
 }
 
 .btn-danger:hover {

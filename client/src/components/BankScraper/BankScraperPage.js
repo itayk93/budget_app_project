@@ -62,6 +62,11 @@ const BankScraperPage = () => {
             if (data.success) {
                 setConfigs(data.configs);
                 setSetupRequired(false);
+                // Auto-select first config if none selected and we're on transactions tab
+                if (activeTab === 'transactions' && data.configs.length > 0 && !selectedConfig) {
+                    setSelectedConfig(data.configs[0].id);
+                    fetchTransactions(data.configs[0].id);
+                }
             } else if (data.needsSetup) {
                 setSetupRequired(true);
             }
@@ -402,7 +407,14 @@ const BankScraperPage = () => {
                 </button>
                 <button 
                     className={activeTab === 'transactions' ? 'active' : ''}
-                    onClick={() => setActiveTab('transactions')}
+                    onClick={() => {
+                        setActiveTab('transactions');
+                        // Auto-select first config if none selected
+                        if (configs.length > 0 && !selectedConfig) {
+                            setSelectedConfig(configs[0].id);
+                            fetchTransactions(configs[0].id);
+                        }
+                    }}
                 >
                     עסקאות
                 </button>
@@ -657,13 +669,15 @@ const BankScraperPage = () => {
                 {activeTab === 'transactions' && (
                     <div className="transactions-tab">
                         <div className="section-header">
-                            <h2>עסקאות מסוקרפות</h2>
-                            {selectedConfig && (
+                            <h2>עסקאות</h2>
+                            {configs.length > 0 && (
                                 <select 
-                                    value={selectedConfig}
+                                    value={selectedConfig || ''}
                                     onChange={(e) => {
                                         setSelectedConfig(e.target.value);
-                                        fetchTransactions(e.target.value);
+                                        if (e.target.value) {
+                                            fetchTransactions(e.target.value);
+                                        }
                                     }}
                                 >
                                     <option value="">בחר קונפיגורציה</option>
