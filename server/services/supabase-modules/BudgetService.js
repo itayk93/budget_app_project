@@ -4,18 +4,19 @@
  * ~400 lines - Handles budgets, monthly goals, and financial targets
  */
 
-const { supabase } = require('../../config/supabase');
+const { adminClient, createUserClient } = require('../../config/supabase');
 const SharedUtilities = require('./SharedUtilities');
 
 class BudgetService {
 
   // ===== MONTHLY BUDGET MANAGEMENT =====
   
-  static async getMonthlyBudgets(userId, year, month) {
+  static async getMonthlyBudgets(userId, year, month, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('monthly_budget')
         .select(`
           *,
@@ -38,7 +39,7 @@ class BudgetService {
     }
   }
 
-  static async createMonthlyBudget(budgetData) {
+  static async createMonthlyBudget(budgetData, userClient = null) {
     try {
       const { user_id, category_id, year, month, budget_amount } = budgetData;
 
@@ -48,6 +49,7 @@ class BudgetService {
 
       SharedUtilities.validateUserId(user_id);
       SharedUtilities.validateAmount(budget_amount);
+      const client = userClient || adminClient;
 
       const budgetToInsert = {
         ...budgetData,
@@ -55,7 +57,7 @@ class BudgetService {
         updated_at: new Date().toISOString()
       };
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('monthly_budget')
         .insert([budgetToInsert])
         .select()
@@ -69,7 +71,7 @@ class BudgetService {
     }
   }
 
-  static async updateMonthlyBudget(budgetId, updateData) {
+  static async updateMonthlyBudget(budgetId, updateData, userClient = null) {
     try {
       if (!budgetId) {
         return SharedUtilities.createErrorResponse('Budget ID is required');
@@ -78,13 +80,14 @@ class BudgetService {
       if (updateData.budget_amount !== undefined) {
         SharedUtilities.validateAmount(updateData.budget_amount);
       }
+      const client = userClient || adminClient;
 
       const processedUpdateData = {
         ...updateData,
         updated_at: new Date().toISOString()
       };
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('monthly_budget')
         .update(processedUpdateData)
         .eq('id', budgetId)
@@ -99,13 +102,14 @@ class BudgetService {
     }
   }
 
-  static async deleteMonthlyBudget(budgetId) {
+  static async deleteMonthlyBudget(budgetId, userClient = null) {
     try {
       if (!budgetId) {
         return SharedUtilities.createErrorResponse('Budget ID is required');
       }
+      const client = userClient || adminClient;
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('monthly_budget')
         .delete()
         .eq('id', budgetId)
@@ -122,11 +126,12 @@ class BudgetService {
 
   // ===== MONTHLY GOALS MANAGEMENT =====
 
-  static async getMonthlySavings(userId, cashFlowId, year, month) {
+  static async getMonthlySavings(userId, cashFlowId, year, month, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('transactions')
         .select('amount')
         .eq('user_id', userId)
@@ -148,11 +153,12 @@ class BudgetService {
     }
   }
 
-  static async getMonthlyGoal(userId, cashFlowId, year, month) {
+  static async getMonthlyGoal(userId, cashFlowId, year, month, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('monthly_goals')
         .select('*')
         .eq('user_id', userId)
@@ -175,7 +181,7 @@ class BudgetService {
     }
   }
 
-  static async saveMonthlyGoal(userId, goalData) {
+  static async saveMonthlyGoal(userId, goalData, userClient = null) {
     try {
       const { cash_flow_id, year, month, goal_amount, description } = goalData;
 
@@ -185,6 +191,7 @@ class BudgetService {
 
       SharedUtilities.validateUserId(userId);
       SharedUtilities.validateAmount(goal_amount);
+      const client = userClient || adminClient;
 
       const goalToSave = {
         user_id: userId,
@@ -198,7 +205,7 @@ class BudgetService {
       };
 
       // Use upsert to handle both create and update
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('monthly_goals')
         .upsert(goalToSave, {
           onConflict: 'user_id,cash_flow_id,year,month'
@@ -214,15 +221,16 @@ class BudgetService {
     }
   }
 
-  static async deleteMonthlyGoal(userId, cashFlowId, year, month) {
+  static async deleteMonthlyGoal(userId, cashFlowId, year, month, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
       if (!cashFlowId || !year || !month) {
         return SharedUtilities.createErrorResponse('Cash flow ID, year, and month are required');
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('monthly_goals')
         .delete()
         .eq('user_id', userId)
@@ -242,14 +250,15 @@ class BudgetService {
 
   // ===== GOAL TO TRANSACTION CONVERSION =====
 
-  static async addGoalAsExpense(userId, goalData) {
+  static async addGoalAsExpense(userId, goalData, userClient = null) {
     try {
       const { cash_flow_id, year, month, description } = goalData;
 
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
       // Get the goal first
-      const goalResult = await this.getMonthlyGoal(userId, cash_flow_id, year, month);
+      const goalResult = await this.getMonthlyGoal(userId, cash_flow_id, year, month, client);
       if (!goalResult.success || !goalResult.data) {
         return SharedUtilities.createErrorResponse('Monthly goal not found');
       }
@@ -272,7 +281,7 @@ class BudgetService {
         updated_at: new Date().toISOString()
       };
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('transactions')
         .insert([expenseData])
         .select()
@@ -286,11 +295,12 @@ class BudgetService {
     }
   }
 
-  static async removeGoalExpense(userId, cashFlowId, year, month) {
+  static async removeGoalExpense(userId, cashFlowId, year, month, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('transactions')
         .delete()
         .eq('user_id', userId)
@@ -308,14 +318,15 @@ class BudgetService {
     }
   }
 
-  static async addGoalAsFutureIncome(userId, goalData, isNextMonth = true) {
+  static async addGoalAsFutureIncome(userId, goalData, isNextMonth = true, userClient = null) {
     try {
       const { cash_flow_id, year, month, description } = goalData;
 
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
       // Get the goal first
-      const goalResult = await this.getMonthlyGoal(userId, cash_flow_id, year, month);
+      const goalResult = await this.getMonthlyGoal(userId, cash_flow_id, year, month, client);
       if (!goalResult.success || !goalResult.data) {
         return SharedUtilities.createErrorResponse('Monthly goal not found');
       }
@@ -350,7 +361,7 @@ class BudgetService {
         updated_at: new Date().toISOString()
       };
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('transactions')
         .insert([incomeData])
         .select()
@@ -364,11 +375,12 @@ class BudgetService {
     }
   }
 
-  static async removeGoalIncome(userId, cashFlowId, year, month) {
+  static async removeGoalIncome(userId, cashFlowId, year, month, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('transactions')
         .delete()
         .eq('user_id', userId)
@@ -388,9 +400,10 @@ class BudgetService {
 
   // ===== CATEGORY MONTHLY TARGETS =====
 
-  static async updateCategoryMonthlyTarget(userId, categoryName, monthlyTarget) {
+  static async updateCategoryMonthlyTarget(userId, categoryName, monthlyTarget, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
       if (!categoryName) {
         return SharedUtilities.createErrorResponse('Category name is required');
@@ -400,7 +413,7 @@ class BudgetService {
         SharedUtilities.validateAmount(monthlyTarget);
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('category_targets')
         .upsert({
           user_id: userId,
@@ -421,15 +434,16 @@ class BudgetService {
     }
   }
 
-  static async getCategoryMonthlyTarget(userId, categoryName) {
+  static async getCategoryMonthlyTarget(userId, categoryName, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
       if (!categoryName) {
         return SharedUtilities.createErrorResponse('Category name is required');
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('category_targets')
         .select('*')
         .eq('user_id', userId)
@@ -452,18 +466,19 @@ class BudgetService {
 
   // ===== BUDGET ANALYSIS =====
 
-  static async getBudgetAnalysis(userId, cashFlowId, year, month) {
+  static async getBudgetAnalysis(userId, cashFlowId, year, month, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
       // Get monthly budgets
-      const budgetsResult = await this.getMonthlyBudgets(userId, year, month);
+      const budgetsResult = await this.getMonthlyBudgets(userId, year, month, client);
       if (!budgetsResult.success) {
         return budgetsResult;
       }
 
       // Get actual spending for the month
-      const { data: transactions, error: transactionError } = await supabase
+      const { data: transactions, error: transactionError } = await client
         .from('transactions')
         .select('amount, category_name, category_id')
         .eq('user_id', userId)

@@ -1,6 +1,8 @@
 const express = require('express');
 const SupabaseService = require('../services/supabaseService');
-const supabase = require('../config/supabase');
+const BudgetService = require('../services/supabase-modules/BudgetService');
+const TransactionService = require('../services/supabase-modules/TransactionService');
+const { createUserClient } = require('../config/supabase');
 const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
@@ -10,8 +12,13 @@ router.get('/', authenticateToken, async (req, res) => {
     // Get all monthly budgets for user
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1;
-    const budgets = await SupabaseService.getMonthlyBudgets(req.user.id, currentYear, currentMonth);
-    res.json(budgets);
+    const userClient = createUserClient(req.user.token);
+    const result = await BudgetService.getMonthlyBudgets(req.user.id, currentYear, currentMonth, userClient);
+    if (result.success) {
+      res.json(result.data);
+    } else {
+      res.status(500).json({ error: result.error || 'Failed to fetch budgets' });
+    }
   } catch (error) {
     console.error('Get budgets error:', error);
     res.status(500).json({ error: 'Failed to fetch budgets' });
@@ -22,12 +29,18 @@ router.get('/', authenticateToken, async (req, res) => {
 router.get('/monthly/:year/:month', authenticateToken, async (req, res) => {
   try {
     const { year, month } = req.params;
-    const monthlyBudgets = await SupabaseService.getMonthlyBudgets(
+    const userClient = createUserClient(req.user.token);
+    const result = await BudgetService.getMonthlyBudgets(
       req.user.id, 
       parseInt(year), 
-      parseInt(month)
+      parseInt(month),
+      userClient
     );
-    res.json(monthlyBudgets);
+    if (result.success) {
+      res.json(result.data);
+    } else {
+      res.status(500).json({ error: result.error || 'Failed to fetch monthly budgets' });
+    }
   } catch (error) {
     console.error('Get monthly budgets error:', error);
     res.status(500).json({ error: 'Failed to fetch monthly budgets' });
@@ -55,8 +68,13 @@ router.post('/', authenticateToken, async (req, res) => {
       amount: amount
     };
 
-    const budget = await SupabaseService.createMonthlyBudget(budgetData);
-    res.json(budget);
+    const userClient = createUserClient(req.user.token);
+    const result = await BudgetService.createMonthlyBudget(budgetData, userClient);
+    if (result.success) {
+      res.json(result.data);
+    } else {
+      res.status(500).json({ error: result.error || 'Failed to create budget' });
+    }
   } catch (error) {
     console.error('Create/update budget error:', error);
     res.status(500).json({ error: 'Failed to create/update budget' });
@@ -80,8 +98,13 @@ router.post('/monthly', authenticateToken, async (req, res) => {
       amount: parseFloat(amount)
     };
 
-    const budget = await SupabaseService.createMonthlyBudget(budgetData);
-    res.json(budget);
+    const userClient = createUserClient(req.user.token);
+    const result = await BudgetService.createMonthlyBudget(budgetData, userClient);
+    if (result.success) {
+      res.json(result.data);
+    } else {
+      res.status(500).json({ error: result.error || 'Failed to create monthly budget' });
+    }
   } catch (error) {
     console.error('Create/update monthly budget error:', error);
     res.status(500).json({ error: 'Failed to create/update monthly budget' });
@@ -95,8 +118,12 @@ router.get('/category/:categoryId', authenticateToken, async (req, res) => {
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1;
     
-    const budgets = await SupabaseService.getMonthlyBudgets(req.user.id, currentYear, currentMonth);
-    const budget = budgets.find(b => b.category_id === categoryId);
+    const userClient = createUserClient(req.user.token);
+    const result = await BudgetService.getMonthlyBudgets(req.user.id, currentYear, currentMonth, userClient);
+    if (!result.success) {
+      return res.status(500).json({ error: result.error || 'Failed to fetch budgets' });
+    }
+    const budget = result.data.find(b => b.category_id === categoryId);
     
     if (!budget) {
       return res.status(404).json({ error: 'Budget not found' });
@@ -113,13 +140,19 @@ router.get('/category/:categoryId', authenticateToken, async (req, res) => {
 router.get('/monthly/:year/:month/:categoryId', authenticateToken, async (req, res) => {
   try {
     const { year, month, categoryId } = req.params;
-    const budgets = await SupabaseService.getMonthlyBudgets(
+    const userClient = createUserClient(req.user.token);
+    const result = await BudgetService.getMonthlyBudgets(
       req.user.id, 
       parseInt(year), 
-      parseInt(month)
+      parseInt(month),
+      userClient
     );
     
-    const monthlyBudget = budgets.find(b => b.category_id === categoryId);
+    if (!result.success) {
+      return res.status(500).json({ error: result.error || 'Failed to fetch budgets' });
+    }
+    
+    const monthlyBudget = result.data.find(b => b.category_id === categoryId);
 
     if (!monthlyBudget) {
       return res.status(404).json({ error: 'Monthly budget not found' });
@@ -137,19 +170,14 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Use direct Supabase query to delete budget
-    const { error } = await supabase
-      .from('monthly_budget')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', req.user.id);
+    const userClient = createUserClient(req.user.token);
+    const result = await BudgetService.deleteMonthlyBudget(id, userClient);
 
-    if (error) {
-      console.error('Delete budget error:', error);
-      return res.status(500).json({ error: 'Failed to delete budget' });
+    if (result.success) {
+      res.json({ message: 'Budget deleted successfully' });
+    } else {
+      res.status(500).json({ error: result.error || 'Failed to delete budget' });
     }
-
-    res.json({ message: 'Budget deleted successfully' });
   } catch (error) {
     console.error('Delete budget error:', error);
     res.status(500).json({ error: 'Failed to delete budget' });
@@ -161,19 +189,14 @@ router.delete('/monthly/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Use direct Supabase query to delete monthly budget
-    const { error } = await supabase
-      .from('monthly_budget')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', req.user.id);
+    const userClient = createUserClient(req.user.token);
+    const result = await BudgetService.deleteMonthlyBudget(id, userClient);
 
-    if (error) {
-      console.error('Delete monthly budget error:', error);
-      return res.status(500).json({ error: 'Failed to delete monthly budget' });
+    if (result.success) {
+      res.json({ message: 'Monthly budget deleted successfully' });
+    } else {
+      res.status(500).json({ error: result.error || 'Failed to delete monthly budget' });
     }
-
-    res.json({ message: 'Monthly budget deleted successfully' });
   } catch (error) {
     console.error('Delete monthly budget error:', error);
     res.status(500).json({ error: 'Failed to delete monthly budget' });
@@ -186,13 +209,23 @@ router.get('/category/:categoryId/average/:year/:month', authenticateToken, asyn
     const { categoryId, year, month } = req.params;
     
     // Get transactions for the last 3 months to calculate average
-    const { transactions } = await SupabaseService.getTransactions(
+    const userClient = createUserClient(req.user.token);
+    const transactionsResult = await TransactionService.getTransactions(
       req.user.id,
       { 
         category_id: categoryId,
         show_all: true
-      }
+      },
+      1,
+      1000,
+      userClient
     );
+    
+    if (!transactionsResult.success) {
+      return res.status(500).json({ error: transactionsResult.error || 'Failed to fetch transactions' });
+    }
+    
+    const transactions = transactionsResult.data.transactions || [];
     
     // Calculate average spending for this category
     const categoryTransactions = transactions.filter(t => t.category_id === categoryId);

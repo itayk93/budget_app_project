@@ -4,21 +4,22 @@
  * ~300 lines - Handles all category-related database operations
  */
 
-const { supabase } = require('../../config/supabase');
+const { adminClient, createUserClient } = require('../../config/supabase');
 const SharedUtilities = require('./SharedUtilities');
 
 class CategoryService {
 
   // ===== CATEGORY RETRIEVAL =====
   
-  static async getCategories(userId = null) {
+  static async getCategories(userId = null, userClient = null) {
     try {
+      const client = userClient || adminClient;
       // Initialize category order if user is provided
       if (userId) {
-        await this.initializeCategoryOrder(userId);
+        await this.initializeCategoryOrder(userId, client);
       }
 
-      let query = supabase
+      let query = client
         .from('category')
         .select('*');
 
@@ -41,7 +42,7 @@ class CategoryService {
 
       // Apply user's preferred category order if user_id is provided
       if (userId) {
-        const preferredOrder = await this.getUserCategoryOrder(userId);
+        const preferredOrder = await this.getUserCategoryOrder(userId, client);
         if (preferredOrder && preferredOrder.length > 0) {
           const categoryMap = {};
           processedCategories.forEach(cat => {
@@ -82,11 +83,12 @@ class CategoryService {
     }
   }
 
-  static async getCategoriesByType(userId, categoryType) {
+  static async getCategoriesByType(userId, categoryType, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('category')
         .select('*')
         .eq('user_id', userId)
@@ -109,11 +111,12 @@ class CategoryService {
 
   // ===== CATEGORY ORDER MANAGEMENT =====
 
-  static async getUserCategoryOrder(userId) {
+  static async getUserCategoryOrder(userId, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('category_order')
         .select('*')
         .eq('user_id', userId)
@@ -127,18 +130,19 @@ class CategoryService {
     }
   }
 
-  static async initializeCategoryOrder(userId) {
+  static async initializeCategoryOrder(userId, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
       // Check if user already has category order
-      const existingOrder = await this.getUserCategoryOrder(userId);
+      const existingOrder = await this.getUserCategoryOrder(userId, client);
       if (existingOrder.length > 0) {
         return SharedUtilities.createSuccessResponse(true, 'Category order already initialized');
       }
 
       // Get all available categories
-      const categoriesResult = await this.getCategories();
+      const categoriesResult = await this.getCategories(userId, client);
       const categories = categoriesResult.success ? categoriesResult.data : [];
       
       // Initialize order for each category
@@ -150,7 +154,7 @@ class CategoryService {
       }));
 
       if (orderData.length > 0) {
-        const { error } = await supabase
+        const { error } = await client
           .from('category_order')
           .insert(orderData);
 
@@ -164,16 +168,17 @@ class CategoryService {
     }
   }
 
-  static async saveCategoryOrder(userId, categoryOrder) {
+  static async saveCategoryOrder(userId, categoryOrder, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
       if (!Array.isArray(categoryOrder)) {
         return SharedUtilities.createErrorResponse('Category order must be an array');
       }
 
       // Delete existing order
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await client
         .from('category_order')
         .delete()
         .eq('user_id', userId);
@@ -188,7 +193,7 @@ class CategoryService {
         created_at: new Date().toISOString()
       }));
 
-      const { error: insertError } = await supabase
+      const { error: insertError } = await client
         .from('category_order')
         .insert(orderData);
 
@@ -201,15 +206,16 @@ class CategoryService {
     }
   }
 
-  static async reorderCategory(userId, categoryId, direction) {
+  static async reorderCategory(userId, categoryId, direction, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
       if (!['up', 'down'].includes(direction)) {
         return SharedUtilities.createErrorResponse('Direction must be "up" or "down"');
       }
 
-      const currentOrder = await this.getUserCategoryOrder(userId);
+      const currentOrder = await this.getUserCategoryOrder(userId, client);
       if (!currentOrder || currentOrder.length === 0) {
         return SharedUtilities.createErrorResponse('No category order found');
       }
@@ -238,7 +244,7 @@ class CategoryService {
       [newOrder[categoryIndex], newOrder[newIndex]] = [newOrder[newIndex], newOrder[categoryIndex]];
 
       // Save the new order
-      return await this.saveCategoryOrder(userId, newOrder.map(item => item.category_name));
+      return await this.saveCategoryOrder(userId, newOrder.map(item => item.category_name), client);
     } catch (error) {
       console.error('Error reordering category:', error);
       return SharedUtilities.handleSupabaseError(error, 'reorder category');
@@ -247,9 +253,10 @@ class CategoryService {
 
   // ===== CATEGORY CREATION AND MANAGEMENT =====
 
-  static async createCategory(userId, categoryData) {
+  static async createCategory(userId, categoryData, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
       const { name, category_type, color, is_default = false } = categoryData;
 
@@ -258,7 +265,7 @@ class CategoryService {
       }
 
       // Check if category already exists for this user
-      const { data: existingCategory, error: checkError } = await supabase
+      const { data: existingCategory, error: checkError } = await client
         .from('category')
         .select('id')
         .eq('user_id', userId)
@@ -281,7 +288,7 @@ class CategoryService {
         updated_at: new Date().toISOString()
       };
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('category')
         .insert([categoryToInsert])
         .select()
@@ -290,7 +297,7 @@ class CategoryService {
       if (error) throw error;
 
       // Add to category order
-      const currentOrder = await this.getUserCategoryOrder(userId);
+      const currentOrder = await this.getUserCategoryOrder(userId, client);
       const newOrderItem = {
         user_id: userId,
         category_name: name,
@@ -298,7 +305,7 @@ class CategoryService {
         created_at: new Date().toISOString()
       };
 
-      await supabase
+      await client
         .from('category_order')
         .insert([newOrderItem]);
 
@@ -309,9 +316,10 @@ class CategoryService {
     }
   }
 
-  static async updateCategory(userId, categoryId, updateData) {
+  static async updateCategory(userId, categoryId, updateData, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
       if (!categoryId) {
         return SharedUtilities.createErrorResponse('Category ID is required');
@@ -322,7 +330,7 @@ class CategoryService {
         updated_at: new Date().toISOString()
       };
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('category')
         .update(processedUpdateData)
         .eq('id', categoryId)
@@ -339,16 +347,17 @@ class CategoryService {
     }
   }
 
-  static async deleteCategory(userId, categoryId) {
+  static async deleteCategory(userId, categoryId, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
       if (!categoryId) {
         return SharedUtilities.createErrorResponse('Category ID is required');
       }
 
       // First get the category to get its name for order cleanup
-      const { data: categoryData, error: fetchError } = await supabase
+      const { data: categoryData, error: fetchError } = await client
         .from('category')
         .select('name')
         .eq('id', categoryId)
@@ -358,7 +367,7 @@ class CategoryService {
       if (fetchError) throw fetchError;
 
       // Delete the category
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('category')
         .delete()
         .eq('id', categoryId)
@@ -370,7 +379,7 @@ class CategoryService {
 
       // Remove from category order
       if (categoryData) {
-        await supabase
+        await client
           .from('category_order')
           .delete()
           .eq('user_id', userId)
@@ -386,15 +395,16 @@ class CategoryService {
 
   // ===== BUSINESS-CATEGORY MAPPING =====
 
-  static async getMostFrequentCategoryForBusiness(businessName, userId = null) {
+  static async getMostFrequentCategoryForBusiness(businessName, userId = null, userClient = null) {
     try {
       if (!businessName) {
         return null;
       }
+      const client = userClient || adminClient;
 
       console.log(`🔍 [getMostFrequentCategoryForBusiness] Searching for business: "${businessName}", userId: ${userId}`);
 
-      let query = supabase
+      let query = client
         .from('transactions')
         .select('category_name, category_id')
         .eq('business_name', businessName)
@@ -450,14 +460,15 @@ class CategoryService {
     }
   }
 
-  static async getAutoCategoryForBusiness(businessName, amount, sourceType = null, userId = null) {
+  static async getAutoCategoryForBusiness(businessName, amount, sourceType = null, userId = null, userClient = null) {
     try {
       if (!businessName) {
         return null;
       }
+      const client = userClient || adminClient;
 
       // First try to get the most frequent category for this business
-      const frequentCategory = await this.getMostFrequentCategoryForBusiness(businessName, userId);
+      const frequentCategory = await this.getMostFrequentCategoryForBusiness(businessName, userId, client);
       
       if (frequentCategory) {
         console.log(`🎯 [AUTO-CATEGORY] Found frequent category for "${businessName}": "${frequentCategory}"`);

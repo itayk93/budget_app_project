@@ -4,7 +4,7 @@
  * ~800 lines - Handles all transaction-related database operations
  */
 
-const { supabase } = require('../../config/supabase');
+const { adminClient, createUserClient } = require('../../config/supabase');
 const crypto = require('crypto');
 const SharedUtilities = require('./SharedUtilities');
 
@@ -62,11 +62,12 @@ class TransactionService {
 
   // ===== TRANSACTION EXISTENCE CHECKS =====
 
-  static async checkTransactionExists(userId, transactionHash, cashFlowId = null) {
+  static async checkTransactionExists(userId, transactionHash, cashFlowId = null, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
-      let query = supabase
+      let query = client
         .from('transactions')
         .select('id')
         .eq('user_id', userId)
@@ -86,11 +87,12 @@ class TransactionService {
     }
   }
 
-  static async getTransactionByHash(userId, transactionHash, cashFlowId = null) {
+  static async getTransactionByHash(userId, transactionHash, cashFlowId = null, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
-      let query = supabase
+      let query = client
         .from('transactions')
         .select('*')
         .eq('user_id', userId)
@@ -111,11 +113,12 @@ class TransactionService {
   }
 
   // Original method name for backward compatibility - returns array of transactions
-  static async getTransactionsByHash(transactionHash, userId, cashFlowId = null) {
+  static async getTransactionsByHash(transactionHash, userId, cashFlowId = null, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
-      let query = supabase
+      let query = client
         .from('transactions')
         .select(`
           *,
@@ -149,15 +152,16 @@ class TransactionService {
   }
 
   // Batch check for existing transaction hashes - much faster than individual queries
-  static async getExistingHashesBatch(userId, transactionHashes, cashFlowId = null) {
+  static async getExistingHashesBatch(userId, transactionHashes, cashFlowId = null, userClient = null) {
     try {
       if (!transactionHashes || transactionHashes.length === 0) {
         return [];
       }
 
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
-      let query = supabase
+      let query = client
         .from('transactions')
         .select('transaction_hash')
         .eq('user_id', userId)
@@ -179,11 +183,12 @@ class TransactionService {
 
   // ===== TRANSACTION RETRIEVAL =====
 
-  static async getTransactions(userId, filters = {}, page = 1, perPage = 100) {
+  static async getTransactions(userId, filters = {}, page = 1, perPage = 100, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
-      let query = supabase
+      let query = client
         .from('transactions')
         .select(`
           *,
@@ -290,13 +295,14 @@ class TransactionService {
     }
   }
 
-  static async getTransactionById(transactionId) {
+  static async getTransactionById(transactionId, userClient = null) {
     try {
       if (!transactionId) {
         return SharedUtilities.createErrorResponse('Transaction ID is required');
       }
+      const client = userClient || adminClient;
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('transactions')
         .select(`
           *,
@@ -326,11 +332,12 @@ class TransactionService {
     }
   }
 
-  static async getLatestTransactionMonth(userId, cashFlowId = null) {
+  static async getLatestTransactionMonth(userId, cashFlowId = null, userClient = null) {
     try {
       SharedUtilities.validateUserId(userId);
+      const client = userClient || adminClient;
 
-      let query = supabase
+      let query = client
         .from('transactions')
         .select('flow_month')
         .eq('user_id', userId)
@@ -355,10 +362,11 @@ class TransactionService {
 
   // ===== DUPLICATE CHAIN MANAGEMENT =====
   
-  static async findLastDuplicateInChain(originalTransactionId) {
+  static async findLastDuplicateInChain(originalTransactionId, userClient = null) {
     try {
       // Find all transactions in the duplicate chain starting from the original
-      const { data, error } = await supabase
+      const client = userClient || adminClient;
+      const { data, error } = await client
         .from('transactions')
         .select('id, duplicate_parent_id, created_at')
         .or(`id.eq.${originalTransactionId},duplicate_parent_id.eq.${originalTransactionId}`)
@@ -389,17 +397,18 @@ class TransactionService {
     }
   }
   
-  static async getNextDuplicateNumber(rootTransactionId) {
+  static async getNextDuplicateNumber(rootTransactionId, userClient = null) {
     try {
       // Count all duplicates in this chain by finding all transactions 
       // that have this root as their ultimate parent
-      const { data, error } = await supabase
+      const client = userClient || adminClient;
+      const { data, error } = await client
         .rpc('count_duplicate_chain', { root_transaction_id: rootTransactionId });
       
       if (error) {
         console.log('RPC function not available, using manual count');
         // Fallback: manual traversal
-        const { data: allTransactions, error: fetchError } = await supabase
+        const { data: allTransactions, error: fetchError } = await client
           .from('transactions')
           .select('id, duplicate_parent_id')
           .or(`id.eq.${rootTransactionId},duplicate_parent_id.eq.${rootTransactionId}`);
@@ -484,9 +493,10 @@ class TransactionService {
 
   // ===== TRANSACTION CREATION =====
   
-  static async createTransaction(transactionData, forceImport = false) {
+  static async createTransaction(transactionData, forceImport = false, userClient = null) {
     try {
       console.log(`[createTransaction] Received transaction with hash: ${transactionData.transaction_hash}. forceImport: ${forceImport}`);
+      const client = userClient || adminClient;
       
       // Validate required fields
       if (!transactionData.user_id) {
@@ -505,7 +515,8 @@ class TransactionService {
       const existingResult = await this.getTransactionByHash(
         transactionData.user_id,
         transactionHash,
-        transactionData.cash_flow_id
+        transactionData.cash_flow_id,
+        client
       );
 
       // Check if we found an existing transaction (existingResult.success means we got data)
@@ -514,11 +525,11 @@ class TransactionService {
           console.log(`⚠️ Duplicate detected, but forceImport is true. Creating new duplicate with parent linkage`);
           
           // Find the most recent duplicate in the chain to link to
-          const parentTransaction = await this.findLastDuplicateInChain(existingResult.data.id);
+          const parentTransaction = await this.findLastDuplicateInChain(existingResult.data.id, client);
           const parentId = parentTransaction ? parentTransaction.id : existingResult.data.id;
           
           // Get the duplicate number for this chain
-          const duplicateNumber = await this.getNextDuplicateNumber(parentId);
+          const duplicateNumber = await this.getNextDuplicateNumber(parentId, client);
           
           console.log(`🔗 [DUPLICATE CREATE] Parent ID: ${parentId}, Duplicate number: ${duplicateNumber}`);
           
@@ -613,7 +624,7 @@ class TransactionService {
         amount: processedData.amount
       });
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('transactions')
         .insert([processedData])
         .select()
@@ -656,11 +667,12 @@ class TransactionService {
 
   // ===== TRANSACTION UPDATES =====
 
-  static async updateTransaction(transactionId, updateData) {
+  static async updateTransaction(transactionId, updateData, userClient = null) {
     try {
       if (!transactionId) {
         return SharedUtilities.createErrorResponse('Transaction ID is required');
       }
+      const client = userClient || adminClient;
 
       // Only extract recipient name if user didn't manually provide one
       let finalRecipientName = updateData.recipient_name;
@@ -711,7 +723,7 @@ class TransactionService {
         }
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('transactions')
         .update(processedUpdateData)
         .eq('id', transactionId)
@@ -726,11 +738,12 @@ class TransactionService {
     }
   }
 
-  static async updateTransactionFlowMonth(transactionId, flowMonth, cashFlowId = null) {
+  static async updateTransactionFlowMonth(transactionId, flowMonth, cashFlowId = null, userClient = null) {
     try {
       if (!transactionId || !flowMonth) {
         return SharedUtilities.createErrorResponse('Transaction ID and flow month are required');
       }
+      const client = userClient || adminClient;
 
       const updateData = {
         flow_month: flowMonth,
@@ -741,7 +754,7 @@ class TransactionService {
         updateData.cash_flow_id = cashFlowId;
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('transactions')
         .update(updateData)
         .eq('id', transactionId)
@@ -757,14 +770,15 @@ class TransactionService {
   }
 
   // Replace an existing transaction with new transaction data (for duplicate handling)
-  static async replaceTransaction(originalTransactionId, newTransactionData) {
+  static async replaceTransaction(originalTransactionId, newTransactionData, userClient = null) {
     try {
       if (!originalTransactionId) {
         return SharedUtilities.createErrorResponse('Original transaction ID is required');
       }
+      const client = userClient || adminClient;
 
       // First, check if this transaction is a parent (has duplicates pointing to it)
-      const { data: dependentTransactions, error: checkError } = await supabase
+      const { data: dependentTransactions, error: checkError } = await client
         .from('transactions')
         .select('id, duplicate_parent_id')
         .eq('duplicate_parent_id', originalTransactionId);
@@ -780,7 +794,7 @@ class TransactionService {
         
         // Strategy: Find the most recent child duplicate and replace IT instead of the parent
         // This preserves the parent-child relationship structure
-        const { data: childToReplace, error: childError } = await supabase
+        const { data: childToReplace, error: childError } = await client
           .from('transactions')
           .select('*')
           .eq('duplicate_parent_id', originalTransactionId)
@@ -794,7 +808,7 @@ class TransactionService {
         } else {
           console.log(`🎯 [REPLACE STRATEGY] Replacing child duplicate ${childToReplace.id} instead of parent ${originalTransactionId}`);
           // Replace the child duplicate instead of the parent (recursive call)
-          const recursiveResult = await this.replaceTransaction(childToReplace.id, newTransactionData);
+          const recursiveResult = await this.replaceTransaction(childToReplace.id, newTransactionData, client);
           console.log(`🔄 [RECURSIVE REPLACE] Result from child replacement:`, recursiveResult);
           return recursiveResult;
         }
@@ -855,7 +869,7 @@ class TransactionService {
 
       console.log(`🔄 [REPLACE TRANSACTION] Updating transaction ${originalTransactionId} with:`, updateData);
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('transactions')
         .update(updateData)
         .eq('id', originalTransactionId)
@@ -881,13 +895,14 @@ class TransactionService {
 
   // ===== TRANSACTION DELETION =====
 
-  static async deleteTransaction(transactionId) {
+  static async deleteTransaction(transactionId, userClient = null) {
     try {
       if (!transactionId) {
         return SharedUtilities.createErrorResponse('Transaction ID is required');
       }
+      const client = userClient || adminClient;
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('transactions')
         .delete()
         .eq('id', transactionId)

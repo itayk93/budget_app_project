@@ -1,7 +1,9 @@
 const express = require('express');
 const SupabaseService = require('../../services/supabaseService');
+const TransactionService = require('../../services/supabase-modules/TransactionService');
 const mongoBusinessService = require('../../services/mongoBusinessService');
 const { authenticateToken } = require('../../middleware/auth');
+const { createUserClient } = require('../../config/supabase');
 const router = express.Router();
 
 // ===== TRANSACTION CRUD OPERATIONS =====
@@ -41,22 +43,28 @@ router.get('/', authenticateToken, async (req, res) => {
     if (no_category === 'true') filters.no_category = true;
     if (show_all === 'true') filters.show_all = true;
 
-    const result = await SupabaseService.getTransactions(
+    const userClient = createUserClient(req.user.token);
+    const result = await TransactionService.getTransactions(
       req.user.id, 
       filters,
       parseInt(page),
-      parseInt(per_page)
+      parseInt(per_page),
+      userClient
     );
 
-    res.json({
-      transactions: result.transactions,
-      pagination: {
-        page: parseInt(page),
-        per_page: parseInt(per_page),
-        total_count: result.totalCount,
-        total_pages: Math.ceil(result.totalCount / parseInt(per_page))
-      }
-    });
+    if (result.success) {
+      res.json({
+        transactions: result.data.transactions,
+        pagination: {
+          page: parseInt(page),
+          per_page: parseInt(per_page),
+          total_count: result.data.totalCount,
+          total_pages: Math.ceil(result.data.totalCount / parseInt(per_page))
+        }
+      });
+    } else {
+      res.status(500).json({ error: result.error || 'Failed to fetch transactions' });
+    }
 
   } catch (error) {
     console.error('Error fetching transactions:', error);
@@ -67,7 +75,9 @@ router.get('/', authenticateToken, async (req, res) => {
 // Get transaction by ID
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    const transaction = await SupabaseService.getTransactionById(req.params.id);
+    const userClient = createUserClient(req.user.token);
+    const transactionResult = await TransactionService.getTransactionById(req.params.id, userClient);
+    const transaction = transactionResult.success ? transactionResult.data : null;
     
     if (!transaction) {
       return res.status(404).json({ error: 'Transaction not found' });
@@ -89,11 +99,14 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // Get business details for a specific transaction
 router.get('/:id/business-details', authenticateToken, async (req, res) => {
   try {
-    const transaction = await SupabaseService.getTransactionById(req.params.id);
+    const userClient = createUserClient(req.user.token);
+    const transactionResult = await TransactionService.getTransactionById(req.params.id, userClient);
     
-    if (!transaction) {
+    if (!transactionResult.success || !transactionResult.data) {
       return res.status(404).json({ error: 'Transaction not found' });
     }
+    
+    const transaction = transactionResult.data;
     
     // Verify ownership
     if (transaction.user_id !== req.user.id) {
@@ -169,7 +182,8 @@ router.post('/', authenticateToken, async (req, res) => {
       }
     }
 
-    const result = await SupabaseService.createTransaction(transactionData);
+    const userClient = createUserClient(req.user.token);
+    const result = await TransactionService.createTransaction(transactionData, false, userClient);
 
     if (result.success) {
       res.status(201).json({
@@ -200,10 +214,12 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const transactionId = req.params.id;
     
     // First verify the transaction exists and belongs to the user
-    const existingTransaction = await SupabaseService.getTransactionById(transactionId);
-    if (!existingTransaction || existingTransaction.user_id !== req.user.id) {
+    const userClient = createUserClient(req.user.token);
+    const existingResult = await TransactionService.getTransactionById(transactionId, userClient);
+    if (!existingResult.success || !existingResult.data || existingResult.data.user_id !== req.user.id) {
       return res.status(404).json({ error: 'Transaction not found' });
     }
+    const existingTransaction = existingResult.data;
 
     // Verify cash flow belongs to user if being updated
     if (req.body.cash_flow_id) {
@@ -213,7 +229,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
       }
     }
 
-    const updatedTransaction = await SupabaseService.updateTransaction(transactionId, req.body);
+    const updateResult = await TransactionService.updateTransaction(transactionId, req.body, userClient);
+    const updatedTransaction = updateResult.success ? updateResult.data : null;
 
     if (updatedTransaction) {
       res.json({
@@ -236,12 +253,14 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     const transactionId = req.params.id;
     
     // Verify the transaction exists and belongs to the user
-    const existingTransaction = await SupabaseService.getTransactionById(transactionId);
-    if (!existingTransaction || existingTransaction.user_id !== req.user.id) {
+    const userClient = createUserClient(req.user.token);
+    const existingResult = await TransactionService.getTransactionById(transactionId, userClient);
+    if (!existingResult.success || !existingResult.data || existingResult.data.user_id !== req.user.id) {
       return res.status(404).json({ error: 'Transaction not found' });
     }
 
-    const success = await SupabaseService.deleteTransaction(transactionId);
+    const deleteResult = await TransactionService.deleteTransaction(transactionId, userClient);
+    const success = deleteResult.success;
 
     if (success) {
       res.json({ message: 'Transaction deleted successfully' });
