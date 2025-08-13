@@ -13,6 +13,41 @@ const { authenticateToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const router = express.Router();
 
+// Cleanup old temporary files older than 1 hour
+const cleanupOldTempFiles = () => {
+  try {
+    const uploadPath = path.join(__dirname, '../../uploads');
+    if (!fs.existsSync(uploadPath)) return;
+    
+    const files = fs.readdirSync(uploadPath);
+    const oneHourAgo = Date.now() - (60 * 60 * 1000); // 1 hour in milliseconds
+    let cleanedCount = 0;
+    
+    files.forEach(file => {
+      if (file.startsWith('temp_duplicates_') || file.startsWith('currency_groups_')) {
+        const filePath = path.join(uploadPath, file);
+        const stats = fs.statSync(filePath);
+        
+        if (stats.mtime.getTime() < oneHourAgo) {
+          fs.unlinkSync(filePath);
+          cleanedCount++;
+          console.log(`🧹 Cleaned up old temp file: ${file}`);
+        }
+      }
+    });
+    
+    if (cleanedCount > 0) {
+      console.log(`✅ Cleaned up ${cleanedCount} old temporary files`);
+    }
+  } catch (error) {
+    console.error('❌ Error cleaning up temporary files:', error);
+  }
+};
+
+// Run cleanup on startup and then every hour
+cleanupOldTempFiles();
+setInterval(cleanupOldTempFiles, 60 * 60 * 1000); // Every hour
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
