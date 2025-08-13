@@ -60,6 +60,29 @@ class IsraeliBankScraperService {
     // Create new bank scraper configuration
     async createScraperConfig(userId, configName, bankType, credentials) {
         try {
+            // For Yahav, check if ENV is properly configured
+            if (bankType === 'yahav') {
+                const envEnabled = process.env.BANK_ENV_CREDENTIALS_ENABLED === 'true';
+                const allowedBanks = process.env.BANK_ENV_ALLOWED_BANKS ? 
+                    process.env.BANK_ENV_ALLOWED_BANKS.split(',').map(b => b.trim()) : [];
+                const yahavPassword = process.env.YAHAV_BANK_PASSWORD;
+
+                console.log(`🔍 Yahav config check - ENV enabled: ${envEnabled}, Allowed banks: [${allowedBanks.join(', ')}], Password set: ${!!yahavPassword}`);
+
+                if (!envEnabled || !allowedBanks.includes('yahav')) {
+                    throw new Error('בנק יהב דורש הגדרת ENV. אנא וודא ש-BANK_ENV_CREDENTIALS_ENABLED=true ו-BANK_ENV_ALLOWED_BANKS=yahav מוגדרים בקובץ .env ואתחל את השרת.');
+                }
+
+                if (!yahavPassword || yahavPassword.includes('your_') || yahavPassword.includes('_here')) {
+                    throw new Error('הסיסמה לבנק יהב לא מוגדרת ב-ENV. אנא הגדר YAHAV_BANK_PASSWORD בקובץ .env עם הסיסמה האמיתית ואתחל את השרת.');
+                }
+
+                // For Yahav, we only need username and nationalID in the database
+                if (!credentials.username || !credentials.nationalID) {
+                    throw new Error('עבור בנק יהב נדרשים שם משתמש ותעודת זהות. הסיסמה נטענת מ-ENV.');
+                }
+            }
+
             const encryptedCredentials = this.encryptCredentials(credentials);
             
             const { data, error } = await supabase
@@ -507,7 +530,12 @@ class IsraeliBankScraperService {
         // Check if ENV credentials are enabled for this bank type (Yahav hybrid mode)
         if (envCredentialsEnabled && allowedBanks.includes(bankType) && bankType === 'yahav') {
             console.log(`🌍 Using hybrid ENV+DB credentials for ${bankType}`);
-            return this.getHybridCredentials(bankType, encryptedCredentials);
+            try {
+                return this.getHybridCredentials(bankType, encryptedCredentials);
+            } catch (error) {
+                console.error(`❌ Error getting hybrid credentials for ${bankType}:`, error.message);
+                throw error;
+            }
         }
 
         console.log(`🔒 Using encrypted stored credentials for ${bankType}`);
@@ -520,11 +548,21 @@ class IsraeliBankScraperService {
             throw new Error(`Hybrid credentials only supported for Yahav bank, not ${bankType}`);
         }
 
+        console.log(`🔄 Getting hybrid credentials for ${bankType}...`);
+
         // Get username and nationalID from encrypted database credentials
-        const dbCredentials = this.decryptCredentials(encryptedCredentials);
+        let dbCredentials;
+        try {
+            dbCredentials = this.decryptCredentials(encryptedCredentials);
+            console.log(`📊 DB credentials loaded, fields: ${Object.keys(dbCredentials).join(', ')}`);
+        } catch (error) {
+            console.error(`❌ Failed to decrypt DB credentials:`, error.message);
+            throw new Error('Failed to decrypt database credentials for Yahav. Please check your configuration.');
+        }
         
         // Get password from ENV
         const envPassword = process.env.YAHAV_BANK_PASSWORD;
+        console.log(`🌍 ENV password loaded: ${envPassword ? 'YES' : 'NO'}`);
         
         // Validate ENV password
         if (!envPassword || envPassword.trim() === '' || envPassword.includes('your_') || envPassword.includes('_here')) {
@@ -533,6 +571,7 @@ class IsraeliBankScraperService {
 
         // Validate required DB credentials
         if (!dbCredentials.username || !dbCredentials.nationalID) {
+            console.error(`❌ Missing required DB credentials. Found: ${Object.keys(dbCredentials).join(', ')}`);
             throw new Error('Missing username or nationalID in database credentials for Yahav. Please ensure these are saved in the configuration.');
         }
 
@@ -542,7 +581,7 @@ class IsraeliBankScraperService {
             nationalID: dbCredentials.nationalID
         };
 
-        console.log(`✅ Successfully loaded hybrid credentials for ${bankType}: username + nationalID from DB, password from ENV`);
+        console.log(`✅ Successfully loaded hybrid credentials for ${bankType}: username(${dbCredentials.username}) + nationalID + password from ENV`);
         return hybridCredentials;
     }
 

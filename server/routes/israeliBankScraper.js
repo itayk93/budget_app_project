@@ -21,6 +21,13 @@ router.get('/bank-types', async (req, res) => {
 router.get('/test-env/:bankType', async (req, res) => {
     try {
         const { bankType } = req.params;
+        
+        // Debug ENV variables
+        console.log('🔍 ENV Debug Info:');
+        console.log('  BANK_ENV_CREDENTIALS_ENABLED:', process.env.BANK_ENV_CREDENTIALS_ENABLED);
+        console.log('  BANK_ENV_ALLOWED_BANKS:', process.env.BANK_ENV_ALLOWED_BANKS);
+        console.log('  YAHAV_BANK_PASSWORD:', process.env.YAHAV_BANK_PASSWORD ? 'SET' : 'NOT SET');
+        
         const result = israeliBankScraperService.testEnvCredentials(bankType);
         
         if (result.success) {
