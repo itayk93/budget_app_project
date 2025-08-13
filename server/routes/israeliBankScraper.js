@@ -252,4 +252,41 @@ router.put('/configs/:configId/toggle', async (req, res) => {
     }
 });
 
+// Convert scraped transactions to main transaction format for approval
+router.post('/configs/:configId/convert-to-transactions', async (req, res) => {
+    try {
+        const { configId } = req.params;
+        const userId = req.user.id;
+
+        console.log(`🔄 Converting transactions for config ${configId}, user ${userId}`);
+
+        const result = await israeliBankScraperService.convertScrapedTransactionsToMainFormat(
+            parseInt(configId),
+            userId
+        );
+
+        if (result.success) {
+            res.json({
+                success: true,
+                message: `המרנו ${result.transactions.length} עסקאות מ${result.configName} לפורמט אישור העסקאות`,
+                data: {
+                    transactions: result.transactions,
+                    accountNumber: result.accountNumber,
+                    configName: result.configName,
+                    bankType: result.bankType,
+                    count: result.transactions.length
+                }
+            });
+        } else {
+            res.status(400).json({
+                success: false,
+                error: result.error
+            });
+        }
+    } catch (error) {
+        console.error('Error converting transactions:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 module.exports = router;

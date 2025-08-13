@@ -270,6 +270,46 @@ const BankScraperPage = () => {
         }
     };
 
+    const handleConvertToTransactions = async (configId) => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_BASE_URL}/bank-scraper/configs/${configId}/convert-to-transactions`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                const { count, configName, accountNumber } = data.data;
+                
+                // Store converted transactions in session storage for the upload page
+                sessionStorage.setItem('bankScraperTransactions', JSON.stringify({
+                    transactions: data.data.transactions,
+                    source: 'bank_scraper',
+                    configName: configName,
+                    accountNumber: accountNumber,
+                    count: count
+                }));
+
+                alert(`✅ ${data.message}\n\nמעביר אותך למסך אישור העסקאות...`);
+                
+                // Navigate to upload page
+                window.location.href = '/upload';
+                
+            } else {
+                alert(`שגיאה: ${data.error}`);
+            }
+        } catch (error) {
+            console.error('Error converting transactions:', error);
+            alert('שגיאה בהעברת העסקאות לאישור');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const renderCredentialsForm = (isEdit = false) => {
         const config = isEdit ? editForm : newConfig;
         const setConfig = isEdit ? setEditForm : setNewConfig;
@@ -328,6 +368,7 @@ const BankScraperPage = () => {
             num: 'קוד זיהוי',
             card6Digits: '6 ספרות אחרונות של הכרטיס',
             nationalID: 'תעודת זהות',
+            accountNumber: 'מספר חשבון',
             email: 'דוא"ל'
         };
         return labels[field] || field;
@@ -446,7 +487,9 @@ const BankScraperPage = () => {
                                         <div className="bank-info" style={{background: '#fff3cd', borderColor: '#ffeaa7'}}>
                                             <p><strong>🔒 בנק יהב - מצב היברידי (ENV + DB)</strong></p>
                                             <p className="note">
-                                                הזן כאן שם משתמש ותעודת זהות. הסיסמה נטענת ממשתני הסביבה (ENV).
+                                                הזן כאן שם משתמש, תעודת זהות ומספר חשבון. הסיסמה נטענת ממשתני הסביבה (ENV).
+                                                <br />
+                                                מספר החשבון נדרש להעברת העסקאות למערכת הראשית.
                                                 <br />
                                                 לשינוי סיסמה: ערוך YAHAV_BANK_PASSWORD בקובץ .env ואתחל את השרת.
                                             </p>
@@ -492,7 +535,9 @@ const BankScraperPage = () => {
                                             <div style={{background: '#fff3cd', padding: '10px', borderRadius: '6px', marginTop: '10px'}}>
                                                 <p><strong>🔒 בנק יהב - מצב היברידי (ENV + DB)</strong></p>
                                                 <p className="note">
-                                                    ניתן לערוך שם משתמש ותעודת זהות כאן. הסיסמה נטענת מ-ENV.
+                                                    ניתן לערוך שם משתמש, תעודת זהות ומספר חשבון כאן. הסיסמה נטענת מ-ENV.
+                                                    <br />
+                                                    מספר החשבון נדרש להעברת העסקאות למערכת הראשית.
                                                     <br />
                                                     לשינוי סיסמה: ערוך YAHAV_BANK_PASSWORD בקובץ .env ואתחל את השרת.
                                                 </p>
@@ -567,6 +612,15 @@ const BankScraperPage = () => {
                                                 }}
                                             >
                                                 צפה בעסקאות
+                                            </button>
+                                            <button 
+                                                className="btn-secondary"
+                                                onClick={() => handleConvertToTransactions(config.id)}
+                                                disabled={loading}
+                                                style={{background: '#28a745', color: 'white', border: 'none'}}
+                                                title="העבר עסקאות למסך אישור העסקאות הרגיל"
+                                            >
+                                                🔄 העבר לאישור
                                             </button>
                                             <button 
                                                 className="btn-secondary"
@@ -773,8 +827,10 @@ const BankScraperPage = () => {
                             <ol>
                                 <li><strong>צור קונפיגורציה:</strong> לחץ על "הוסף קונפיגורציה חדשה" ובחר את הבנק שלך</li>
                                 <li><strong>הזן נתונים:</strong> הזן את פרטי הכניסה לחשבון הבנק (נתונים מוצפנים באופן מאובטח)</li>
-                                <li><strong>הרץ סקריפה:</strong> לחץ על "הרץ סקריפה" כדי לייבא עסקאות מהבנק</li>
+                                <li><strong>הוסף מספר חשבון:</strong> עבור בנק יהב - הזן גם את מספר החשבון לזיהוי העסקאות</li>
+                                <li><strong>הרץ כריית נתונים:</strong> לחץ על "הרץ כריית נתונים" כדי לייבא עסקאות מהבנק</li>
                                 <li><strong>צפה בתוצאות:</strong> עבור לטאב "עסקאות" לראות את הנתונים שיובאו</li>
+                                <li><strong>העבר לאישור:</strong> לחץ על "🔄 העבר לאישור" להעביר עסקאות למסך אישור העסקאות הרגיל</li>
                             </ol>
                         </div>
 
@@ -796,11 +852,29 @@ const BankScraperPage = () => {
                             <ul>
                                 <li><strong>סיסמה ב-ENV:</strong> הסיסמה נשמרת במשתני הסביבה (YAHAV_BANK_PASSWORD)</li>
                                 <li><strong>שם משתמש ות"ז במסד נתונים:</strong> ניתן לערוך דרך הממשק הרגיל</li>
+                                <li><strong>מספר חשבון:</strong> נדרש לזיהוי והעברה למערכת הראשית</li>
                                 <li><strong>אבטחה כפולה:</strong> הסיסמה הרגישה ביותר מוגנת ברמת השרת</li>
                                 <li><strong>גמישות:</strong> ניתן לעדכן שם משתמש ות"ז בקלות דרך הממשק</li>
                             </ul>
                             <p className="note">
                                 <strong>לשינוי סיסמה:</strong> ערוך את YAHAV_BANK_PASSWORD בקובץ .env והפעל מחדש את השרת.
+                            </p>
+                        </div>
+
+                        <div className="guide-section" style={{background: '#e7f3ff', borderColor: '#0066cc'}}>
+                            <h3>🔄 העברת עסקאות למסך האישור הרגיל:</h3>
+                            <p>
+                                לאחר כריית נתונים מוצלחת מבנק יהב, ניתן להעביר את העסקאות למסך אישור העסקאות הרגיל של האפליקציה.
+                            </p>
+                            <ul>
+                                <li><strong>המרה אוטומטית:</strong> העסקאות מומרות לפורמט התואם למערכת הראשית</li>
+                                <li><strong>זיהוי חשבון:</strong> מספר החשבון משמש כ-payment_method לזיהוי</li>
+                                <li><strong>ניקוי נתונים:</strong> תיאורי העסקאות מנוקים מתווי RTL ותווים מיוחדים</li>
+                                <li><strong>אישור ועיבוד:</strong> מעבר למסך האישור לקטלוג ואישור העסקאות</li>
+                                <li><strong>אינטגרציה מלאה:</strong> העסקאות נכנסות למערכת התקציב הראשית</li>
+                            </ul>
+                            <p className="note">
+                                <strong>שים לב:</strong> לחץ על כפתור "🔄 העבר לאישור" רק לאחר כריית נתונים מוצלחת.
                             </p>
                         </div>
 

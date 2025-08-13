@@ -50,7 +50,7 @@ class IsraeliBankScraperService {
             unionBank: { name: 'בנק יוניון', credentials: ['username', 'password'] },
             beinleumi: { name: 'בינלאומי', credentials: ['username', 'password'] },
             massad: { name: 'מסד', credentials: ['username', 'password'] },
-            yahav: { name: 'בנק יהב', credentials: ['username', 'password', 'nationalID'] },
+            yahav: { name: 'בנק יהב', credentials: ['username', 'password', 'nationalID', 'accountNumber'] },
             beyhadBishvilha: { name: 'ביחד בשבילך', credentials: ['id', 'password'] },
             oneZero: { name: 'וואן זירו', credentials: ['email', 'password'] },
             behatsdaa: { name: 'בהצדעה', credentials: ['id', 'password'] }
@@ -77,9 +77,9 @@ class IsraeliBankScraperService {
                     throw new Error('הסיסמה לבנק יהב לא מוגדרת ב-ENV. אנא הגדר YAHAV_BANK_PASSWORD בקובץ .env עם הסיסמה האמיתית ואתחל את השרת.');
                 }
 
-                // For Yahav, we only need username and nationalID in the database
-                if (!credentials.username || !credentials.nationalID) {
-                    throw new Error('עבור בנק יהב נדרשים שם משתמש ותעודת זהות. הסיסמה נטענת מ-ENV.');
+                // For Yahav, we need username, nationalID and accountNumber in the database
+                if (!credentials.username || !credentials.nationalID || !credentials.accountNumber) {
+                    throw new Error('עבור בנק יהב נדרשים שם משתמש, תעודת זהות ומספר חשבון. הסיסמה נטענת מ-ENV.');
                 }
             }
 
@@ -570,15 +570,16 @@ class IsraeliBankScraperService {
         }
 
         // Validate required DB credentials
-        if (!dbCredentials.username || !dbCredentials.nationalID) {
+        if (!dbCredentials.username || !dbCredentials.nationalID || !dbCredentials.accountNumber) {
             console.error(`❌ Missing required DB credentials. Found: ${Object.keys(dbCredentials).join(', ')}`);
-            throw new Error('Missing username or nationalID in database credentials for Yahav. Please ensure these are saved in the configuration.');
+            throw new Error('Missing username, nationalID or accountNumber in database credentials for Yahav. Please ensure these are saved in the configuration.');
         }
 
         const hybridCredentials = {
             username: dbCredentials.username,
             password: envPassword, // From ENV
-            nationalID: dbCredentials.nationalID
+            nationalID: dbCredentials.nationalID,
+            accountNumber: dbCredentials.accountNumber // From DB for transaction processing
         };
 
         console.log(`✅ Successfully loaded hybrid credentials for ${bankType}: username(${dbCredentials.username}) + nationalID + password from ENV`);
@@ -692,6 +693,116 @@ class IsraeliBankScraperService {
                 error: error.message
             };
         }
+    }
+
+    // Convert bank scraper transactions to main transactions format for approval
+    async convertScrapedTransactionsToMainFormat(configId, userId) {
+        try {
+            console.log(`🔄 Converting scraped transactions from config ${configId} to main format...`);
+            
+            // Get configuration to extract account number
+            const { data: config } = await supabase
+                .from('bank_scraper_configs')
+                .select('*')
+                .eq('id', configId)
+                .eq('user_id', userId)
+                .single();
+
+            if (!config) {
+                throw new Error('Configuration not found');
+            }
+
+            // Get account number from credentials
+            const credentials = this.getCredentialsForBank(config.bank_type, config.credentials_encrypted);
+            const accountNumber = credentials.accountNumber;
+            
+            if (!accountNumber) {
+                throw new Error('Account number not found in configuration');
+            }
+
+            // Get scraped transactions
+            const { data: scrapedTransactions, error } = await supabase
+                .from('bank_scraper_transactions')
+                .select('*')
+                .eq('config_id', configId)
+                .order('transaction_date', { ascending: false });
+
+            if (error) throw error;
+
+            if (!scrapedTransactions || scrapedTransactions.length === 0) {
+                return { success: true, transactions: [], message: 'No transactions found to convert' };
+            }
+
+            // Convert to main transactions format
+            const convertedTransactions = scrapedTransactions.map(txn => ({
+                user_id: userId,
+                business_name: this.cleanBusinessName(txn.description),
+                payment_date: txn.transaction_date,
+                amount: txn.charged_amount.toString(),
+                currency: txn.original_currency,
+                payment_method: accountNumber, // Use account number as payment method
+                payment_identifier: txn.transaction_identifier,
+                category_id: null, // Will be set during approval
+                payment_month: new Date(txn.transaction_date).getMonth() + 1,
+                payment_year: new Date(txn.transaction_date).getFullYear(),
+                flow_month: `${new Date(txn.transaction_date).getFullYear()}-${String(new Date(txn.transaction_date).getMonth() + 1).padStart(2, '0')}`,
+                charge_date: txn.processed_date || txn.transaction_date,
+                notes: txn.memo || '',
+                excluded_from_flow: false,
+                source_type: 'bank_scraper',
+                original_amount: txn.original_amount.toString(),
+                transaction_hash: this.generateTransactionHash(txn),
+                is_transfer: false,
+                linked_transaction_id: null,
+                payment_number: txn.installment_number || 1,
+                total_payments: txn.total_installments || 1,
+                original_currency: txn.original_currency,
+                exchange_rate: txn.original_currency !== 'ILS' ? null : null,
+                exchange_date: txn.original_currency !== 'ILS' ? txn.transaction_date : null,
+                business_country: null,
+                quantity: null,
+                source_category: null,
+                transaction_type: txn.transaction_type,
+                execution_method: null,
+                file_source: 'bank_scraper',
+                recipient_name: null,
+                duplicate_parent_id: null,
+                bank_scraper_source_id: txn.id // Reference to original scraped transaction
+            }));
+
+            console.log(`✅ Converted ${convertedTransactions.length} transactions from scraper format to main format`);
+            
+            return {
+                success: true,
+                transactions: convertedTransactions,
+                accountNumber: accountNumber,
+                configName: config.config_name,
+                bankType: config.bank_type
+            };
+
+        } catch (error) {
+            console.error('Error converting scraped transactions:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Clean business name from Hebrew formatting issues
+    cleanBusinessName(description) {
+        if (!description) return 'עסקה ללא תיאור';
+        
+        // Remove RTL marks and other formatting characters
+        return description
+            .replace(/[\u200E\u200F\u202A\u202B\u202C\u202D\u202E\u061C]/g, '')
+            .replace(/[()[\]{}]/g, '')
+            .replace(/^[‫]+|[‫]+$/g, '') // Remove leading/trailing Hebrew punctuation
+            .trim();
+    }
+
+    // Generate hash for transaction deduplication
+    generateTransactionHash(transaction) {
+        const crypto = require('crypto');
+        const hashString = `${transaction.transaction_date}_${transaction.charged_amount}_${transaction.description}_${transaction.account_number}`;
+        return crypto.createHash('md5').update(hashString).digest('hex');
     }
 }
 
