@@ -26,6 +26,9 @@ const TransactionReviewModal = ({
   const [skipDuplicates, setSkipDuplicates] = useState(false); // Default to show duplicates in yellow for review
   const [replaceDuplicates, setReplaceDuplicates] = useState(new Map()); // Map of tempId -> boolean (true = replace, false = create new)
   
+  // Source cash flow selection state
+  const [selectedSourceCashFlowId, setSelectedSourceCashFlowId] = useState(cashFlowId || '');
+  
   // Foreign currency copy state
   const [isForeignCopyModalOpen, setIsForeignCopyModalOpen] = useState(false);
   const [selectedTransactionForCopy, setSelectedTransactionForCopy] = useState(null);
@@ -57,9 +60,28 @@ const TransactionReviewModal = ({
     ['cashFlows'],
     cashFlowsAPI.getAll,
     {
-      enabled: isOpen
+      enabled: isOpen,
+      refetchOnWindowFocus: false,
+      staleTime: 0, // Always fetch fresh data
+      cacheTime: 0  // Don't cache the data
     }
   );
+
+  // Debug cash flows data when received
+  useEffect(() => {
+    if (cashFlows && cashFlows.length > 0) {
+      console.log('🔍 [CASH FLOWS DEBUG] Received cash flows:', cashFlows);
+      console.log('🔍 [CASH FLOWS DEBUG] Cash flows count:', cashFlows.length);
+      cashFlows.forEach((flow, index) => {
+        console.log(`🔍 [CASH FLOWS DEBUG] Flow ${index + 1}:`, {
+          id: flow.id,
+          name: flow.name,
+          user_id: flow.user_id,
+          currency: flow.currency
+        });
+      });
+    }
+  }, [cashFlows]);
 
   // Handle categories data when received
   useEffect(() => {
@@ -368,7 +390,8 @@ const TransactionReviewModal = ({
       await onConfirm({
         transactions: finalTransactions,
         deletedIndices: Array.from(deletedTransactionIds),
-        duplicateActions
+        duplicateActions,
+        cashFlowId: selectedSourceCashFlowId
       });
     } catch (error) {
       console.error('Error confirming transactions:', error);
@@ -394,11 +417,35 @@ const TransactionReviewModal = ({
   };
 
 
-  const formatAmount = (amount) => {
-    return new Intl.NumberFormat('he-IL', {
-      style: 'currency',
-      currency: 'ILS'
-    }).format(Math.abs(amount));
+  const formatAmount = (amount, currency = 'ILS') => {
+    const currencySymbols = {
+      'ILS': '₪',
+      'USD': '$',
+      'EUR': '€',
+      'GBP': '£',
+      'CHF': 'CHF',
+      'JPY': '¥',
+      'CAD': 'C$',
+      'AUD': 'A$',
+      'SEK': 'kr',
+      'NOK': 'kr',
+      'DKK': 'kr'
+    };
+    
+    const symbol = currencySymbols[currency] || currency;
+    return `${symbol} ${Math.abs(amount).toFixed(2)}`;
+  };
+
+  // Check if transaction belongs to a different cash flow
+  const isFromDifferentCashFlow = (transaction) => {
+    return transaction.cash_flow_id && transaction.cash_flow_id !== selectedSourceCashFlowId;
+  };
+
+  // Get cash flow name for different cash flow transactions
+  const getTargetCashFlowName = (transaction) => {
+    if (!transaction.cash_flow_id) return null;
+    const targetFlow = cashFlows.find(cf => cf.id === transaction.cash_flow_id);
+    return targetFlow?.name || 'תזרים לא ידוע';
   };
 
   // Detect foreign currency in business name
@@ -434,6 +481,10 @@ const TransactionReviewModal = ({
   // Handle foreign currency copy
   const handleForeignCopy = (transaction) => {
     const detectedCurrency = detectForeignCurrency(transaction.business_name);
+    console.log('🔄 [FOREIGN COPY] Detected currency:', detectedCurrency);
+    console.log('🔄 [FOREIGN COPY] Available cash flows:', cashFlows);
+    console.log('🔄 [FOREIGN COPY] Current cash flow ID:', cashFlowId);
+    
     setSelectedTransactionForCopy(transaction);
     setForeignCurrency(detectedCurrency || 'USD');
     setForeignAmount('');
@@ -463,25 +514,44 @@ const TransactionReviewModal = ({
       return;
     }
 
-    const copyData = {
-      transaction_id: selectedTransactionForCopy.id || selectedTransactionForCopy.tempId,
-      target_cash_flow_id: targetCashFlowId,
+    console.log('🔄 [FOREIGN COPY] Creating new transaction for target cash flow');
+    
+    // Find the target cash flow to get its details
+    const targetCashFlow = cashFlows.find(cf => cf.id === targetCashFlowId);
+    if (!targetCashFlow) {
+      alert('שגיאה: לא נמצא תזרים יעד');
+      return;
+    }
+
+    // Create a new transaction based on the original one but for the target cash flow
+    const newTransaction = {
+      tempId: `foreign_copy_${Date.now()}`,
+      user_id: selectedTransactionForCopy.user_id,
+      business_name: selectedTransactionForCopy.business_name,
+      payment_date: selectedTransactionForCopy.payment_date,
+      amount: parseFloat(foreignAmount), // Positive amount for income
+      currency: foreignCurrency,
+      payment_method: selectedTransactionForCopy.payment_method,
       category_name: 'הכנסות משתנות',
-      foreign_currency: foreignCurrency,
-      foreign_amount: parseFloat(foreignAmount),
-      exchange_rate: parseFloat(exchangeRate)
+      notes: `העתקה מעסקת מטבע זר - שער חליפין: 1 ${foreignCurrency} = ${exchangeRate} ₪ - העתקה מתזרים ${cashFlows.find(cf => cf.id === selectedSourceCashFlowId)?.name || 'לא ידוע'}`,
+      recipient_name: '',
+      cash_flow_id: targetCashFlowId,
+      is_income: true
     };
 
-    // Call the existing copy transaction API
-    transactionsAPI.recordAsIncome(copyData)
-      .then(() => {
-        alert(`✅ העסקה הועתקה בהצלחה לתזרים היעד כהכנסה של ${foreignAmount} ${foreignCurrency}`);
-        setIsForeignCopyModalOpen(false);
-      })
-      .catch((error) => {
-        console.error('❌ Error copying transaction:', error);
-        alert('שגיאה בהעתקת העסקה: ' + error.message);
-      });
+    // Add the new transaction to the edited transactions list
+    setEditedTransactions(prev => [...prev, newTransaction]);
+
+    console.log('✅ [FOREIGN COPY] Added new transaction:', newTransaction);
+    alert(`✅ נוספה עסקה חדשה לתזרים "${targetCashFlow.name}" עבור ${foreignAmount} ${foreignCurrency}\nהעסקה תיווסף לרשימת העסקאות לאישור.`);
+    
+    // Close the modal and reset state
+    setIsForeignCopyModalOpen(false);
+    setSelectedTransactionForCopy(null);
+    setTargetCashFlowId('');
+    setForeignCurrency('');
+    setForeignAmount('');
+    setExchangeRate('');
   };
 
 
@@ -494,32 +564,7 @@ const TransactionReviewModal = ({
           <div className="header-content-centered">
             <h2>בדיקת עסקאות לפני העלאה</h2>
             
-            <div className="controls-inline">
-              <button 
-                className={`toggle-button compact ${showNonCashFlowOnly ? 'active' : ''}`}
-                onClick={() => setShowNonCashFlowOnly(!showNonCashFlowOnly)}
-              >
-                <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                הראה קטגוריות לא תזרימיות בלבד
-              </button>
 
-              {duplicateTransactionIds.size > 0 && (
-                <>
-                  <button 
-                    className="action-button compact delete-duplicates"
-                    onClick={handleDeleteAllDuplicatesDirectly}
-                  >
-                    <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" />
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
-                    מחק כפילויות ({duplicateTransactionIds.size})
-                  </button>
-                </>
-              )}
-            </div>
           </div>
         </div>
 
@@ -530,7 +575,21 @@ const TransactionReviewModal = ({
             </div>
           ) : (
             <>
-              <div className="transactions-summary">
+              {/* Combined Summary and Cash Flow Selection */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '0px',
+                gap: '16px'
+              }} className="summary-cashflow-row">
+                {/* Left Side - Summary */}
+                <div className="transactions-summary" style={{
+                  padding: '8px 12px',
+                  fontSize: '13px',
+                  flex: '1',
+                  minWidth: '0'
+                }}>
                 <div className="summary-item">
                   <span className="label">סה״כ עסקאות:</span>
                   <span className="value">{editedTransactions.length}</span>
@@ -551,6 +610,40 @@ const TransactionReviewModal = ({
                     {editedTransactions.length}
                   </span>
                 </div>
+                </div>
+
+                {/* Right Side - Cash Flow Selection */}
+                <div className="cash-flow-selection" style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '8px 12px',
+                  background: '#f8f9fa',
+                  borderRadius: '6px',
+                  border: '1px solid #e0e0e0',
+                  flexShrink: 0
+                }}>
+                  <label style={{ fontSize: '14px', fontWeight: '500', marginLeft: '8px', whiteSpace: 'nowrap' }}>
+                    תזרים יעד:
+                  </label>
+                  <select
+                    value={selectedSourceCashFlowId}
+                    onChange={(e) => setSelectedSourceCashFlowId(e.target.value)}
+                    style={{
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      border: '1px solid #ccc',
+                      fontSize: '14px',
+                      minWidth: '180px'
+                    }}
+                  >
+                    <option value="">בחר תזרים...</option>
+                    {cashFlows?.map(cashFlow => (
+                      <option key={cashFlow.id} value={cashFlow.id}>
+                        {cashFlow.name} ({cashFlow.currency || 'ILS'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="transactions-table-container">
@@ -562,7 +655,6 @@ const TransactionReviewModal = ({
                       <th>שם העסק</th>
                       <th>סכום</th>
                       <th>קטגוריה</th>
-                      <th>מקבל</th>
                       <th>הערות</th>
                       <th>עדכן</th>
                       <th>פעולות</th>
@@ -571,7 +663,8 @@ const TransactionReviewModal = ({
                   <tbody>
                     {editedTransactions.map((transaction) => {
                       const isDuplicate = transaction.isDuplicate;
-                      const rowClass = `transaction-row ${isDuplicate ? 'duplicate-row' : ''}`;
+                      const isDifferentCashFlow = isFromDifferentCashFlow(transaction);
+                      const rowClass = `transaction-row ${isDuplicate ? 'duplicate-row' : ''} ${isDifferentCashFlow ? 'different-cash-flow' : ''}`;
                       
                       return (
                       <tr key={transaction.tempId} className={rowClass}>
@@ -605,28 +698,42 @@ const TransactionReviewModal = ({
                                 כפול
                               </span>
                             )}
-                            {detectForeignCurrency(transaction.business_name) && (
-                              <button
-                                type="button"
-                                className="foreign-currency-btn"
-                                onClick={() => handleForeignCopy(transaction)}
-                                title={`זוהה מטבע זר: ${detectForeignCurrency(transaction.business_name)} - לחץ להעתקה לתזרים אחר`}
-                                style={{
-                                  background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
-                                  border: 'none',
-                                  borderRadius: '4px',
-                                  color: 'white',
-                                  fontSize: '12px',
-                                  padding: '4px 8px',
-                                  marginLeft: '8px',
-                                  cursor: 'pointer',
-                                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                                }}
-                              >
-                                {detectForeignCurrency(transaction.business_name)} 🔄
-                              </button>
+                            {isDifferentCashFlow && (
+                              <span className="cash-flow-badge" style={{
+                                background: 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)',
+                                color: 'white',
+                                fontSize: '11px',
+                                padding: '3px 8px',
+                                borderRadius: '4px',
+                                marginLeft: '8px',
+                                fontWeight: '500'
+                              }}>
+                                → {getTargetCashFlowName(transaction)}
+                              </span>
                             )}
                           </div>
+                          {detectForeignCurrency(transaction.business_name) && (
+                            <button
+                              type="button"
+                              className="foreign-currency-btn"
+                              onClick={() => handleForeignCopy(transaction)}
+                              title={`זוהה מטבע זר: ${detectForeignCurrency(transaction.business_name)} - לחץ להעתקה לתזרים אחר`}
+                              style={{
+                                background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+                                border: 'none',
+                                borderRadius: '4px',
+                                color: 'white',
+                                fontSize: '12px',
+                                padding: '4px 8px',
+                                marginTop: '4px',
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                display: 'block'
+                              }}
+                            >
+                              {detectForeignCurrency(transaction.business_name)} 🔄
+                            </button>
+                          )}
                         </td>
                         <td>
                           <div className="amount-container">
@@ -642,7 +749,7 @@ const TransactionReviewModal = ({
                               className={`amount-input ${transaction.amount >= 0 ? 'positive' : 'negative'}`}
                             />
                             <span className="amount-display">
-                              {formatAmount(transaction.amount || 0)}
+                              {formatAmount(transaction.amount || 0, transaction.currency || 'ILS')}
                             </span>
                           </div>
                         </td>
@@ -652,19 +759,6 @@ const TransactionReviewModal = ({
                             onChange={(categoryData) => handleCategoryChange(transaction.tempId, categoryData)}
                             categories={filteredCategories}
                             placeholder="בחר קטגוריה..."
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            value={transaction.recipient_name || ''}
-                            onChange={(e) => handleTransactionChange(
-                              transaction.tempId, 
-                              'recipient_name', 
-                              e.target.value
-                            )}
-                            className="notes-input"
-                            placeholder="שם המקבל..."
                           />
                         </td>
                         <td>
@@ -721,7 +815,8 @@ const TransactionReviewModal = ({
                 <div className="transactions-mobile">
                   {editedTransactions.map((transaction) => {
                     const isDuplicate = transaction.isDuplicate;
-                    const cardClass = `transaction-card ${isDuplicate ? 'duplicate-card' : ''}`;
+                    const isDifferentCashFlow = isFromDifferentCashFlow(transaction);
+                    const cardClass = `transaction-card ${isDuplicate ? 'duplicate-card' : ''} ${isDifferentCashFlow ? 'different-cash-flow' : ''}`;
                     
                     return (
                     <div key={transaction.tempId} className={cardClass}>
@@ -733,9 +828,22 @@ const TransactionReviewModal = ({
                               כפול
                             </span>
                           )}
+                          {isDifferentCashFlow && (
+                            <span className="cash-flow-badge mobile" style={{
+                              background: 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)',
+                              color: 'white',
+                              fontSize: '10px',
+                              padding: '2px 6px',
+                              borderRadius: '3px',
+                              marginLeft: '6px',
+                              fontWeight: '500'
+                            }}>
+                              → {getTargetCashFlowName(transaction)}
+                            </span>
+                          )}
                         </div>
                         <div className={`card-amount ${transaction.amount >= 0 ? 'positive' : 'negative'}`}>
-                          {formatAmount(transaction.amount || 0)}
+                          {formatAmount(transaction.amount || 0, transaction.currency || 'ILS')}
                         </div>
                       </div>
 
@@ -863,26 +971,43 @@ const TransactionReviewModal = ({
           )}
         </div>
 
-        <div className="modal-footer">
+        <div className="modal-footer" style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '15px 30px',
+          borderTop: '1px solid #e0e0e0',
+          backgroundColor: '#fafafa'
+        }}>
           <button 
             className="btn btn-secondary" 
             onClick={onClose}
             disabled={isSubmitting}
+            style={{
+              fontSize: '13px',
+              padding: '6px 12px',
+              minHeight: '32px'
+            }}
           >
             ביטול
           </button>
           <button 
             className="btn btn-primary" 
             onClick={handleConfirm}
-            disabled={isSubmitting || editedTransactions.length === 0}
+            disabled={isSubmitting || editedTransactions.length === 0 || !selectedSourceCashFlowId}
+            style={{
+              fontSize: '13px',
+              padding: '6px 12px',
+              minHeight: '32px'
+            }}
           >
             {isSubmitting ? (
               <>
                 <LoadingSpinner size="small" />
-                מעלה עסקאות...
+                מעלה...
               </>
             ) : (
-`אשר והעלה ${editedTransactions.length} עסקאות`
+              `אשר והעלה ${editedTransactions.length} עסקאות`
             )}
           </button>
         </div>
@@ -916,11 +1041,18 @@ const TransactionReviewModal = ({
                 style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc'}}
               >
                 <option value="">בחר תזרים יעד...</option>
-                {cashFlows?.filter(cf => cf.id !== cashFlowId).map(cashFlow => (
-                  <option key={cashFlow.id} value={cashFlow.id}>
-                    {cashFlow.flow_name} ({cashFlow.currency || 'ILS'})
-                  </option>
-                ))}
+                {(() => {
+                  const filteredFlows = cashFlows?.filter(cf => 
+                    cf.id !== selectedSourceCashFlowId && 
+                    cf.currency === foreignCurrency
+                  ) || [];
+                  console.log('🔄 [FOREIGN COPY] Filtered flows for currency', foreignCurrency, ':', filteredFlows);
+                  return filteredFlows.map(cashFlow => (
+                    <option key={cashFlow.id} value={cashFlow.id}>
+                      {cashFlow.name} ({cashFlow.currency || 'ILS'})
+                    </option>
+                  ));
+                })()}
               </select>
             </div>
 
@@ -929,7 +1061,11 @@ const TransactionReviewModal = ({
               <select
                 className="form-select"
                 value={foreignCurrency}
-                onChange={(e) => setForeignCurrency(e.target.value)}
+                onChange={(e) => {
+                  console.log('🔄 [FOREIGN COPY] Currency changed to:', e.target.value);
+                  setForeignCurrency(e.target.value);
+                  setTargetCashFlowId(''); // Reset target flow when currency changes
+                }}
                 style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc'}}
               >
                 <option value="USD">דולר אמריקאי (USD)</option>
@@ -986,11 +1122,22 @@ const TransactionReviewModal = ({
               זה מתאים כאשר קנית מטבע זר (למשל: שילמת 198.6 ₪ וקנית 50 יורו).
             </div>
 
-            <div className="modal-footer" style={{display: 'flex', justifyContent: 'flex-end', gap: '8px', paddingTop: '1rem', borderTop: '1px solid #e9ecef'}}>
+            <div className="modal-footer" style={{
+              display: 'flex', 
+              justifyContent: 'flex-end', 
+              gap: '8px', 
+              paddingTop: '8px', 
+              borderTop: '1px solid #e9ecef'
+            }}>
               <button
                 type="button"
                 className="btn btn-secondary"
                 onClick={() => setIsForeignCopyModalOpen(false)}
+                style={{
+                  fontSize: '13px',
+                  padding: '6px 12px',
+                  minHeight: '32px'
+                }}
               >
                 ביטול
               </button>
@@ -999,6 +1146,11 @@ const TransactionReviewModal = ({
                 className="btn btn-primary"
                 onClick={handleForeignCopySubmit}
                 disabled={!targetCashFlowId || !foreignAmount || !exchangeRate}
+                style={{
+                  fontSize: '13px',
+                  padding: '6px 12px',
+                  minHeight: '32px'
+                }}
               >
                 העתק לתזרים
               </button>

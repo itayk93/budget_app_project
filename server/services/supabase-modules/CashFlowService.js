@@ -13,6 +13,7 @@ class CashFlowService {
   
   static async getCashFlows(userId) {
     try {
+      console.log('🔍 [CASHFLOW SERVICE] getCashFlows called with userId:', userId);
       SharedUtilities.validateUserId(userId);
 
       const { data, error } = await supabase
@@ -22,8 +23,16 @@ class CashFlowService {
         .order('is_default', { ascending: false })
         .order('name');
 
+      console.log('🔍 [CASHFLOW SERVICE] Supabase query result:');
+      console.log('🔍 [CASHFLOW SERVICE] - Error:', error);
+      console.log('🔍 [CASHFLOW SERVICE] - Data:', data);
+      console.log('🔍 [CASHFLOW SERVICE] - Data count:', data ? data.length : 'null');
+
       if (error) throw error;
-      return SharedUtilities.createSuccessResponse(data || []);
+      
+      const response = SharedUtilities.createSuccessResponse(data || []);
+      console.log('🔍 [CASHFLOW SERVICE] Final response:', response);
+      return response;
     } catch (error) {
       console.error('Error fetching cash flows:', error);
       return SharedUtilities.handleSupabaseError(error, 'fetch cash flows');

@@ -6,7 +6,25 @@ const router = express.Router();
 // Get user cash flows
 router.get('/', authenticateToken, async (req, res) => {
   try {
+    console.log('🔍 [CASHFLOWS API] Request from user:', req.user.id);
+    console.log('🔍 [CASHFLOWS API] User object:', { id: req.user.id, email: req.user.email, username: req.user.username });
+    
     const cashFlows = await SupabaseService.getCashFlows(req.user.id);
+    
+    console.log('🔍 [CASHFLOWS API] Raw result from SupabaseService:', cashFlows);
+    console.log('🔍 [CASHFLOWS API] Cash flows count:', Array.isArray(cashFlows) ? cashFlows.length : 'Not an array');
+    
+    if (Array.isArray(cashFlows)) {
+      cashFlows.forEach((flow, index) => {
+        console.log(`🔍 [CASHFLOWS API] Flow ${index + 1}:`, {
+          id: flow.id,
+          name: flow.name,
+          user_id: flow.user_id,
+          currency: flow.currency
+        });
+      });
+    }
+    
     res.json(cashFlows);
   } catch (error) {
     console.error('Get cash flows error:', error);
