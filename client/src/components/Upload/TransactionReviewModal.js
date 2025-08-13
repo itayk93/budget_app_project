@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
-import { categoriesAPI, transactionsAPI } from '../../services/api';
+import { categoriesAPI, transactionsAPI, cashFlowsAPI } from '../../services/api';
 import LoadingSpinner from '../Common/LoadingSpinner';
 import CategoryDropdown from './CategoryDropdown';
+import Modal from '../Common/Modal';
 import './TransactionReviewModal.css';
 
 const TransactionReviewModal = ({ 
@@ -24,6 +25,14 @@ const TransactionReviewModal = ({
   const [duplicateTransactionIds, setDuplicateTransactionIds] = useState(new Set());
   const [skipDuplicates, setSkipDuplicates] = useState(false); // Default to show duplicates in yellow for review
   const [replaceDuplicates, setReplaceDuplicates] = useState(new Map()); // Map of tempId -> boolean (true = replace, false = create new)
+  
+  // Foreign currency transfer state
+  const [isForeignTransferModalOpen, setIsForeignTransferModalOpen] = useState(false);
+  const [selectedTransactionForTransfer, setSelectedTransactionForTransfer] = useState(null);
+  const [targetCashFlowId, setTargetCashFlowId] = useState('');
+  const [foreignCurrency, setForeignCurrency] = useState('');
+  const [foreignAmount, setForeignAmount] = useState('');
+  const [exchangeRate, setExchangeRate] = useState('');
 
   // Fetch categories for dropdown - using regular categories API for now
   const { data: categoriesData = [], isLoading: categoriesLoading, error: categoriesError } = useQuery(
@@ -40,6 +49,15 @@ const TransactionReviewModal = ({
       onError: (error) => {
         console.error('❌ [React Query] Categories query error:', error);
       }
+    }
+  );
+
+  // Fetch cash flows for transfer modal
+  const { data: cashFlows = [] } = useQuery(
+    ['cashFlows'],
+    cashFlowsAPI.getAll,
+    {
+      enabled: isOpen
     }
   );
 
@@ -383,6 +401,89 @@ const TransactionReviewModal = ({
     }).format(Math.abs(amount));
   };
 
+  // Detect foreign currency in business name
+  const detectForeignCurrency = (businessName) => {
+    if (!businessName) return null;
+    
+    const currencies = {
+      'USD': ['USD', 'DOLLAR', 'דולר'],
+      'EUR': ['EUR', 'EURO', 'יורו', 'אירו'],
+      'GBP': ['GBP', 'POUND', 'פאונד'],
+      'CHF': ['CHF', 'FRANC', 'פרנק'],
+      'JPY': ['JPY', 'YEN', 'ין יפני'],
+      'CAD': ['CAD', 'קנדי'],
+      'AUD': ['AUD', 'אוסטרלי'],
+      'SEK': ['SEK', 'קרונה'],
+      'NOK': ['NOK', 'נורבגי'],
+      'DKK': ['DKK', 'דני']
+    };
+    
+    const upperName = businessName.toUpperCase();
+    
+    for (const [currency, keywords] of Object.entries(currencies)) {
+      for (const keyword of keywords) {
+        if (upperName.includes(keyword.toUpperCase())) {
+          return currency;
+        }
+      }
+    }
+    
+    return null;
+  };
+
+  // Handle foreign currency transfer
+  const handleForeignTransfer = (transaction) => {
+    const detectedCurrency = detectForeignCurrency(transaction.business_name);
+    setSelectedTransactionForTransfer(transaction);
+    setForeignCurrency(detectedCurrency || 'USD');
+    setForeignAmount('');
+    setExchangeRate('');
+    setTargetCashFlowId('');
+    setIsForeignTransferModalOpen(true);
+  };
+
+  // Handle foreign amount change and calculate exchange rate
+  const handleForeignAmountChange = (value) => {
+    setForeignAmount(value);
+    if (value && selectedTransactionForTransfer) {
+      const originalAmount = Math.abs(parseFloat(selectedTransactionForTransfer.amount));
+      const foreignAmountNum = parseFloat(value);
+      
+      if (foreignAmountNum > 0) {
+        const rate = originalAmount / foreignAmountNum;
+        setExchangeRate(rate.toFixed(4));
+      }
+    }
+  };
+
+  // Submit foreign currency transfer
+  const handleForeignTransferSubmit = () => {
+    if (!selectedTransactionForTransfer || !targetCashFlowId || !foreignAmount || !exchangeRate) {
+      alert('אנא מלא את כל השדות הנדרשים');
+      return;
+    }
+
+    const copyData = {
+      transaction_id: selectedTransactionForTransfer.id || selectedTransactionForTransfer.tempId,
+      target_cash_flow_id: targetCashFlowId,
+      category_name: 'הכנסות משתנות',
+      foreign_currency: foreignCurrency,
+      foreign_amount: parseFloat(foreignAmount),
+      exchange_rate: parseFloat(exchangeRate)
+    };
+
+    // Call the existing copy transaction API
+    transactionsAPI.recordAsIncome(copyData)
+      .then(() => {
+        alert(`✅ העסקה הועתקה בהצלחה לתזרים היעד כהכנסה של ${foreignAmount} ${foreignCurrency}`);
+        setIsForeignTransferModalOpen(false);
+      })
+      .catch((error) => {
+        console.error('❌ Error copying transaction:', error);
+        alert('שגיאה בהעתקת העסקה: ' + error.message);
+      });
+  };
+
 
   if (!isOpen) return null;
 
@@ -503,6 +604,27 @@ const TransactionReviewModal = ({
                               <span className="duplicate-badge">
                                 כפול
                               </span>
+                            )}
+                            {detectForeignCurrency(transaction.business_name) && (
+                              <button
+                                type="button"
+                                className="foreign-currency-btn"
+                                onClick={() => handleForeignTransfer(transaction)}
+                                title={`זוהה מטבע זר: ${detectForeignCurrency(transaction.business_name)} - לחץ להעברה לתזרים אחר`}
+                                style={{
+                                  background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  color: 'white',
+                                  fontSize: '12px',
+                                  padding: '4px 8px',
+                                  marginLeft: '8px',
+                                  cursor: 'pointer',
+                                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                }}
+                              >
+                                {detectForeignCurrency(transaction.business_name)} 🔄
+                              </button>
                             )}
                           </div>
                         </td>
@@ -765,6 +887,125 @@ const TransactionReviewModal = ({
           </button>
         </div>
       </div>
+
+      {/* Foreign Currency Transfer Modal */}
+      <Modal
+        isOpen={isForeignTransferModalOpen}
+        onClose={() => {
+          setIsForeignTransferModalOpen(false);
+          setSelectedTransactionForTransfer(null);
+          setTargetCashFlowId('');
+          setForeignCurrency('');
+          setForeignAmount('');
+          setExchangeRate('');
+        }}
+        title="העברת עסקה עם מטבע זר לתזרים אחר"
+      >
+        {selectedTransactionForTransfer && (
+          <div>
+            <p style={{marginBottom: '1rem'}}>
+              זוהה מטבע זר בשם העסק. העבר את העסקה לתזרים המתאים:
+            </p>
+            
+            <div className="form-group" style={{marginBottom: '1rem'}}>
+              <label className="form-label">תזרים יעד:</label>
+              <select 
+                className="form-select" 
+                value={targetCashFlowId}
+                onChange={(e) => setTargetCashFlowId(e.target.value)}
+                style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc'}}
+              >
+                <option value="">בחר תזרים יעד...</option>
+                {cashFlows?.filter(cf => cf.id !== cashFlowId).map(cashFlow => (
+                  <option key={cashFlow.id} value={cashFlow.id}>
+                    {cashFlow.flow_name} ({cashFlow.currency || 'ILS'})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group" style={{marginBottom: '1rem'}}>
+              <label className="form-label">מטבע זר:</label>
+              <select
+                className="form-select"
+                value={foreignCurrency}
+                onChange={(e) => setForeignCurrency(e.target.value)}
+                style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc'}}
+              >
+                <option value="USD">דולר אמריקאי (USD)</option>
+                <option value="EUR">יורו (EUR)</option>
+                <option value="GBP">פאונד (GBP)</option>
+                <option value="CHF">פרנק שוויצרי (CHF)</option>
+                <option value="JPY">ין יפני (JPY)</option>
+                <option value="CAD">דולר קנדי (CAD)</option>
+                <option value="AUD">דולר אוסטרלי (AUD)</option>
+                <option value="SEK">קרונה שוודית (SEK)</option>
+                <option value="NOK">קרונה נורבגית (NOK)</option>
+                <option value="DKK">קרונה דנית (DKK)</option>
+              </select>
+            </div>
+
+            <div className="form-group" style={{marginBottom: '1rem'}}>
+              <label className="form-label">סכום במטבע זר ({foreignCurrency}):</label>
+              <input
+                type="number"
+                step="0.01"
+                className="form-input"
+                value={foreignAmount}
+                onChange={(e) => handleForeignAmountChange(e.target.value)}
+                placeholder={`כמה ${foreignCurrency} קנית?`}
+                style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc'}}
+              />
+            </div>
+
+            {exchangeRate && (
+              <div className="form-group" style={{marginBottom: '1rem'}}>
+                <label className="form-label">שער חליפין (חושב אוטומטית):</label>
+                <input
+                  type="number"
+                  step="0.0001"
+                  className="form-input"
+                  value={exchangeRate}
+                  onChange={(e) => setExchangeRate(e.target.value)}
+                  style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc'}}
+                />
+                <small style={{color: '#666', fontSize: '12px'}}>
+                  1 {foreignCurrency} = {exchangeRate} ₪
+                </small>
+              </div>
+            )}
+
+            <div style={{margin: '1rem 0', padding: '12px', backgroundColor: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '4px'}}>
+              <div><strong>עסקה:</strong> {selectedTransactionForTransfer.business_name}</div>
+              <div><strong>סכום מקורי:</strong> {Math.abs(parseFloat(selectedTransactionForTransfer.amount)).toLocaleString()} ₪</div>
+              <div><strong>העסקה תועתק כ:</strong> הכנסה של {foreignAmount} {foreignCurrency} בתזרים היעד</div>
+            </div>
+
+            <div className="alert alert-info" style={{padding: '12px', backgroundColor: '#e3f2fd', border: '1px solid #bbdefb', borderRadius: '4px', marginBottom: '1rem'}}>
+              <strong>💡 הסבר:</strong> העסקה תועתק לתזרים היעד כהכנסה במטבע זר. 
+              זה מתאים כאשר קנית מטבע זר (למשל: שילמת 198.6 ₪ וקנית 50 יורו).
+            </div>
+
+            <div className="modal-footer" style={{display: 'flex', justifyContent: 'flex-end', gap: '8px', paddingTop: '1rem', borderTop: '1px solid #e9ecef'}}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setIsForeignTransferModalOpen(false)}
+              >
+                ביטול
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleForeignTransferSubmit}
+                disabled={!targetCashFlowId || !foreignAmount || !exchangeRate}
+              >
+                העבר לתזרים
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

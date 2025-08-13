@@ -132,13 +132,15 @@ const Upload = () => {
     }
   }, []);
 
-  // Clean business names - replace slashes with spaces and normalize whitespace
+  // Clean business names - replace slashes with spaces, remove problematic characters, and normalize whitespace
   const cleanBusinessNames = (transactions) => {
     return transactions.map(txn => ({
       ...txn,
       business_name: txn.business_name ? 
         txn.business_name
           .replace(/\//g, ' ') // Replace slashes with spaces
+          .replace(/[״""''`]/g, '') // Remove quotes and apostrophes
+          .replace(/[';]/g, '') // Remove semicolons and single quotes (SQL injection prevention)
           .replace(/\s+/g, ' ') // Replace multiple spaces with single space
           .trim() 
         : txn.business_name

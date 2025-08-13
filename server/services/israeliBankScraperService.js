@@ -811,16 +811,18 @@ class IsraeliBankScraperService {
         }
     }
 
-    // Clean business name from Hebrew formatting issues
+    // Clean business name from Hebrew formatting issues and problematic SQL characters
     cleanBusinessName(description) {
         if (!description) return 'עסקה ללא תיאור';
         
-        // Remove RTL marks and other formatting characters, replace slashes with spaces
+        // Remove RTL marks, formatting characters, and SQL-problematic characters
         return description
-            .replace(/[\u200E\u200F\u202A\u202B\u202C\u202D\u202E\u061C]/g, '')
-            .replace(/[()[\]{}]/g, '')
-            .replace(/^[‫]+|[‫]+$/g, '') // Remove leading/trailing Hebrew punctuation
+            .replace(/[\u200E\u200F\u202A\u202B\u202C\u202D\u202E\u061C]/g, '') // RTL marks
+            .replace(/[()[\]{}]/g, '') // Brackets
+            .replace(/^[‫]+|[‫]+$/g, '') // Leading/trailing Hebrew punctuation
             .replace(/\//g, ' ') // Replace slashes with spaces
+            .replace(/[״""''`]/g, '') // Remove quotes and apostrophes
+            .replace(/[';]/g, '') // Remove semicolons and single quotes (SQL injection prevention)
             .replace(/\s+/g, ' ') // Replace multiple spaces with single space
             .trim();
     }

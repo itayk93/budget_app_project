@@ -22,6 +22,8 @@ function cleanBusinessNames(transactions) {
         business_name: txn.business_name ? 
             txn.business_name
                 .replace(/\//g, ' ') // Replace slashes with spaces
+                .replace(/[״""''`]/g, '') // Remove quotes and apostrophes
+                .replace(/[';]/g, '') // Remove semicolons and single quotes (SQL injection prevention)
                 .replace(/\s+/g, ' ') // Replace multiple spaces with single space
                 .trim() 
             : txn.business_name
@@ -33,11 +35,15 @@ const testBusinessNames = [
     'רמי לוי/סניף ירושלים',
     'תן ביס/פיצה נחלת בנימין',
     'מקדונלדס/רמת גן',
-    'סופר פארם/סניף תל אביב',
-    'פיצה דומינוס/קניון עופר',
-    'בנק הפועלים/סניף מרכז',
+    'הוק פקדון EUR',
+    'קניית דולר USD',
+    'פקדון יורו EURO',
+    'עמלת פרנק CHF',
+    'בנק הפועלים/GBP תשלום',
     'מק/דונלדס//כפל//סלאש',
     '   עם רווחים   /  מיותרים  ',
+    'עסק עם ״גרשיים״ ותווים מיוחדים',
+    'עסק; עם נקודה פסיק',
     null,
     undefined,
     ''
@@ -59,6 +65,46 @@ const testTransactions = testBusinessNames.map((name, index) => ({
 const cleanedTransactions = cleanBusinessNames(testTransactions);
 cleanedTransactions.forEach((txn, index) => {
     console.log(`${index + 1}. "${testBusinessNames[index]}" → "${txn.business_name}"`);
+});
+
+// בדיקת זיהוי מטבע זר
+function detectForeignCurrency(businessName) {
+    if (!businessName) return null;
+    
+    const currencies = {
+        'USD': ['USD', 'DOLLAR', 'דולר'],
+        'EUR': ['EUR', 'EURO', 'יורו', 'אירו'],
+        'GBP': ['GBP', 'POUND', 'פאונד'],
+        'CHF': ['CHF', 'FRANC', 'פרנק'],
+        'JPY': ['JPY', 'YEN', 'ין'],
+        'CAD': ['CAD', 'קנדי'],
+        'AUD': ['AUD', 'אוסטרלי'],
+        'SEK': ['SEK', 'קרונה'],
+        'NOK': ['NOK', 'נורבגי'],
+        'DKK': ['DKK', 'דני']
+    };
+    
+    const upperName = businessName.toUpperCase();
+    
+    for (const [currency, keywords] of Object.entries(currencies)) {
+        for (const keyword of keywords) {
+            if (upperName.includes(keyword.toUpperCase())) {
+                return currency;
+            }
+        }
+    }
+    
+    return null;
+}
+
+console.log('\n🌍 בדיקת זיהוי מטבעות זרים:');
+testBusinessNames.forEach((name, index) => {
+    const currency = detectForeignCurrency(name);
+    if (currency) {
+        console.log(`${index + 1}. "${name}" → מטבע זוהה: ${currency} 🔄`);
+    } else if (name && name !== 'null' && name !== 'undefined' && name !== '') {
+        console.log(`${index + 1}. "${name}" → אין מטבע זר`);
+    }
 });
 
 console.log('\n✅ בדיקה הושלמה בהצלחה!');
