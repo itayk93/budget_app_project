@@ -132,11 +132,16 @@ const Upload = () => {
     }
   }, []);
 
-  // Clean business names - replace slashes with spaces
+  // Clean business names - replace slashes with spaces and normalize whitespace
   const cleanBusinessNames = (transactions) => {
     return transactions.map(txn => ({
       ...txn,
-      business_name: txn.business_name ? txn.business_name.replace(/\//g, ' ').trim() : txn.business_name
+      business_name: txn.business_name ? 
+        txn.business_name
+          .replace(/\//g, ' ') // Replace slashes with spaces
+          .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+          .trim() 
+        : txn.business_name
     }));
   };
 
