@@ -19,6 +19,42 @@ const CURRENCY_SYMBOL_MAP = {
 
 class SharedUtilities {
   
+  // ===== RLS SECURITY UTILITIES =====
+  
+  static async setUserContext(client, userId) {
+    try {
+      if (!userId) {
+        console.warn('⚠️ [RLS] No userId provided for context setting');
+        return false;
+      }
+      
+      // Set user context for RLS policies
+      const { error } = await client.rpc('set_config', {
+        setting_name: 'app.current_user_id',
+        new_value: userId,
+        is_local: true
+      });
+      
+      if (error) {
+        console.error('❌ [RLS] Failed to set user context:', error);
+        return false;
+      }
+      
+      console.log('✅ [RLS] User context set for:', userId);
+      return true;
+    } catch (error) {
+      console.error('❌ [RLS] Error setting user context:', error);
+      return false;
+    }
+  }
+  
+  static async createSecureClient(client, userId) {
+    if (userId) {
+      await this.setUserContext(client, userId);
+    }
+    return client;
+  }
+  
   // ===== CONNECTION UTILITIES =====
   
   static async testConnection() {

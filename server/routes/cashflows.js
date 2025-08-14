@@ -51,7 +51,14 @@ router.get('/default', authenticateToken, async (req, res) => {
 // Create new cash flow
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { name, description, isDefault = false, currency = 'ILS' } = req.body;
+    const { 
+      name, 
+      description, 
+      is_default = false, 
+      currency = 'ILS',
+      is_monthly = true,
+      is_investment_account = false
+    } = req.body;
 
     if (!name) {
       return res.status(400).json({ error: 'Name is required' });
@@ -61,8 +68,10 @@ router.post('/', authenticateToken, async (req, res) => {
       user_id: req.user.id,
       name,
       description,
-      is_default: isDefault,
-      currency
+      is_default,
+      currency,
+      is_monthly,
+      is_investment_account
     };
 
     const cashFlow = await SupabaseService.createCashFlow(cashFlowData);
@@ -82,7 +91,14 @@ router.post('/', authenticateToken, async (req, res) => {
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, isDefault, currency } = req.body;
+    const { 
+      name, 
+      description, 
+      is_default, 
+      currency,
+      is_monthly,
+      is_investment_account
+    } = req.body;
 
     // Verify cash flow exists and belongs to user
     const existingCashFlow = await SupabaseService.getCashFlow(id);
@@ -93,8 +109,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const updateData = {};
     if (name) updateData.name = name;
     if (description !== undefined) updateData.description = description;
-    if (isDefault !== undefined) updateData.is_default = isDefault;
+    if (is_default !== undefined) updateData.is_default = is_default;
     if (currency) updateData.currency = currency;
+    if (is_monthly !== undefined) updateData.is_monthly = is_monthly;
+    if (is_investment_account !== undefined) updateData.is_investment_account = is_investment_account;
 
     const updatedCashFlow = await SupabaseService.updateCashFlow(id, updateData);
     
@@ -136,7 +154,7 @@ router.get('/:id/latest-transaction-date', authenticateToken, async (req, res) =
 });
 
 // Set default cash flow
-router.put('/:id/default', authenticateToken, async (req, res) => {
+router.put('/:id/set-default', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     

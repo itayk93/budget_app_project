@@ -22,6 +22,7 @@ import CategoryOrder from './pages/CategoryOrder/CategoryOrder';
 import CategoryMappings from './pages/CategoryMappings/CategoryMappings';
 import BusinessCategoryIntelligence from './pages/BusinessCategoryIntelligence/BusinessCategoryIntelligence';
 import CashFlowDashboard from './pages/CashFlow/CashFlowDashboard';
+import CashFlowManagement from './pages/CashFlow/CashFlowManagement';
 import BudgetLensComparison from './pages/BudgetLensComparison/BudgetLensComparison';
 import BankScraperPage from './components/BankScraper/BankScraperPage';
 import './styles/stocks.css';
@@ -60,6 +61,7 @@ function App() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="cash-flow" element={<CashFlowDashboard />} />
+        <Route path="cash-flow/manage" element={<CashFlowManagement />} />
         <Route path="transactions" element={<Transactions />} />
         <Route path="transaction/:id" element={<TransactionDetails />} />
         <Route path="upload" element={<Upload />} />

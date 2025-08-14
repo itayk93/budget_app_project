@@ -11,15 +11,17 @@ class CashFlowService {
 
   // ===== CASH FLOW RETRIEVAL =====
   
-  static async getCashFlows(userId) {
+  static async getCashFlows(userId, userClient = null) {
     try {
       console.log('🔍 [CASHFLOW SERVICE] getCashFlows called with userId:', userId);
       SharedUtilities.validateUserId(userId);
 
-      const { data, error } = await supabase
+      // Use secure client with user context
+      const client = userClient || await SharedUtilities.createSecureClient(supabase, userId);
+      
+      const { data, error } = await client
         .from('cash_flows')
         .select('*')
-        .eq('user_id', userId)
         .order('is_default', { ascending: false })
         .order('name');
 

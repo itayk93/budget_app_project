@@ -45,7 +45,20 @@ const menuItems = [
   {
     path: '/cash-flow',
     label: 'דשבורד תזרים',
-    icon: '💰'
+    icon: '💰',
+    hasSubmenu: true,
+    submenu: [
+      {
+        path: '/cash-flow',
+        label: 'דשבורד תזרים',
+        icon: '📊'
+      },
+      {
+        path: '/cash-flow/manage',
+        label: 'ניהול תזרימים',
+        icon: '⚙️'
+      }
+    ]
   },
   {
     path: '/transactions',
