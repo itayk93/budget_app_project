@@ -10,8 +10,13 @@ const router = express.Router();
 // Calculate monthly target based on historical average
 router.post('/calculate-monthly-target', authenticateToken, async (req, res) => {
   try {
-    const { categoryName, category_name, monthsBack = 6 } = req.body;
+    console.log('🔍 [CALCULATE TARGET] Request body:', req.body);
+    const { categoryName, category_name, monthsBack = 6, months = 6 } = req.body;
     const finalCategoryName = categoryName || category_name;
+    const finalMonthsBack = months || monthsBack; // Use 'months' from frontend, fallback to 'monthsBack'
+    
+    console.log('🔍 [CALCULATE TARGET] Final category:', finalCategoryName);
+    console.log('🔍 [CALCULATE TARGET] Months back:', finalMonthsBack);
     
     if (!finalCategoryName) {
       return res.status(400).json({ error: 'categoryName or category_name is required' });
@@ -67,7 +72,7 @@ router.post('/calculate-monthly-target', authenticateToken, async (req, res) => 
       const allMonthlyValues = Array.from(monthlyTotals.entries())
         .sort(([a], [b]) => b.localeCompare(a)); // Sort by month desc (newest first)
       
-      const recentMonthlyValues = allMonthlyValues.slice(0, monthsBack).map(([, value]) => value);
+      const recentMonthlyValues = allMonthlyValues.slice(0, finalMonthsBack).map(([, value]) => value);
       
       if (recentMonthlyValues.length > 0) {
         // Found data in requested period
@@ -80,7 +85,7 @@ router.post('/calculate-monthly-target', authenticateToken, async (req, res) => 
         const latestMonth = allMonthlyValues[0];
         suggestedTarget = Math.round(latestMonth[1]);
         const monthName = getHebrewMonthName(latestMonth[0]);
-        message = `לא נמצאו עסקאות ב-${monthsBack} החודשים האחרונים. נקבע יעד על בסיס החודש האחרון עם עסקאות: ${monthName}`;
+        message = `לא נמצאו עסקאות ב-${finalMonthsBack} החודשים האחרונים. נקבע יעד על בסיס החודש האחרון עם עסקאות: ${monthName}`;
         fallbackUsed = 'latest';
       } else {
         // Should not reach here, but just in case
@@ -99,7 +104,7 @@ router.post('/calculate-monthly-target', authenticateToken, async (req, res) => 
       return `${monthNames[parseInt(month) - 1]} ${year}`;
     }
 
-    res.json({
+    const response = {
       success: true,
       category_name: finalCategoryName,
       suggested_target: suggestedTarget,
@@ -107,11 +112,14 @@ router.post('/calculate-monthly-target', authenticateToken, async (req, res) => 
       message: message,
       fallback_used: fallbackUsed,
       historical_data: {
-        months_analyzed: fallbackUsed === 'average' ? monthsBack : (fallbackUsed === 'latest' ? 1 : 0),
+        months_analyzed: fallbackUsed === 'average' ? finalMonthsBack : (fallbackUsed === 'latest' ? 1 : 0),
         total_transactions: categoryTransactions.length,
         fallback_used: fallbackUsed
       }
-    });
+    };
+    
+    console.log('✅ [CALCULATE TARGET] Sending response:', response);
+    res.json(response);
   } catch (error) {
     console.error('Calculate monthly target error:', error);
     res.status(500).json({ error: 'Failed to calculate monthly target' });

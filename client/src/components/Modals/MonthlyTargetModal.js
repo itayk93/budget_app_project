@@ -83,6 +83,10 @@ const MonthlyTargetModal = ({
         months: months
       });
 
+      console.log('🔍 API Response:', response);
+      console.log('🎯 Monthly target:', response.monthly_target);
+      console.log('💬 Message:', response.message);
+
       setTargetAmount(response.monthly_target.toString());
       
       // Show message if available
@@ -97,7 +101,12 @@ const MonthlyTargetModal = ({
         onTargetUpdated(response.monthly_target);
       }
     } catch (err) {
-      console.error('Error calculating monthly target:', err);
+      console.error('❌ Error calculating monthly target:', err);
+      console.error('❌ Error details:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      });
       setError(err.response?.data?.error || err.message || 'שגיאה בחישוב היעד החודשי');
     } finally {
       setIsLoading(false);
