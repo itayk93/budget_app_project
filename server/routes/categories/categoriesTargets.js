@@ -26,40 +26,77 @@ router.post('/calculate-monthly-target', authenticateToken, async (req, res) => 
       t.category_name === finalCategoryName
     );
 
+    let suggestedTarget = 100; // Default fallback
+    let message = '';
+    let fallbackUsed = '';
+
     if (categoryTransactions.length === 0) {
-      return res.status(400).json({ error: 'No historical transactions found for this category' });
+      // No transactions ever - use default 100
+      suggestedTarget = 100;
+      message = 'לא נמצאו עסקאות בקטגוריה זו. נקבע יעד ברירת מחדל של 100 ש״ח';
+      fallbackUsed = 'default';
+    } else {
+      // Group by month and calculate averages
+      const monthlyTotals = new Map();
+      
+      categoryTransactions.forEach(transaction => {
+        const date = new Date(transaction.payment_date);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        
+        if (!monthlyTotals.has(monthKey)) {
+          monthlyTotals.set(monthKey, 0);
+        }
+        
+        monthlyTotals.set(monthKey, monthlyTotals.get(monthKey) + Math.abs(parseFloat(transaction.amount || 0)));
+      });
+
+      // Calculate average from recent months
+      const allMonthlyValues = Array.from(monthlyTotals.entries())
+        .sort(([a], [b]) => b.localeCompare(a)); // Sort by month desc (newest first)
+      
+      const recentMonthlyValues = allMonthlyValues.slice(0, monthsBack).map(([, value]) => value);
+      
+      if (recentMonthlyValues.length > 0) {
+        // Found data in requested period
+        const averageMonthlySpending = recentMonthlyValues.reduce((sum, val) => sum + val, 0) / recentMonthlyValues.length;
+        suggestedTarget = Math.round(averageMonthlySpending);
+        message = `יעד מוצע על בסיס ממוצע ${recentMonthlyValues.length} חודשים אחרונים`;
+        fallbackUsed = 'average';
+      } else if (allMonthlyValues.length > 0) {
+        // No data in requested period, but have historical data - use latest month
+        const latestMonth = allMonthlyValues[0];
+        suggestedTarget = Math.round(latestMonth[1]);
+        const monthName = getHebrewMonthName(latestMonth[0]);
+        message = `לא נמצאו עסקאות ב-${monthsBack} החודשים האחרונים. נקבע יעד על בסיס החודש האחרון עם עסקאות: ${monthName}`;
+        fallbackUsed = 'latest';
+      } else {
+        // Should not reach here, but just in case
+        suggestedTarget = 100;
+        message = 'לא נמצאו עסקאות בקטגוריה זו. נקבע יעד ברירת מחדל של 100 ש״ח';
+        fallbackUsed = 'default';
+      }
     }
 
-    // Group by month and calculate averages
-    const monthlyTotals = new Map();
-    
-    categoryTransactions.forEach(transaction => {
-      const date = new Date(transaction.payment_date);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      
-      if (!monthlyTotals.has(monthKey)) {
-        monthlyTotals.set(monthKey, 0);
-      }
-      
-      monthlyTotals.set(monthKey, monthlyTotals.get(monthKey) + Math.abs(parseFloat(transaction.amount || 0)));
-    });
-
-    // Calculate average from recent months
-    const monthlyValues = Array.from(monthlyTotals.values()).slice(-monthsBack);
-    const averageMonthlySpending = monthlyValues.length > 0 
-      ? monthlyValues.reduce((sum, val) => sum + val, 0) / monthlyValues.length
-      : 0;
-
-    const suggestedTarget = Math.round(averageMonthlySpending);
+    function getHebrewMonthName(monthKey) {
+      const [year, month] = monthKey.split('-');
+      const monthNames = [
+        'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
+        'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
+      ];
+      return `${monthNames[parseInt(month) - 1]} ${year}`;
+    }
 
     res.json({
       success: true,
       category_name: finalCategoryName,
       suggested_target: suggestedTarget,
       monthly_target: suggestedTarget, // Add this field for compatibility
+      message: message,
+      fallback_used: fallbackUsed,
       historical_data: {
-        months_analyzed: monthlyValues.length,
-        monthly_totals: Array.from(monthlyTotals.entries()).slice(-monthsBack)
+        months_analyzed: fallbackUsed === 'average' ? monthsBack : (fallbackUsed === 'latest' ? 1 : 0),
+        total_transactions: categoryTransactions.length,
+        fallback_used: fallbackUsed
       }
     });
   } catch (error) {

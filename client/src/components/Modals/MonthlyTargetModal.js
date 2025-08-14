@@ -83,6 +83,11 @@ const MonthlyTargetModal = ({
 
       setTargetAmount(response.monthly_target.toString());
       
+      // Show message if available
+      if (response.message) {
+        alert(response.message);
+      }
+      
       if (onTargetUpdated) {
         onTargetUpdated(response.monthly_target);
       }
