@@ -68,7 +68,14 @@ const MonthlyTargetModal = ({
     setIsLoading(true);
     setError('');
 
+    if (!categoryName) {
+      setError('שם הקטגוריה לא נמצא');
+      setIsLoading(false);
+      return;
+    }
+
     try {
+      console.log('Calculating target for category:', categoryName, 'months:', months);
       const response = await categoriesAPI.calculateMonthlyTarget({
         category_name: categoryName,
         months: months

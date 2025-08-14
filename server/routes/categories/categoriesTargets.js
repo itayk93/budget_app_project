@@ -10,10 +10,11 @@ const router = express.Router();
 // Calculate monthly target based on historical average
 router.post('/calculate-monthly-target', authenticateToken, async (req, res) => {
   try {
-    const { categoryName, monthsBack = 6 } = req.body;
+    const { categoryName, category_name, monthsBack = 6 } = req.body;
+    const finalCategoryName = categoryName || category_name;
     
-    if (!categoryName) {
-      return res.status(400).json({ error: 'categoryName is required' });
+    if (!finalCategoryName) {
+      return res.status(400).json({ error: 'categoryName or category_name is required' });
     }
 
     // Get historical transactions for this category
@@ -22,7 +23,7 @@ router.post('/calculate-monthly-target', authenticateToken, async (req, res) => 
     });
     
     const categoryTransactions = transactions.filter(t => 
-      t.category_name === categoryName
+      t.category_name === finalCategoryName
     );
 
     if (categoryTransactions.length === 0) {
@@ -53,8 +54,9 @@ router.post('/calculate-monthly-target', authenticateToken, async (req, res) => 
 
     res.json({
       success: true,
-      category_name: categoryName,
+      category_name: finalCategoryName,
       suggested_target: suggestedTarget,
+      monthly_target: suggestedTarget, // Add this field for compatibility
       historical_data: {
         months_analyzed: monthlyValues.length,
         monthly_totals: Array.from(monthlyTotals.entries()).slice(-monthsBack)

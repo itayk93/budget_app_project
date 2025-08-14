@@ -13,7 +13,7 @@ import WeeklyBreakdown from '../WeeklyBreakdown/WeeklyBreakdown';
 import { transactionsAPI, categoriesAPI } from '../../services/api';
 import './CategoryCard.css';
 
-const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, onDataChange, year, month, isInGroup = false }) => {
+const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, onDataChange, year, month, isInGroup = false, isEmpty = false, onRemoveEmpty = null }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedSubCategory, setExpandedSubCategory] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -215,6 +215,10 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
   };
 
   const toggleExpanded = () => {
+    // Don't allow expansion for empty categories
+    if (isEmpty && categoryData.count === 0) {
+      return;
+    }
     setIsExpanded(!isExpanded);
   };
 
@@ -297,6 +301,8 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
 
   const showMonthlyTargetDialog = () => {
     console.log('Monthly target dialog for:', categoryName);
+    console.log('CategoryData:', categoryData);
+    console.log('UseSharedTarget:', useSharedTarget);
     setShowDropdown(false);
     setShowMonthlyTargetModal(true);
     setIsModalOpen(true);
@@ -508,7 +514,7 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
 
   return (
     <div 
-      className={`category-card category-${isIncome ? 'income' : 'expense'} ${isModalOpen ? 'modal-open' : ''}`}
+      className={`category-card category-${isIncome ? 'income' : 'expense'} ${isModalOpen ? 'modal-open' : ''} ${isEmpty ? 'empty-category' : ''}`}
       data-category-name={categoryName}
       data-category-spent={categoryData.spent}
       data-is-shared={categoryData.is_shared_category ? "true" : "false"}
@@ -534,6 +540,19 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
           <div className={`ri-bold-body ${isIncome ? 'text-green' : 'text-red'}`}>
             {formatCurrency(spent)}
           </div>
+          {isEmpty && onRemoveEmpty && (
+            <button 
+              className="remove-empty-btn"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onRemoveEmpty();
+              }}
+              title="הסר מהתצוגה"
+            >
+              ✕
+            </button>
+          )}
           <div className="menu-dots" onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -1034,14 +1053,21 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
             ) : (
               // Regular category view - show transactions directly or weekly breakdown
               <div className="transaction-list margin-top-s">
-                <div 
-                  className="transactions-container transactions-scrollable-container"
-                  data-category={categoryName}
-                  data-page="1"
-                  data-per-page={transactions.length}
-                  data-total={transactions.length}
-                >
-                  {transactions.map((transaction) => (
+                {isEmpty && transactions.length === 0 ? (
+                  <div className="empty-category-message">
+                    <div className="empty-icon">📊</div>
+                    <div className="empty-text">קטגוריה ללא עסקאות בחודש זה</div>
+                    <div className="empty-subtext">הקטגוריה נוספה לתצוגה לצורך מעקב</div>
+                  </div>
+                ) : (
+                  <div 
+                    className="transactions-container transactions-scrollable-container"
+                    data-category={categoryName}
+                    data-page="1"
+                    data-per-page={transactions.length}
+                    data-total={transactions.length}
+                  >
+                    {transactions.map((transaction) => (
                   <div 
                     key={transaction.id}
                     className="transaction-item"
@@ -1108,9 +1134,10 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-              
+                  ))}
+                  </div>
+                )}
+                
                 {transactions.length > 0 && (
                   <div className="transaction-pagination-info">
                     מציג 1-{transactions.length} מתוך {transactions.length} עסקאות
@@ -1195,20 +1222,30 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
         document.body
       )}
 
-      {showMonthlyTargetModal && createPortal(
-        <MonthlyTargetModal
-          isOpen={showMonthlyTargetModal}
-          onClose={() => { setShowMonthlyTargetModal(false); setIsModalOpen(false); }}
-          categoryName={categoryData?.shared_category && useSharedTarget ? categoryData.shared_category : categoryName}
-          currentTarget={(categoryData?.shared_category && useSharedTarget && sharedTarget) ? sharedTarget.monthly_target : monthlyTarget}
-          formatCurrency={formatCurrency}
-          onTargetUpdated={handleMonthlyTargetUpdated}
-          isIncome={isIncome}
-          isSharedTarget={categoryData?.shared_category && useSharedTarget}
-          sharedCategoryName={categoryData?.shared_category}
-        />,
-        document.body
-      )}
+      {showMonthlyTargetModal && (() => {
+        const finalCategoryName = categoryData?.shared_category && useSharedTarget ? categoryData.shared_category : categoryName;
+        console.log('MonthlyTargetModal props:', {
+          categoryName: finalCategoryName,
+          originalCategoryName: categoryName,
+          sharedCategory: categoryData?.shared_category,
+          useSharedTarget
+        });
+        
+        return createPortal(
+          <MonthlyTargetModal
+            isOpen={showMonthlyTargetModal}
+            onClose={() => { setShowMonthlyTargetModal(false); setIsModalOpen(false); }}
+            categoryName={finalCategoryName}
+            currentTarget={(categoryData?.shared_category && useSharedTarget && sharedTarget) ? sharedTarget.monthly_target : monthlyTarget}
+            formatCurrency={formatCurrency}
+            onTargetUpdated={handleMonthlyTargetUpdated}
+            isIncome={isIncome}
+            isSharedTarget={categoryData?.shared_category && useSharedTarget}
+            sharedCategoryName={categoryData?.shared_category}
+          />,
+          document.body
+        );
+      })()}
 
       {showTransactionActionsModal && createPortal(
         <TransactionActionsModal

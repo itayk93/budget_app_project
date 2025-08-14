@@ -20,6 +20,103 @@ import {
 import { Bar as ChartJSBar } from 'react-chartjs-2';
 import './Dashboard.css';
 
+// Empty Categories Selector Component
+const EmptyCategoriesSelector = ({ year, month, cashFlowId, onAddCategories, onClose }) => {
+  const [emptyCategories, setEmptyCategories] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEmptyCategories = async () => {
+      try {
+        const response = await api.get('/categories/empty', {
+          params: {
+            year: year,
+            month: month,
+            cash_flow: cashFlowId
+          }
+        });
+        setEmptyCategories(response.categories || []);
+      } catch (error) {
+        console.error('Error fetching empty categories:', error);
+        setEmptyCategories([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (year && month && cashFlowId) {
+      fetchEmptyCategories();
+    }
+  }, [year, month, cashFlowId]);
+
+  const toggleCategory = (categoryName) => {
+    setSelectedCategories(prev => 
+      prev.includes(categoryName)
+        ? prev.filter(name => name !== categoryName)
+        : [...prev, categoryName]
+    );
+  };
+
+  const handleAddSelected = () => {
+    if (selectedCategories.length > 0) {
+      onAddCategories(selectedCategories);
+    }
+  };
+
+  if (loading) {
+    return <div style={{ textAlign: 'center', padding: '20px' }}>טוען קטגוריות...</div>;
+  }
+
+  if (emptyCategories.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '20px' }}>
+        <p>כל הקטגוריות כבר מוצגות או שאין קטגוריות ריקות</p>
+        <button className="developer-action-button" onClick={onClose}>
+          סגור
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="empty-categories-selector">
+      <p>בחר קטגוריות להצגה בדשבורד (גם ללא עסקאות):</p>
+      <div className="categories-list">
+        {emptyCategories.map(category => (
+          <div key={category.name} className="category-checkbox-item">
+            <label>
+              <input
+                type="checkbox"
+                checked={selectedCategories.includes(category.name)}
+                onChange={() => toggleCategory(category.name)}
+              />
+              <span>{category.name}</span>
+              {category.display_order !== null && (
+                <small style={{ color: '#666', marginRight: '10px' }}>
+                  (סדר: {category.display_order})
+                </small>
+              )}
+            </label>
+          </div>
+        ))}
+      </div>
+      <div className="modal-actions">
+        <button 
+          className="developer-action-button"
+          onClick={handleAddSelected}
+          disabled={selectedCategories.length === 0}
+        >
+          הצג {selectedCategories.length} קטגוריות נבחרות
+        </button>
+        <button className="developer-action-button" onClick={onClose}>
+          ביטול
+        </button>
+      </div>
+    </div>
+  );
+};
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -40,6 +137,17 @@ const Dashboard = () => {
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [hideEmptyCategories, setHideEmptyCategories] = useState(true);
   const [showDeveloperFeaturesModal, setShowDeveloperFeaturesModal] = useState(false);
+  const [showEmptyCategories, setShowEmptyCategories] = useState(false);
+  const [emptyCategoriesModal, setEmptyCategoriesModal] = useState(false);
+  const [selectedEmptyCategories, setSelectedEmptyCategories] = useState(() => {
+    // Load saved empty categories from localStorage
+    try {
+      const saved = localStorage.getItem('dashboard-empty-categories');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const queryClient = useQueryClient();
 
   const year = currentDate.getFullYear();
@@ -235,6 +343,55 @@ const Dashboard = () => {
     }
   }, [selectedCashFlow]);
 
+  // Fetch all categories and find empty ones
+  const fetchEmptyCategories = async () => {
+    try {
+      const response = await api.get('/categories/empty', {
+        params: {
+          year: year,
+          month: month,
+          cash_flow: selectedCashFlow?.id
+        }
+      });
+      return response.categories || [];
+    } catch (error) {
+      console.error('Error fetching empty categories:', error);
+      return [];
+    }
+  };
+
+  // Handle showing empty categories
+  const handleShowEmptyCategories = async () => {
+    const emptyCategories = await fetchEmptyCategories();
+    if (emptyCategories.length === 0) {
+      alert('כל הקטגוריות כבר מוצגות או שאין קטגוריות ריקות');
+      return;
+    }
+    setEmptyCategoriesModal(true);
+  };
+
+  // Add selected empty categories to display
+  const addEmptyCategoriesToDisplay = async (categoriesToAdd) => {
+    if (categoriesToAdd.length === 0) return;
+    
+    setSelectedEmptyCategories(prev => [...prev, ...categoriesToAdd]);
+    setShowEmptyCategories(true);
+    setEmptyCategoriesModal(false);
+    
+    // Refresh dashboard to show the added categories
+    setTimeout(() => {
+      refetchDashboard();
+    }, 100);
+  };
+
+  // Remove empty category from display
+  const removeEmptyCategory = (categoryName) => {
+    setSelectedEmptyCategories(prev => prev.filter(cat => cat !== categoryName));
+    if (selectedEmptyCategories.length <= 1) {
+      setShowEmptyCategories(false);
+    }
+  };
+
   // Force refresh all monthly targets (initial setup)
   const forceRefreshAllTargets = async () => {
     try {
@@ -300,6 +457,22 @@ const Dashboard = () => {
       checkAndRefreshTargets();
     }
   }, [selectedCashFlow, refetchDashboard]);
+
+  // Save empty categories to localStorage when they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('dashboard-empty-categories', JSON.stringify(selectedEmptyCategories));
+    } catch (error) {
+      console.error('Failed to save empty categories to localStorage:', error);
+    }
+  }, [selectedEmptyCategories]);
+
+  // Initialize showEmptyCategories based on saved data
+  useEffect(() => {
+    if (selectedEmptyCategories.length > 0) {
+      setShowEmptyCategories(true);
+    }
+  }, []); // Run only once on mount
 
   // Close modals when pressing escape
   useEffect(() => {
@@ -545,6 +718,35 @@ const Dashboard = () => {
   };
 
   const summary = calculateSummary();
+
+  // Add empty categories to the categories list
+  const addEmptyCategoriesToList = (categories, emptyCategoriesToShow) => {
+    if (!showEmptyCategories || emptyCategoriesToShow.length === 0) {
+      return categories;
+    }
+
+    const existingCategoryNames = new Set(categories.map(cat => cat.name));
+    const emptyCategoriesToAdd = emptyCategoriesToShow
+      .filter(categoryName => !existingCategoryNames.has(categoryName))
+      .map(categoryName => ({
+        name: categoryName,
+        amount: 0,
+        count: 0,
+        type: 'expense', // Default type
+        transactions: [],
+        category_type: 'expense',
+        display_order: 999, // Will be sorted properly later
+        shared_category: null,
+        weekly_display: false,
+        monthly_target: null,
+        use_shared_target: false,
+        is_shared_category: false,
+        sub_categories: null,
+        isEmpty: true // Mark as empty for special handling
+      }));
+
+    return [...categories, ...emptyCategoriesToAdd];
+  };
 
   // Group categories - handle both old system (CategoryGroupCard) and new system (Shared Categories)
   const groupCategories = (categories) => {
@@ -905,7 +1107,9 @@ const Dashboard = () => {
                 // Use ordered categories array with grouping
                 (() => {
                   console.log('🔍 DASHBOARD: Raw categories before grouping:', dashboardData.orderedCategories);
-                  const { grouped, standalone } = groupCategories(dashboardData.orderedCategories);
+                  // Add empty categories if requested
+                  const categoriesWithEmpty = addEmptyCategoriesToList(dashboardData.orderedCategories, selectedEmptyCategories);
+                  const { grouped, standalone } = groupCategories(categoriesWithEmpty);
                   
                   console.log('🎯 DASHBOARD: Grouped categories:', Object.keys(grouped));
                   console.log('🎯 DASHBOARD: Grouped categories details:', grouped);
@@ -943,6 +1147,8 @@ const Dashboard = () => {
                           onDataChange={refetchDashboard}
                           year={year}
                           month={month}
+                          isEmpty={categoryData.isEmpty}
+                          onRemoveEmpty={categoryData.isEmpty ? () => removeEmptyCategory(categoryData.name) : null}
                         />
                       ))}
                     </>
@@ -1202,6 +1408,12 @@ const Dashboard = () => {
                   >
                     {hideEmptyCategories ? '👁️' : '👁️‍🗨️'} הסתר קטגוריות ריקות
                   </button>
+                  <button 
+                    className="developer-action-button"
+                    onClick={handleShowEmptyCategories}
+                  >
+                    📋 הצג קטגוריות ללא עסקאות
+                  </button>
                 </div>
 
                 {/* Navigation Section */}
@@ -1228,6 +1440,36 @@ const Dashboard = () => {
                     </button>
                   </div>
                 </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Empty Categories Modal */}
+        {emptyCategoriesModal && (
+          <>
+            <div 
+              className="developer-modal-backdrop"
+              onClick={() => setEmptyCategoriesModal(false)}
+            ></div>
+            <div className="empty-categories-modal">
+              <div className="developer-modal-header">
+                <h3>קטגוריות ללא עסקאות - {month}/{year}</h3>
+                <button 
+                  className="close-developer-modal" 
+                  onClick={() => setEmptyCategoriesModal(false)}
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="developer-modal-body">
+                <EmptyCategoriesSelector
+                  year={year}
+                  month={month}
+                  cashFlowId={selectedCashFlow?.id}
+                  onAddCategories={addEmptyCategoriesToDisplay}
+                  onClose={() => setEmptyCategoriesModal(false)}
+                />
               </div>
             </div>
           </>
