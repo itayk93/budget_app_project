@@ -188,8 +188,8 @@ class AdditionalMethods {
       // Sort by display order - ensure we're comparing numbers, not strings
       const sortedCategories = Object.values(processedCategories)
         .sort((a, b) => {
-          const aOrder = parseInt(a.display_order) || 999;
-          const bOrder = parseInt(b.display_order) || 999;
+          const aOrder = a.display_order !== null && a.display_order !== undefined ? parseInt(a.display_order) : 999;
+          const bOrder = b.display_order !== null && b.display_order !== undefined ? parseInt(b.display_order) : 999;
           return aOrder - bOrder;
         });
 
@@ -239,7 +239,9 @@ class AdditionalMethods {
           // Find the display order for the shared category (use the lowest display_order of its sub-categories)
           const subCategories = Object.values(categoryBreakdown)
             .filter(cat => cat.shared_category === sharedName);
-          const sharedDisplayOrder = Math.min(...subCategories.map(cat => parseInt(cat.display_order) || 999));
+          const sharedDisplayOrder = Math.min(...subCategories.map(cat => 
+            cat.display_order !== null && cat.display_order !== undefined ? parseInt(cat.display_order) : 999
+          ));
           
           sharedCategoryMap.set(sharedName, {
             name: sharedName,
@@ -285,7 +287,7 @@ class AdditionalMethods {
             ...category,
             spent: category.type === 'income' ? category.amount : -category.amount,
             is_shared_category: false,
-            display_order: parseInt(category.display_order) || 999 // Ensure display_order is properly preserved
+            display_order: category.display_order !== null && category.display_order !== undefined ? parseInt(category.display_order) : 999 // Ensure display_order is properly preserved
           };
         }
       }
@@ -443,15 +445,13 @@ class AdditionalMethods {
       }
 
       const { data, error } = await supabase
-        .from('category_targets')
-        .upsert({
-          user_id: userId,
-          category_name: categoryName,
+        .from('category_order')
+        .update({
           use_shared_target: useSharedTarget,
           updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,category_name'
         })
+        .eq('user_id', userId)
+        .eq('category_name', categoryName)
         .select()
         .single();
 
@@ -611,11 +611,12 @@ class AdditionalMethods {
         }
       }
 
-      // Get all category targets
+      // Get all category targets from category_order table
       const { data: categoryTargets, error: targetsError } = await supabase
-        .from('category_targets')
+        .from('category_order')
         .select('*')
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .not('monthly_target', 'is', null);
 
       if (targetsError) throw targetsError;
 
@@ -633,7 +634,7 @@ class AdditionalMethods {
             
             if (newTarget !== target.monthly_target) {
               await supabase
-                .from('category_targets')
+                .from('category_order')
                 .update({ 
                   monthly_target: newTarget,
                   updated_at: new Date().toISOString()

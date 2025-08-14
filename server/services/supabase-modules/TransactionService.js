@@ -234,8 +234,8 @@ class TransactionService {
           // 1. Look for transactions with matching category_name field directly
           // 2. Look for transactions linked via categories table
           
-          // First attempt: filter by direct category_name field
-          query = query.or(`category_name.eq.${filters.category_name},categories.name.eq.${filters.category_name}`);
+          // Use proper parameter binding to handle Hebrew characters correctly
+          query = query.or(`category_name.eq."${filters.category_name}",categories.name.eq."${filters.category_name}"`);
           
           console.log(`Filtering transactions by category_name: "${filters.category_name}"`);
         } catch (error) {
