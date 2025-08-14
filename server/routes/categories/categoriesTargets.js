@@ -142,16 +142,20 @@ router.get('/spending-history/:categoryName', authenticateToken, async (req, res
     const { months = 12 } = req.query;
     const userId = req.user.id;
     
-    const spendingHistory = await SupabaseService.getCategorySpendingHistory(
+    const result = await AdditionalMethods.getCategorySpendingHistory(
       userId, 
       categoryName, 
       parseInt(months)
     );
     
-    res.json({
-      success: true,
-      spending_history: spendingHistory
-    });
+    if (result.success) {
+      res.json({
+        success: true,
+        spending_history: result.data.history || []
+      });
+    } else {
+      res.status(500).json({ error: result.error || 'Failed to get spending history' });
+    }
   } catch (error) {
     console.error('Get spending history error:', error);
     res.status(500).json({ error: 'Failed to get spending history' });

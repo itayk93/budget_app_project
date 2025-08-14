@@ -143,7 +143,16 @@ const MonthlyTargetModal = ({
 
     try {
       const response = await categoriesAPI.getSpendingHistory(categoryName, 12);
-      setSpendingHistory(response.spending_history);
+      const historyData = response.spending_history || [];
+      
+      // Ensure it's always an array
+      if (Array.isArray(historyData)) {
+        setSpendingHistory(historyData);
+      } else {
+        console.warn('Spending history is not an array:', historyData);
+        setSpendingHistory([]);
+      }
+      
       setShowHistogram(true);
     } catch (err) {
       console.error('Error loading spending history:', err);
