@@ -591,9 +591,17 @@ class AdditionalMethods {
     try {
       SharedUtilities.validateUserId(userId);
 
-      // Simplified: always return false for now to avoid errors
-      // This prevents the monthly targets refresh from causing issues
-      return SharedUtilities.createSuccessResponse(false);
+      // Check if there are categories without monthly targets
+      const { data: categoriesWithoutTargets, error } = await supabase
+        .from('category_order')
+        .select('category_name')
+        .eq('user_id', userId)
+        .is('monthly_target', null);
+
+      if (error) throw error;
+
+      // If there are categories without targets, suggest refresh
+      return SharedUtilities.createSuccessResponse(categoriesWithoutTargets && categoriesWithoutTargets.length > 0);
     } catch (error) {
       console.error('Error checking if should refresh monthly targets:', error);
       return SharedUtilities.createSuccessResponse(false); // Default to no refresh on error
@@ -611,45 +619,77 @@ class AdditionalMethods {
         }
       }
 
-      // Get all category targets from category_order table
-      const { data: categoryTargets, error: targetsError } = await supabase
+      // Get all categories (both with and without targets)
+      const { data: allCategories, error: categoriesError } = await supabase
         .from('category_order')
         .select('*')
-        .eq('user_id', userId)
-        .not('monthly_target', 'is', null);
+        .eq('user_id', userId);
 
-      if (targetsError) throw targetsError;
+      if (categoriesError) throw categoriesError;
+
+      // Get all transactions for this user to calculate averages
+      const { data: transactions, error: transactionsError } = await supabase
+        .from('transactions')
+        .select('category_name, amount, payment_date')
+        .eq('user_id', userId)
+        .eq('excluded_from_flow', false)
+        .not('category_name', 'is', null);
+
+      if (transactionsError) throw transactionsError;
 
       let refreshedCount = 0;
       const results = [];
+      
+      // Calculate monthly averages for all categories from transactions
+      const categoryMonthlyTotals = new Map();
+      
+      transactions.forEach(transaction => {
+        const categoryName = transaction.category_name;
+        const date = new Date(transaction.payment_date);
+        const monthKey = `${categoryName}_${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        
+        if (!categoryMonthlyTotals.has(categoryName)) {
+          categoryMonthlyTotals.set(categoryName, new Map());
+        }
+        
+        const categoryMap = categoryMonthlyTotals.get(categoryName);
+        const currentTotal = categoryMap.get(monthKey) || 0;
+        categoryMap.set(monthKey, currentTotal + Math.abs(parseFloat(transaction.amount || 0)));
+      });
 
-      // Process each category target
-      for (const target of categoryTargets || []) {
-        if (target.monthly_target && target.monthly_target > 0) {
-          // Calculate new target based on historical data if needed
-          const avgResult = await AdditionalMethods.calculateMonthlyAverage(userId, target.category_name, 3);
+      // Process each category to create or update targets
+      for (const category of allCategories || []) {
+        const categoryName = category.category_name;
+        const categoryTotals = categoryMonthlyTotals.get(categoryName);
+        
+        // Skip categories with insufficient data (less than 2 months)
+        if (!categoryTotals || categoryTotals.size < 2) {
+          continue;
+        }
+        
+        // Calculate average monthly spending
+        const monthlyValues = Array.from(categoryTotals.values());
+        const averageMonthlySpending = monthlyValues.reduce((sum, val) => sum + val, 0) / monthlyValues.length;
+        const suggestedTarget = Math.round(averageMonthlySpending);
+        
+        // Only set target if it's meaningful (> 10 NIS) and category doesn't already have a target
+        if (suggestedTarget > 10 && (!category.monthly_target || forceRefresh)) {
+          await supabase
+            .from('category_order')
+            .update({ 
+              monthly_target: suggestedTarget,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', userId)
+            .eq('category_name', categoryName);
           
-          if (avgResult.success && avgResult.data.average > 0) {
-            const newTarget = Math.round(avgResult.data.average);
-            
-            if (newTarget !== target.monthly_target) {
-              await supabase
-                .from('category_order')
-                .update({ 
-                  monthly_target: newTarget,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('user_id', userId)
-                .eq('category_name', target.category_name);
-              
-              refreshedCount++;
-              results.push({
-                category_name: target.category_name,
-                old_target: target.monthly_target,
-                new_target: newTarget
-              });
-            }
-          }
+          refreshedCount++;
+          results.push({
+            category_name: categoryName,
+            old_target: category.monthly_target || 0,
+            new_target: suggestedTarget,
+            months_analyzed: monthlyValues.length
+          });
         }
       }
 
@@ -657,8 +697,9 @@ class AdditionalMethods {
       await AdditionalMethods.setUserPreference(userId, 'last_targets_refresh', new Date().toISOString());
 
       return SharedUtilities.createSuccessResponse({
-        refreshed: true,
-        categories_updated: refreshedCount,
+        refreshed: refreshedCount > 0,
+        refreshedCount: refreshedCount,
+        totalCategories: allCategories.length,
         updates: results
       });
     } catch (error) {

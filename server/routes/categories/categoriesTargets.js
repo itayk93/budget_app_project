@@ -1,5 +1,6 @@
 const express = require('express');
 const SupabaseService = require('../../services/supabaseService');
+const AdditionalMethods = require('../../services/supabase-modules/AdditionalMethods');
 const { supabase } = require('../../config/supabase');
 const { authenticateToken } = require('../../middleware/auth');
 const router = express.Router();
@@ -161,11 +162,11 @@ router.get('/spending-history/:categoryName', authenticateToken, async (req, res
 router.get('/should-refresh-targets', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    const shouldRefresh = await SupabaseService.shouldRefreshMonthlyTargets(userId);
+    const result = await AdditionalMethods.shouldRefreshMonthlyTargets(userId);
     
     res.json({
       success: true,
-      should_refresh: shouldRefresh
+      should_refresh: result.success ? result.data : false
     });
   } catch (error) {
     console.error('Check should refresh targets error:', error);
@@ -178,12 +179,19 @@ router.post('/refresh-monthly-targets', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const { force = false } = req.body;
-    const result = await SupabaseService.refreshMonthlyTargetsForNewMonth(userId, force);
+    const result = await AdditionalMethods.refreshMonthlyTargetsForNewMonth(userId, force);
     
-    res.json({
-      success: true,
-      ...result
-    });
+    if (result.success) {
+      res.json({
+        success: true,
+        updated: result.data.refreshed !== false,
+        updatedCount: result.data.refreshedCount || 0,
+        totalCategories: result.data.totalCategories || 0,
+        ...result.data
+      });
+    } else {
+      res.status(500).json({ error: result.error || 'Failed to refresh monthly targets' });
+    }
   } catch (error) {
     console.error('Refresh monthly targets error:', error);
     res.status(500).json({ error: 'Failed to refresh monthly targets' });
