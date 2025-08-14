@@ -17,10 +17,10 @@ router.post('/calculate-monthly-target', authenticateToken, async (req, res) => 
       return res.status(400).json({ error: 'categoryName or category_name is required' });
     }
 
-    // Get historical transactions for this category
+    // Get ALL historical transactions for this category (increase limit)
     const { transactions } = await SupabaseService.getTransactions(req.user.id, { 
       show_all: true 
-    });
+    }, 1, 5000); // Get up to 5000 transactions for accurate analysis
     
     console.log(`[DEBUG] Total transactions found: ${transactions.length}`);
     console.log(`[DEBUG] Looking for category: "${finalCategoryName}"`);
