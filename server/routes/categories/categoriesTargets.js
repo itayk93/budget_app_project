@@ -10,13 +10,18 @@ const router = express.Router();
 // Calculate monthly target based on historical average
 router.post('/calculate-monthly-target', authenticateToken, async (req, res) => {
   try {
-    console.log('🔍 [CALCULATE TARGET] Request body:', req.body);
+    console.log('🚀 [BACKEND] === CALCULATE TARGET REQUEST ===');
+    console.log('🔍 [BACKEND] Full request body:', JSON.stringify(req.body, null, 2));
+    console.log('🔍 [BACKEND] User ID:', req.user?.id);
+    
     const { categoryName, category_name, monthsBack = 6, months = 6 } = req.body;
     const finalCategoryName = categoryName || category_name;
     const finalMonthsBack = months || monthsBack; // Use 'months' from frontend, fallback to 'monthsBack'
     
-    console.log('🔍 [CALCULATE TARGET] Final category:', finalCategoryName);
-    console.log('🔍 [CALCULATE TARGET] Months back:', finalMonthsBack);
+    console.log('🔍 [BACKEND] Final category name:', finalCategoryName);
+    console.log('🔍 [BACKEND] Final months back:', finalMonthsBack);
+    console.log('🔍 [BACKEND] Original months param:', months);
+    console.log('🔍 [BACKEND] Original monthsBack param:', monthsBack);
     
     if (!finalCategoryName) {
       return res.status(400).json({ error: 'categoryName or category_name is required' });
@@ -118,7 +123,10 @@ router.post('/calculate-monthly-target', authenticateToken, async (req, res) => 
       }
     };
     
-    console.log('✅ [CALCULATE TARGET] Sending response:', response);
+    console.log('✅ [BACKEND] === SENDING RESPONSE ===');
+    console.log('✅ [BACKEND] Full response:', JSON.stringify(response, null, 2));
+    console.log('✅ [BACKEND] Monthly target value:', response.monthly_target);
+    console.log('✅ [BACKEND] Response success:', response.success);
     res.json(response);
   } catch (error) {
     console.error('Calculate monthly target error:', error);
@@ -129,30 +137,71 @@ router.post('/calculate-monthly-target', authenticateToken, async (req, res) => 
 // Update monthly target manually
 router.post('/update-monthly-target', authenticateToken, async (req, res) => {
   try {
+    console.log('🚀 [UPDATE TARGET] Request received');
+    console.log('🔍 [UPDATE TARGET] Request body:', JSON.stringify(req.body, null, 2));
+    console.log('🔍 [UPDATE TARGET] User ID:', req.user?.id);
+    
     const { categoryName, target } = req.body;
     
+    console.log('🔍 [UPDATE TARGET] Parsed categoryName:', categoryName);
+    console.log('🔍 [UPDATE TARGET] Parsed target:', target);
+    console.log('🔍 [UPDATE TARGET] Target type:', typeof target);
+    
     if (!categoryName || typeof target !== 'number') {
+      console.log('❌ [UPDATE TARGET] Validation failed');
       return res.status(400).json({ error: 'categoryName and target are required' });
     }
 
-    // Update or insert category target
-    const { data, error } = await supabase
+    console.log('🔄 [UPDATE TARGET] Starting Supabase upsert...');
+    
+    // First try to update existing record
+    const { data: updateData, error: updateError } = await supabase
       .from('category_order')
-      .upsert({
-        user_id: req.user.id,
-        category_name: categoryName,
+      .update({
         monthly_target: target,
         updated_at: new Date().toISOString()
       })
-      .select()
-      .single();
+      .eq('user_id', req.user.id)
+      .eq('category_name', categoryName)
+      .select();
 
-    if (error) throw error;
+    let data, error;
+    
+    if (updateError || !updateData || updateData.length === 0) {
+      console.log('🔍 [UPDATE TARGET] No existing record found, creating new one...');
+      // If update failed or no record exists, try to insert
+      const { data: insertData, error: insertError } = await supabase
+        .from('category_order')
+        .insert({
+          user_id: req.user.id,
+          category_name: categoryName,
+          monthly_target: target,
+          display_order: 999, // Default order for new categories
+          updated_at: new Date().toISOString()
+        })
+        .select();
+      
+      data = insertData;
+      error = insertError;
+    } else {
+      console.log('🔍 [UPDATE TARGET] Updated existing record successfully');
+      data = updateData;
+      error = updateError;
+    }
 
+    console.log('🔍 [UPDATE TARGET] Supabase response data:', data);
+    console.log('🔍 [UPDATE TARGET] Supabase response error:', error);
+
+    if (error) {
+      console.log('❌ [UPDATE TARGET] Supabase error:', error);
+      throw error;
+    }
+
+    console.log('✅ [UPDATE TARGET] Success, sending response');
     res.json({
       success: true,
       message: 'Monthly target updated successfully',
-      category: data
+      category: data && data.length > 0 ? data[0] : null
     });
   } catch (error) {
     console.error('Update monthly target error:', error);

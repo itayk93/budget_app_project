@@ -717,12 +717,21 @@ router.post('/finalize', authenticateToken, async (req, res) => {
       sample_business_name: finalTransactions[0]?.business_name
     });
 
-    // Import transactions
-    const importResult = await ExcelService.importTransactions(
+    // Import transactions with timeout
+    console.log(`🔄 Starting import of ${finalTransactions.length} transactions...`);
+    const importTimeout = 300000; // 5 minutes timeout for entire import
+    
+    const importPromise = ExcelService.importTransactions(
       finalTransactions, 
       session.forceImport,
       duplicateActions // Pass duplicate actions for handling replace vs create new
     );
+    
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error(`Import timeout: Process exceeded ${importTimeout/1000} seconds`)), importTimeout);
+    });
+    
+    const importResult = await Promise.race([importPromise, timeoutPromise]);
 
     // Clean up file
     try {
@@ -756,14 +765,27 @@ router.post('/finalize', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Finalize import error:', error);
     
-    // Mark finalization as complete even on error
+    // Mark finalization as complete even on error and reset session state
     if (session) {
       session.isFinalizingImport = false;
+      session.status = 'error';
+      session.error = error.message;
+    }
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to finalize import';
+    if (error.message.includes('timeout')) {
+      errorMessage = 'Import timed out - this may happen with large files or slow connections. Please try with fewer transactions or check your internet connection.';
+    } else if (error.message.includes('connection')) {
+      errorMessage = 'Database connection error - please try again in a few moments.';
     }
     
     res.status(500).json({
-      error: 'Failed to finalize import',
-      details: error.message
+      error: errorMessage,
+      details: error.message,
+      suggestion: error.message.includes('timeout') ? 
+        'Try uploading fewer transactions at once, or check your internet connection.' :
+        'Please wait a moment and try again. If the problem persists, contact support.'
     });
   }
 });

@@ -206,4 +206,75 @@ router.get('/:id/transactions', authenticateToken, async (req, res) => {
   }
 });
 
+// Get empty categories (categories with no transactions in given period)
+router.get('/empty', authenticateToken, async (req, res) => {
+  try {
+    const { year, month, cash_flow } = req.query;
+    const userId = req.user.id;
+
+    if (!year || !month || !cash_flow) {
+      return res.status(400).json({ 
+        error: 'Missing required parameters: year, month, cash_flow' 
+      });
+    }
+
+    // Get all categories for the user
+    const { supabase } = require('../../config/supabase');
+    const { data: allCategories, error: categoriesError } = await supabase
+      .from('category_order')
+      .select('*')
+      .eq('user_id', userId)
+      .order('display_order', { ascending: true });
+
+    if (categoriesError) {
+      console.error('Error fetching categories:', categoriesError);
+      return res.status(500).json({ error: 'Failed to fetch categories' });
+    }
+
+    // Get categories that have transactions in the given period
+    const flowMonth = `${year}-${month.toString().padStart(2, '0')}`;
+    const { data: categoriesWithTransactions, error: transactionError } = await supabase
+      .from('transactions')
+      .select('category_name')
+      .eq('user_id', userId)
+      .eq('cash_flow_id', cash_flow)
+      .eq('flow_month', flowMonth)
+      .eq('excluded_from_flow', false);
+
+    if (transactionError) {
+      console.error('Error fetching transactions:', transactionError);
+      return res.status(500).json({ error: 'Failed to fetch transactions' });
+    }
+
+    // Create set of categories with transactions
+    const categoriesWithData = new Set(
+      categoriesWithTransactions.map(t => t.category_name)
+    );
+
+    // Filter categories that don't have transactions
+    const emptyCategories = allCategories
+      .filter(category => !categoriesWithData.has(category.category_name))
+      .map(category => ({
+        name: category.category_name,
+        display_order: category.display_order,
+        shared_category: category.shared_category,
+        weekly_display: category.weekly_display,
+        monthly_target: category.monthly_target,
+        use_shared_target: category.use_shared_target
+      }));
+
+    console.log(`Found ${emptyCategories.length} empty categories for ${flowMonth}`);
+
+    res.json({ 
+      categories: emptyCategories,
+      period: { year: parseInt(year), month: parseInt(month) },
+      cash_flow_id: cash_flow
+    });
+
+  } catch (error) {
+    console.error('Get empty categories error:', error);
+    res.status(500).json({ error: 'Failed to fetch empty categories' });
+  }
+});
+
 module.exports = router;

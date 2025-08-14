@@ -799,6 +799,10 @@ class ExcelService {
     for (let i = 0; i < transactions.length; i++) {
       const transaction = transactions[i];
       try {
+        // Show progress
+        const progress = Math.round((i / transactions.length) * 100);
+        console.log(`[importTransactions] Progress: ${i + 1}/${transactions.length} (${progress}%) - Processing: ${transaction.business_name}`);
+        
         // Log details for the specific transaction being processed
         console.log(`[importTransactions] Processing tx with hash: ${transaction.transaction_hash}, forceFlag: ${transaction.forceImport}, business_name: ${transaction.business_name}`);
         

@@ -634,11 +634,42 @@ class TransactionService {
         amount: processedData.amount
       });
 
-      const { data, error } = await client
-        .from('transactions')
-        .insert([processedData])
-        .select()
-        .single();
+      // Add timeout and retry logic to prevent hanging
+      const insertWithTimeout = async (retryCount = 0) => {
+        const maxRetries = 3;
+        const timeoutMs = 15000; // 15 seconds timeout
+        
+        try {
+          console.log(`🔄 [DB INSERT] Attempt ${retryCount + 1}/${maxRetries + 1} for ${processedData.business_name}`);
+          
+          const insertPromise = client
+            .from('transactions')
+            .insert([processedData])
+            .select()
+            .single();
+          
+          // Create timeout promise
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Database insert timeout')), timeoutMs);
+          });
+          
+          // Race between insert and timeout
+          return await Promise.race([insertPromise, timeoutPromise]);
+          
+        } catch (error) {
+          console.error(`⚠️ [DB INSERT] Attempt ${retryCount + 1} failed:`, error.message);
+          
+          if (retryCount < maxRetries && (error.message.includes('timeout') || error.message.includes('network'))) {
+            console.log(`🔄 [DB INSERT] Retrying in 2 seconds...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            return insertWithTimeout(retryCount + 1);
+          }
+          
+          throw error;
+        }
+      };
+
+      const { data, error } = await insertWithTimeout();
 
       if (error) {
         console.error(`❌ [DB INSERT ERROR] Failed to insert transaction:`, error);

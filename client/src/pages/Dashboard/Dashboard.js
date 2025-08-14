@@ -213,6 +213,15 @@ const Dashboard = () => {
     }
   );
 
+  // Create a proper data change handler that invalidates cache and refetches
+  const handleDataChange = async () => {
+    console.log('🔄 [DASHBOARD] handleDataChange called - invalidating cache and refetching');
+    // Invalidate the React Query cache to ensure fresh data
+    queryClient.invalidateQueries(['dashboard']);
+    // Refetch the dashboard data
+    await refetchDashboard();
+  };
+
   // Fetch cash flows separately for initial load
   const { data: cashFlows, isLoading: cashFlowsLoading } = useQuery(
     'cashFlows',
@@ -1130,7 +1139,7 @@ const Dashboard = () => {
                           }}
                           formatCurrency={formatCurrency}
                           formatDate={formatDate}
-                          onDataChange={refetchDashboard}
+                          onDataChange={handleDataChange}
                           year={year}
                           month={month}
                         />
@@ -1144,7 +1153,7 @@ const Dashboard = () => {
                           categoryData={categoryData}
                           formatCurrency={formatCurrency}
                           formatDate={formatDate}
-                          onDataChange={refetchDashboard}
+                          onDataChange={handleDataChange}
                           year={year}
                           month={month}
                           isEmpty={categoryData.isEmpty}

@@ -257,6 +257,70 @@ ul li::marker {
   border-color: #2196F3;
 }
 
+/* Remove empty category button */
+.remove-empty-btn {
+  background: #f44336;
+  border: none;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  margin-left: 8px;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.remove-empty-btn:hover {
+  background: #d32f2f;
+}
+
+/* Empty category styling */
+.category-card.empty-category {
+  border: 2px dashed #ccc;
+  background: #f8f9fa;
+  opacity: 0.8;
+}
+
+.category-card.empty-category .ri-bold-title {
+  color: #666;
+}
+
+.category-card.empty-category:hover {
+  border-color: #999;
+  background: #f0f0f0;
+}
+
+/* Empty category message */
+.empty-category-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.empty-category-message .empty-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  opacity: 0.7;
+}
+
+.empty-category-message .empty-text {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #555;
+}
+
+.empty-category-message .empty-subtext {
+  font-size: 14px;
+  color: #888;
+}
+
 .category-header {
   padding: 16px 20px 8px 20px;
   background: transparent;

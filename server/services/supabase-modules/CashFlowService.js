@@ -254,41 +254,64 @@ class CashFlowService {
 
   static async deleteCashFlow(cashFlowId) {
     try {
+      console.log('🗑️ [CASHFLOW SERVICE] deleteCashFlow called with ID:', cashFlowId);
+      
       if (!cashFlowId) {
+        console.log('🗑️ [CASHFLOW SERVICE] No cash flow ID provided');
         return SharedUtilities.createErrorResponse('Cash flow ID is required');
       }
 
-      // Get cash flow info first
-      const cashFlowResult = await this.getCashFlow(cashFlowId);
+      // Get cash flow info first (using direct service call to get success wrapper)
+      console.log('🗑️ [CASHFLOW SERVICE] Getting cash flow info...');
+      const cashFlowResult = await CashFlowService.getCashFlow(cashFlowId);
+      console.log('🗑️ [CASHFLOW SERVICE] Cash flow result:', cashFlowResult);
+      console.log('🗑️ [CASHFLOW SERVICE] Cash flow result type:', typeof cashFlowResult);
+      console.log('🗑️ [CASHFLOW SERVICE] Cash flow result.success:', cashFlowResult.success);
+      
       if (!cashFlowResult.success) {
+        console.log('🗑️ [CASHFLOW SERVICE] Cash flow not found');
         return cashFlowResult;
       }
 
       const cashFlow = cashFlowResult.data;
+      console.log('🗑️ [CASHFLOW SERVICE] Cash flow to delete:', cashFlow);
 
       // Check if this is the only cash flow for the user
+      console.log('🗑️ [CASHFLOW SERVICE] Checking user cash flows...');
       const userCashFlows = await this.getCashFlows(cashFlow.user_id);
+      console.log('🗑️ [CASHFLOW SERVICE] User cash flows:', userCashFlows);
+      
       if (userCashFlows.success && userCashFlows.data.length <= 1) {
+        console.log('🗑️ [CASHFLOW SERVICE] Cannot delete - only cash flow for user');
         return SharedUtilities.createErrorResponse('Cannot delete the only cash flow. Create another cash flow first.');
       }
 
       // First delete all associated transactions
+      console.log('🗑️ [CASHFLOW SERVICE] Deleting associated transactions...');
       const { error: transactionError } = await supabase
         .from('transactions')
         .delete()
         .eq('cash_flow_id', cashFlowId);
 
-      if (transactionError) throw transactionError;
+      if (transactionError) {
+        console.log('🗑️ [CASHFLOW SERVICE] Transaction deletion error:', transactionError);
+        throw transactionError;
+      }
 
       // Delete associated monthly goals
+      console.log('🗑️ [CASHFLOW SERVICE] Deleting associated monthly goals...');
       const { error: goalsError } = await supabase
         .from('monthly_goals')
         .delete()
         .eq('cash_flow_id', cashFlowId);
 
-      if (goalsError) throw goalsError;
+      if (goalsError) {
+        console.log('🗑️ [CASHFLOW SERVICE] Goals deletion error:', goalsError);
+        throw goalsError;
+      }
 
       // Then delete the cash flow
+      console.log('🗑️ [CASHFLOW SERVICE] Deleting cash flow...');
       const { data, error } = await supabase
         .from('cash_flows')
         .delete()
@@ -296,19 +319,26 @@ class CashFlowService {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.log('🗑️ [CASHFLOW SERVICE] Cash flow deletion error:', error);
+        throw error;
+      }
+
+      console.log('🗑️ [CASHFLOW SERVICE] Cash flow deleted successfully:', data);
 
       // If the deleted cash flow was default, set another one as default
       if (cashFlow.is_default) {
+        console.log('🗑️ [CASHFLOW SERVICE] Deleted cash flow was default, setting new default...');
         const remainingFlows = await this.getCashFlows(cashFlow.user_id);
         if (remainingFlows.success && remainingFlows.data.length > 0) {
           await this.setDefaultCashFlow(cashFlow.user_id, remainingFlows.data[0].id);
         }
       }
 
+      console.log('🗑️ [CASHFLOW SERVICE] Delete operation completed successfully');
       return SharedUtilities.createSuccessResponse(data, 'Cash flow deleted successfully');
     } catch (error) {
-      console.error('Error deleting cash flow:', error);
+      console.error('🗑️ [CASHFLOW SERVICE] Error deleting cash flow:', error);
       return SharedUtilities.handleSupabaseError(error, 'delete cash flow');
     }
   }

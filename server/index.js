@@ -56,6 +56,12 @@ app.use(cors({
 app.use(express.json({ limit: '16mb' }));
 app.use(express.urlencoded({ extended: true, limit: '16mb' }));
 
+// Global request logging middleware
+app.use((req, res, next) => {
+  console.log(`🌐 [GLOBAL] ${req.method} ${req.originalUrl} - ${new Date().toISOString()}`);
+  next();
+});
+
 // Session configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || 'hard-to-guess-string',
@@ -98,6 +104,14 @@ const israeliBankScraperRoutes = require('./routes/israeliBankScraper');
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/transactions', transactionRoutes);
+
+// Add logging middleware for category routes
+app.use('/api/categories', (req, res, next) => {
+  console.log(`🔍 [CATEGORY ROUTE] ${req.method} ${req.originalUrl}`);
+  console.log(`🔍 [CATEGORY ROUTE] Body:`, req.body);
+  next();
+});
+
 app.use('/api/categories', categoryRoutes);
 app.use('/api/budgets', budgetRoutes);
 app.use('/api/cashflows', cashFlowRoutes);

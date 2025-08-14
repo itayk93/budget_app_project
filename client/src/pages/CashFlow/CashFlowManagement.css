@@ -97,6 +97,12 @@
   gap: 20px;
 }
 
+.form-row-single {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
 .form-checkboxes {
   display: flex;
   flex-direction: column;
@@ -123,6 +129,7 @@
 
 .form-actions {
   display: flex;
+  gap: 10px;
   justify-content: flex-start;
   margin-top: 10px;
 }
@@ -230,6 +237,7 @@
 
 .card-actions {
   display: flex;
+  justify-content: space-evenly;
   gap: 8px;
   flex-wrap: wrap;
 }
@@ -237,7 +245,7 @@
 /* Buttons */
 .btn {
   padding: 10px 20px;
-  border: none;
+  border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 0.9rem;
   font-weight: 500;
@@ -248,6 +256,8 @@
   align-items: center;
   justify-content: center;
   gap: 5px;
+  background: white;
+  color: #333;
 }
 
 .btn:disabled {
@@ -256,38 +266,54 @@
 }
 
 .btn-primary {
-  background: #4CAF50;
+  background: #2196F3;
   color: white;
+  border-color: #2196F3;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #45a049;
-  transform: translateY(-1px);
+  background: #1976D2;
+  border-color: #1976D2;
 }
 
 .btn-secondary {
-  background: #f5f5f5;
-  color: #333;
-  border: 1px solid #ddd;
+  background: #f8f9fa;
+  color: #495057;
+  border-color: #dee2e6;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #eeeeee;
-  border-color: #ccc;
+  background: #e9ecef;
+  border-color: #adb5bd;
 }
 
 .btn-danger {
   background: #f44336;
   color: white;
+  border-color: #f44336;
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: #da190b;
+  background: #d32f2f;
+  border-color: #d32f2f;
 }
 
 .btn-small {
   padding: 6px 12px;
   font-size: 0.8rem;
+}
+
+.card-actions .btn-small.btn-primary {
+  padding: 0 !important;
+  margin: 0 !important;
+  transition: none !important;
+  animation: none !important;
+  transform: none !important;
+}
+
+.card-actions .btn-small.btn-primary:hover {
+  transform: none !important;
+  animation: none !important;
 }
 
 /* Empty State */
@@ -346,7 +372,12 @@
     grid-template-columns: 1fr;
   }
   
-  .form-row {
+  .form-row,
+  .form-row-single {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-checkboxes {
     grid-template-columns: 1fr;
   }
   

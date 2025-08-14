@@ -51,10 +51,18 @@ const CashFlowManagement = () => {
 
   // Delete cash flow mutation
   const deleteMutation = useMutation(
-    (id) => api.delete(`/cashflows/${id}`),
+    (id) => {
+      console.log('🗑️ [CLIENT] Making DELETE request to /cashflows/' + id);
+      return api.delete(`/cashflows/${id}`);
+    },
     {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        console.log('🗑️ [CLIENT] Delete successful:', data);
         queryClient.invalidateQueries('cashFlows');
+      },
+      onError: (error) => {
+        console.error('🗑️ [CLIENT] Delete failed:', error);
+        alert('שגיאה במחיקת התזרים: ' + (error.response?.data?.error || error.message));
       }
     }
   );
@@ -103,8 +111,12 @@ const CashFlowManagement = () => {
   };
 
   const handleDelete = (flow) => {
+    console.log('🗑️ [CLIENT] handleDelete called for flow:', flow);
     if (window.confirm(`האם אתה בטוח שברצונך למחוק את התזרים "${flow.name}"?`)) {
+      console.log('🗑️ [CLIENT] User confirmed deletion, calling deleteMutation.mutate with ID:', flow.id);
       deleteMutation.mutate(flow.id);
+    } else {
+      console.log('🗑️ [CLIENT] User cancelled deletion');
     }
   };
 
@@ -159,7 +171,7 @@ const CashFlowManagement = () => {
             resetForm();
           }}
         >
-          + תזרים חדש
+          תזרים חדש +
         </button>
       </div>
 
@@ -167,16 +179,6 @@ const CashFlowManagement = () => {
         <div className="create-form-container">
           <div className="form-header">
             <h2>{editingFlow ? 'עריכת תזרים' : 'יצירת תזרים חדש'}</h2>
-            <button 
-              className="btn btn-secondary"
-              onClick={() => {
-                setShowCreateForm(false);
-                setEditingFlow(null);
-                resetForm();
-              }}
-            >
-              ביטול
-            </button>
           </div>
           
           <form onSubmit={handleSubmit} className="cash-flow-form">
@@ -219,6 +221,28 @@ const CashFlowManagement = () => {
               </div>
             </div>
 
+            <div className="form-actions">
+              <button 
+                type="submit" 
+                className="btn btn-primary"
+                disabled={createMutation.isLoading || updateMutation.isLoading}
+              >
+                {createMutation.isLoading || updateMutation.isLoading ? 'שומר...' : 
+                 editingFlow ? 'עדכן תזרים' : 'צור תזרים'}
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-secondary"
+                onClick={() => {
+                  setShowCreateForm(false);
+                  setEditingFlow(null);
+                  resetForm();
+                }}
+              >
+                ביטול
+              </button>
+            </div>
+
             <div className="form-checkboxes">
               <div className="checkbox-group">
                 <input
@@ -251,16 +275,6 @@ const CashFlowManagement = () => {
               </div>
             </div>
 
-            <div className="form-actions">
-              <button 
-                type="submit" 
-                className="btn btn-primary"
-                disabled={createMutation.isLoading || updateMutation.isLoading}
-              >
-                {createMutation.isLoading || updateMutation.isLoading ? 'שומר...' : 
-                 editingFlow ? 'עדכן תזרים' : 'צור תזרים'}
-              </button>
-            </div>
           </form>
         </div>
       )}

@@ -285,22 +285,30 @@ router.get('/:id/analytics', authenticateToken, async (req, res) => {
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
+    console.log('🗑️ [DELETE CASHFLOW] Attempting to delete cash flow:', id, 'for user:', req.user.id);
     
     // Verify cash flow exists and belongs to user
     const existingCashFlow = await SupabaseService.getCashFlow(id);
+    console.log('🗑️ [DELETE CASHFLOW] Existing cash flow found:', existingCashFlow);
+    
     if (!existingCashFlow || existingCashFlow.user_id !== req.user.id) {
+      console.log('🗑️ [DELETE CASHFLOW] Cash flow not found or access denied');
       return res.status(404).json({ error: 'Cash flow not found' });
     }
 
+    console.log('🗑️ [DELETE CASHFLOW] Calling SupabaseService.deleteCashFlow...');
     const success = await SupabaseService.deleteCashFlow(id);
+    console.log('🗑️ [DELETE CASHFLOW] Delete result:', success);
     
     if (!success) {
+      console.log('🗑️ [DELETE CASHFLOW] Delete failed');
       return res.status(500).json({ error: 'Failed to delete cash flow' });
     }
 
+    console.log('🗑️ [DELETE CASHFLOW] Delete successful');
     res.json({ message: 'Cash flow deleted successfully' });
   } catch (error) {
-    console.error('Delete cash flow error:', error);
+    console.error('🗑️ [DELETE CASHFLOW] Error:', error);
     res.status(500).json({ error: 'Failed to delete cash flow' });
   }
 });
