@@ -17,6 +17,7 @@ const MonthlyTargetModal = ({
   const [targetAmount, setTargetAmount] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [showHistogram, setShowHistogram] = useState(false);
   const [spendingHistory, setSpendingHistory] = useState([]);
 
@@ -27,6 +28,7 @@ const MonthlyTargetModal = ({
       setTargetAmount('');
     }
     setError('');
+    setSuccessMessage('');
   }, [isOpen, currentTarget]);
 
   const handleSubmit = async (e) => {
@@ -85,7 +87,10 @@ const MonthlyTargetModal = ({
       
       // Show message if available
       if (response.message) {
-        alert(response.message);
+        setSuccessMessage(response.message);
+        setTimeout(() => {
+          setSuccessMessage('');
+        }, 8000); // Clear message after 8 seconds
       }
       
       if (onTargetUpdated) {
@@ -275,6 +280,13 @@ const MonthlyTargetModal = ({
             <div className="error-message">
               <i className="fas fa-exclamation-triangle"></i>
               {error}
+            </div>
+          )}
+          
+          {successMessage && (
+            <div className="success-message">
+              <i className="fas fa-check-circle"></i>
+              {successMessage}
             </div>
           )}
           

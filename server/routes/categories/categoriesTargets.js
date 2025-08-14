@@ -22,9 +22,22 @@ router.post('/calculate-monthly-target', authenticateToken, async (req, res) => 
       show_all: true 
     });
     
+    console.log(`[DEBUG] Total transactions found: ${transactions.length}`);
+    console.log(`[DEBUG] Looking for category: "${finalCategoryName}"`);
+    console.log(`[DEBUG] Available categories:`, [...new Set(transactions.map(t => t.category_name))].filter(Boolean));
+    
     const categoryTransactions = transactions.filter(t => 
       t.category_name === finalCategoryName
     );
+    
+    console.log(`[DEBUG] Category transactions found: ${categoryTransactions.length}`);
+    if (categoryTransactions.length > 0) {
+      console.log(`[DEBUG] Category transactions dates:`, categoryTransactions.map(t => ({
+        date: t.payment_date,
+        amount: t.amount,
+        category: t.category_name
+      })));
+    }
 
     let suggestedTarget = 100; // Default fallback
     let message = '';

@@ -201,6 +201,20 @@
   font-weight: 500;
 }
 
+/* Success Message */
+.monthly-target-modal .success-message {
+  background-color: #e3f2fd;
+  color: #1565c0;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-sm);
+  border-left: 4px solid #2196f3;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-small);
+  font-weight: 500;
+}
+
 /* Modal Footer */
 .monthly-target-modal .modal-footer {
   background: white;
