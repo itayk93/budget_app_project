@@ -185,8 +185,13 @@ class TransactionService {
 
   static async getTransactions(userId, filters = {}, page = 1, perPage = 100, userClient = null) {
     try {
+      console.log('🔍 [TRANSACTION SERVICE] getTransactions called with userId:', userId);
+      console.log('🔍 [TRANSACTION SERVICE] filters:', filters);
       SharedUtilities.validateUserId(userId);
-      const client = userClient || adminClient;
+      
+      // Always use admin client with user filtering for RLS bypass
+      const client = await SharedUtilities.createSecureClient(adminClient, userId);
+      console.log('🔍 [TRANSACTION SERVICE] Using admin client for RLS bypass');
 
       let query = client
         .from('transactions')
@@ -265,6 +270,11 @@ class TransactionService {
       query = query.range(start, end);
 
       const { data, error, count } = await query;
+      
+      console.log('🔍 [TRANSACTION SERVICE] Query result:');
+      console.log('🔍 [TRANSACTION SERVICE] - Error:', error);
+      console.log('🔍 [TRANSACTION SERVICE] - Data count:', data ? data.length : 'null');
+      console.log('🔍 [TRANSACTION SERVICE] - Total count:', count);
 
       if (error) throw error;
 
