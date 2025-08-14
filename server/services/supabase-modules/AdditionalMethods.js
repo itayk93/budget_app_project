@@ -546,13 +546,21 @@ class AdditionalMethods {
           if (a.year !== b.year) return a.year - b.year;
           return a.month - b.month;
         })
-        .map(item => ({
-          amount: item.total_amount,
-          month: `${item.year}-${String(item.month).padStart(2, '0')}`,
-          year: item.year,
-          monthNumber: item.month,
-          transaction_count: item.transaction_count
-        }));
+        .map(item => {
+          const monthNames = [
+            'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
+            'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
+          ];
+          
+          return {
+            amount: item.total_amount,
+            month: `${item.year}-${String(item.month).padStart(2, '0')}`,
+            year: item.year,
+            monthNumber: item.month,
+            monthName: `${monthNames[item.month - 1]} ${item.year}`,
+            transaction_count: item.transaction_count
+          };
+        });
 
       return SharedUtilities.createSuccessResponse({
         category_name: categoryName,
