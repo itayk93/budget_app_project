@@ -4,7 +4,8 @@
 -- Disable RLS on user tables
 ALTER TABLE users DISABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;
-ALTER TABLE monthly_budget DISABLE ROW LEVEL SECURITY;
+-- Handle both budget table names (budgets is the actual table name)
+ALTER TABLE budgets DISABLE ROW LEVEL SECURITY;
 
 -- Disable RLS on financial tables
 ALTER TABLE cash_flows DISABLE ROW LEVEL SECURITY;
@@ -28,10 +29,10 @@ DROP POLICY IF EXISTS "Users can insert own transactions" ON transactions;
 DROP POLICY IF EXISTS "Users can update own transactions" ON transactions;
 DROP POLICY IF EXISTS "Users can delete own transactions" ON transactions;
 
-DROP POLICY IF EXISTS "Users can view own budgets" ON monthly_budget;
-DROP POLICY IF EXISTS "Users can insert own budgets" ON monthly_budget;
-DROP POLICY IF EXISTS "Users can update own budgets" ON monthly_budget;
-DROP POLICY IF EXISTS "Users can delete own budgets" ON monthly_budget;
+DROP POLICY IF EXISTS "Users can view own budgets" ON budgets;
+DROP POLICY IF EXISTS "Users can insert own budgets" ON budgets;
+DROP POLICY IF EXISTS "Users can update own budgets" ON budgets;
+DROP POLICY IF EXISTS "Users can delete own budgets" ON budgets;
 
 DROP POLICY IF EXISTS "Users can view own cash flows" ON cash_flows;
 DROP POLICY IF EXISTS "Users can insert own cash flows" ON cash_flows;

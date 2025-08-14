@@ -17,7 +17,7 @@ class BudgetService {
       const client = userClient || adminClient;
 
       const { data, error } = await client
-        .from('monthly_budget')
+        .from('budgets')
         .select(`
           *,
           category:category_id (
@@ -58,7 +58,7 @@ class BudgetService {
       };
 
       const { data, error } = await client
-        .from('monthly_budget')
+        .from('budgets')
         .insert([budgetToInsert])
         .select()
         .single();
@@ -88,7 +88,7 @@ class BudgetService {
       };
 
       const { data, error } = await client
-        .from('monthly_budget')
+        .from('budgets')
         .update(processedUpdateData)
         .eq('id', budgetId)
         .select()
@@ -110,7 +110,7 @@ class BudgetService {
       const client = userClient || adminClient;
 
       const { data, error } = await client
-        .from('monthly_budget')
+        .from('budgets')
         .delete()
         .eq('id', budgetId)
         .select()
