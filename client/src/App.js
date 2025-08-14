@@ -21,7 +21,6 @@ import Alerts from './pages/Stocks/Alerts';
 import CategoryOrder from './pages/CategoryOrder/CategoryOrder';
 import CategoryMappings from './pages/CategoryMappings/CategoryMappings';
 import BusinessCategoryIntelligence from './pages/BusinessCategoryIntelligence/BusinessCategoryIntelligence';
-import Subscriptions from './pages/Subscriptions/Subscriptions';
 import CashFlowDashboard from './pages/CashFlow/CashFlowDashboard';
 import BudgetLensComparison from './pages/BudgetLensComparison/BudgetLensComparison';
 import BankScraperPage from './components/BankScraper/BankScraperPage';
@@ -74,7 +73,6 @@ function App() {
         <Route path="category-order" element={<CategoryOrder />} />
         <Route path="category-mappings" element={<CategoryMappings />} />
         <Route path="business-category-intelligence" element={<BusinessCategoryIntelligence />} />
-        <Route path="subscriptions" element={<Subscriptions />} />
         <Route path="budgetlens-comparison" element={<BudgetLensComparison />} />
         <Route path="bank-scraper" element={<BankScraperPage />} />
       </Route>

@@ -4,12 +4,12 @@
 -- Enable RLS on critical user tables
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE budgets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE monthly_budget ENABLE ROW LEVEL SECURITY;
 
 -- Enable RLS on financial tables
 ALTER TABLE cash_flows ENABLE ROW LEVEL SECURITY;
 ALTER TABLE monthly_goals ENABLE ROW LEVEL SECURITY;
-ALTER TABLE monthly_savings ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE monthly_savings ENABLE ROW LEVEL SECURITY; -- Table may not exist
 
 -- Enable RLS on stock tables
 ALTER TABLE stocks ENABLE ROW LEVEL SECURITY;
@@ -17,7 +17,7 @@ ALTER TABLE stock_holdings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE stock_prices ENABLE ROW LEVEL SECURITY;
 
 -- Enable RLS on category tables
-ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE category ENABLE ROW LEVEL SECURITY;
 ALTER TABLE category_order ENABLE ROW LEVEL SECURITY;
 
 -- Enable RLS on bank scraper tables
@@ -39,11 +39,11 @@ CREATE POLICY "Users can insert own transactions" ON transactions FOR INSERT WIT
 CREATE POLICY "Users can update own transactions" ON transactions FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete own transactions" ON transactions FOR DELETE USING (auth.uid() = user_id);
 
--- Budgets table - users can only access their own budgets
-CREATE POLICY "Users can view own budgets" ON budgets FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert own budgets" ON budgets FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update own budgets" ON budgets FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete own budgets" ON budgets FOR DELETE USING (auth.uid() = user_id);
+-- Monthly budgets table - users can only access their own budgets
+CREATE POLICY "Users can view own budgets" ON monthly_budget FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own budgets" ON monthly_budget FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own budgets" ON monthly_budget FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own budgets" ON monthly_budget FOR DELETE USING (auth.uid() = user_id);
 
 -- Cash flows table
 CREATE POLICY "Users can view own cash flows" ON cash_flows FOR SELECT USING (auth.uid() = user_id);
@@ -57,11 +57,11 @@ CREATE POLICY "Users can insert own monthly goals" ON monthly_goals FOR INSERT W
 CREATE POLICY "Users can update own monthly goals" ON monthly_goals FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete own monthly goals" ON monthly_goals FOR DELETE USING (auth.uid() = user_id);
 
--- Monthly savings table
-CREATE POLICY "Users can view own monthly savings" ON monthly_savings FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert own monthly savings" ON monthly_savings FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update own monthly savings" ON monthly_savings FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete own monthly savings" ON monthly_savings FOR DELETE USING (auth.uid() = user_id);
+-- Monthly savings table (commented out - table may not exist)
+-- CREATE POLICY "Users can view own monthly savings" ON monthly_savings FOR SELECT USING (auth.uid() = user_id);
+-- CREATE POLICY "Users can insert own monthly savings" ON monthly_savings FOR INSERT WITH CHECK (auth.uid() = user_id);
+-- CREATE POLICY "Users can update own monthly savings" ON monthly_savings FOR UPDATE USING (auth.uid() = user_id);
+-- CREATE POLICY "Users can delete own monthly savings" ON monthly_savings FOR DELETE USING (auth.uid() = user_id);
 
 -- Stock holdings table
 CREATE POLICY "Users can view own stock holdings" ON stock_holdings FOR SELECT USING (auth.uid() = user_id);
@@ -69,11 +69,11 @@ CREATE POLICY "Users can insert own stock holdings" ON stock_holdings FOR INSERT
 CREATE POLICY "Users can update own stock holdings" ON stock_holdings FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete own stock holdings" ON stock_holdings FOR DELETE USING (auth.uid() = user_id);
 
--- Categories table - users can only access their own categories
-CREATE POLICY "Users can view own categories" ON categories FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert own categories" ON categories FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update own categories" ON categories FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete own categories" ON categories FOR DELETE USING (auth.uid() = user_id);
+-- Categories table - users can only access their own categories (table name: category)
+CREATE POLICY "Users can view own categories" ON category FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own categories" ON category FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own categories" ON category FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own categories" ON category FOR DELETE USING (auth.uid() = user_id);
 
 -- Category order table
 CREATE POLICY "Users can view own category order" ON category_order FOR SELECT USING (auth.uid() = user_id);

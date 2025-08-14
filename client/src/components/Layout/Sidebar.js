@@ -86,11 +86,6 @@ const menuItems = [
     ]
   },
   {
-    path: '/subscriptions',
-    label: 'מנויים',
-    icon: '🔄'
-  },
-  {
     path: '/budgetlens-comparison',
     label: 'השוואת BudgetLens',
     icon: '🔍'
