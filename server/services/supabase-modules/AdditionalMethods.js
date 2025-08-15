@@ -282,11 +282,11 @@ class AdditionalMethods {
       }
     });
 
-    // Add all shared categories to the processed categories (only if they have sub-categories or hideEmptyCategories is false)
+    // Add all shared categories to the processed categories (only if they have sub-categories)
     sharedCategoryMap.forEach((sharedCategory, sharedName) => {
       const hasSubCategories = Object.keys(sharedCategory.sub_categories).length > 0;
       
-      if (!hideEmptyCategories || hasSubCategories) {
+      if (hasSubCategories) {
         processedCategories[sharedName] = {
           ...sharedCategory,
           spent: sharedCategory.type === 'income' ? sharedCategory.amount : -sharedCategory.amount

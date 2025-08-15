@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
-import { categoriesAPI, cashFlowsAPI, monthlyGoalsAPI, usersAPI } from '../../services/api';
+import { categoriesAPI, cashFlowsAPI, monthlyGoalsAPI } from '../../services/api';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import CategoryCard from '../../components/CategoryCard/CategoryCard';
 import CategoryGroupCard from '../../components/CategoryGroupCard/CategoryGroupCard';
