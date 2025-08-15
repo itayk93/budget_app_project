@@ -258,11 +258,17 @@ const VisibleCategoriesManager = ({ categories, hiddenCategories, onToggleVisibi
                 />
                 <span className="category-name">{category.name}</span>
                 <div className="category-details">
-                  {category.amount !== undefined && (
-                    <span className="category-amount">{Math.abs(category.amount).toFixed(1)} ₪</span>
-                  )}
-                  {category.count !== undefined && (
-                    <span className="transaction-count">{category.count} עסקאות</span>
+                  {category.isEmpty ? (
+                    <span className="category-amount">ללא עסקאות</span>
+                  ) : (
+                    <>
+                      {category.amount !== undefined && (
+                        <span className="category-amount">{Math.abs(category.amount).toFixed(1)} ₪</span>
+                      )}
+                      {category.count !== undefined && (
+                        <span className="transaction-count">{category.count} עסקאות</span>
+                      )}
+                    </>
                   )}
                 </div>
               </label>
@@ -302,6 +308,7 @@ const Dashboard = () => {
   const [showEmptyCategories, setShowEmptyCategories] = useState(false);
   const [emptyCategoriesModal, setEmptyCategoriesModal] = useState(false);
   const [visibleCategoriesModal, setVisibleCategoriesModal] = useState(false);
+  const [allAvailableCategories, setAllAvailableCategories] = useState([]);
   const [hiddenCategories, setHiddenCategories] = useState(() => {
     // Load saved hidden categories from localStorage
     try {
@@ -446,6 +453,18 @@ const Dashboard = () => {
     }
   }, [dashboardData, year, month, selectedCashFlow, activeTab]);
 
+  // Load all available categories when dashboard data changes
+  useEffect(() => {
+    const loadAllCategories = async () => {
+      if (dashboardData?.orderedCategories) {
+        const allCategories = await getAllCategories();
+        setAllAvailableCategories(allCategories);
+      }
+    };
+    
+    loadAllCategories();
+  }, [dashboardData]);
+
   // Create monthly balance data from current dashboard summary
   const monthlyBalanceData = React.useMemo(() => {
     if (!selectedCashFlow) return null;
@@ -586,9 +605,50 @@ const Dashboard = () => {
   };
 
   // Handle managing visible categories
-  const handleManageVisibleCategories = () => {
+  const handleManageVisibleCategories = async () => {
     console.log('🔍 [VISIBLE CATEGORIES] handleManageVisibleCategories called');
+    
+    // Get all categories (both with and without transactions)
+    const allCategories = await getAllCategories();
+    setAllAvailableCategories(allCategories);
     setVisibleCategoriesModal(true);
+  };
+
+  // Get all categories including empty ones
+  const getAllCategories = async () => {
+    try {
+      const [currentCategories, emptyCategories] = await Promise.all([
+        Promise.resolve(dashboardData?.orderedCategories || []),
+        fetchEmptyCategories()
+      ]);
+      
+      // Combine and deduplicate
+      const allCategoryNames = new Set();
+      const combinedCategories = [];
+      
+      // Add current categories
+      currentCategories.forEach(cat => {
+        allCategoryNames.add(cat.name);
+        combinedCategories.push(cat);
+      });
+      
+      // Add empty categories
+      emptyCategories.forEach(cat => {
+        if (!allCategoryNames.has(cat.name)) {
+          combinedCategories.push({
+            name: cat.name,
+            amount: 0,
+            count: 0,
+            isEmpty: true
+          });
+        }
+      });
+      
+      return combinedCategories;
+    } catch (error) {
+      console.error('Error getting all categories:', error);
+      return dashboardData?.orderedCategories || [];
+    }
   };
 
   // Toggle category visibility
@@ -1305,11 +1365,9 @@ const Dashboard = () => {
                 // Use ordered categories array with grouping
                 (() => {
                   console.log('🔍 DASHBOARD: Raw categories before grouping:', dashboardData.orderedCategories);
-                  // Add empty categories if requested
-                  const categoriesWithEmpty = addEmptyCategoriesToList(dashboardData.orderedCategories, selectedEmptyCategories);
                   
-                  // Filter out hidden categories
-                  const visibleCategories = categoriesWithEmpty.filter(category => 
+                  // Get all categories that should be shown (not hidden)
+                  const visibleCategories = allAvailableCategories.filter(category => 
                     !hiddenCategories.includes(category.name)
                   );
                   
@@ -1607,23 +1665,13 @@ const Dashboard = () => {
                 <div className="developer-feature-section">
                   <h4>הגדרות תצוגה</h4>
                   <button 
-                    className="developer-action-button"
+                    className="category-manager-button"
                     onClick={() => {
-                      console.log('🔍 [BUTTON] Manage empty categories clicked');
-                      handleShowEmptyCategories();
-                    }}
-                  >
-                    📋 הוסף קטגוריות ללא עסקאות
-                  </button>
-                  <button 
-                    className="developer-action-button"
-                    onClick={() => {
-                      console.log('🔍 [BUTTON] Manage visible categories clicked');
+                      console.log('🔍 [BUTTON] Manage categories clicked');
                       handleManageVisibleCategories();
                     }}
-                    style={{ backgroundColor: '#28a745' }}
                   >
-                    👁️ נהל קטגוריות מוצגות
+                    נהל קטגוריות
                   </button>
                   <button 
                     className="developer-action-button"
@@ -1717,7 +1765,7 @@ const Dashboard = () => {
               </div>
               <div className="developer-modal-body">
                 <VisibleCategoriesManager
-                  categories={dashboardData?.orderedCategories || []}
+                  categories={allAvailableCategories}
                   hiddenCategories={hiddenCategories}
                   onToggleVisibility={toggleCategoryVisibility}
                   onClose={() => setVisibleCategoriesModal(false)}
