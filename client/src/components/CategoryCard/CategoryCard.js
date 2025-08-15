@@ -161,12 +161,21 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
     if (categoryName && year && month) {
       loadCurrentSpending();
     }
-    
-    // Update monthly target when categoryData changes
+  }, [categoryName, year, month]);
+
+  // Separate useEffect for monthly target to avoid overriding local updates
+  useEffect(() => {
     const target = categoryData?.monthly_target || null;
-    setMonthlyTarget(target);
-    console.log(`Monthly target for ${categoryName}:`, target);
-  }, [categoryName, categoryData, year, month]);
+    // Only update if the new target is different from current state
+    // This prevents overriding local updates while API data propagates
+    setMonthlyTarget(prevTarget => {
+      if (target !== prevTarget) {
+        console.log(`Monthly target for ${categoryName} updated: ${prevTarget} -> ${target}`);
+        return target;
+      }
+      return prevTarget;
+    });
+  }, [categoryData?.monthly_target, categoryName]);
 
   const toggleDropdown = () => {
     setShowDropdown(!showDropdown);
@@ -311,6 +320,8 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
   const handleMonthlyTargetUpdated = async (newTarget) => {
     const isSharedCategory = categoryData?.shared_category && useSharedTarget;
     
+    console.log(`🎯 Target updated for ${categoryName}: ${newTarget} (isShared: ${isSharedCategory})`);
+    
     if (isSharedCategory) {
       // Update shared target
       setSharedTarget(prev => prev ? { ...prev, monthly_target: newTarget } : { monthly_target: newTarget });
@@ -324,11 +335,14 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
         console.error('Error reloading shared target:', error);
       }
     } else {
-      // Update individual target
+      // Update individual target immediately
       setMonthlyTarget(newTarget);
+      console.log(`✅ Local monthly target state updated to: ${newTarget}`);
     }
     
+    // Refresh dashboard data (but local state should persist until server data arrives)
     if (onDataChange) {
+      console.log(`🔄 Calling onDataChange to refresh dashboard data`);
       onDataChange();
     }
   };
