@@ -1,0 +1,29 @@
+{
+  "APIKEY": "ollama",
+  "PROXY_URL": "",
+  "LOG": true,
+  "API_TIMEOUT_MS": 600000,
+  "NON_INTERACTIVE_MODE": false,
+  "Providers": [
+    {
+      "name": "ollama",
+      "api_base_url": "http://localhost:11434/v1/chat/completions",
+      "api_key": "ollama",
+      "models": [
+        "codellama:latest",
+        "qwen:0.5b",
+        "mistral-small:latest",
+        "qwen2.5-coder:7b",
+        "llama3.2:latest"
+      ]
+    }
+  ],
+  "Router": {
+    "default": "ollama,codellama:latest",
+    "background": "ollama,qwen:0.5b",
+    "think": "ollama,mistral-small:latest",
+    "longContext": "ollama,codellama:latest",
+    "longContextThreshold": 60000,
+    "webSearch": "ollama,qwen:0.5b"
+  }
+}

@@ -212,6 +212,8 @@ const Dashboard = () => {
     console.log('🔍 [MODAL STATE] emptyCategoriesModal changed to:', emptyCategoriesModal);
   }, [emptyCategoriesModal]);
   const [selectedEmptyCategories, setSelectedEmptyCategories] = useState([]);
+  const [isLoadingEmptyCategories, setIsLoadingEmptyCategories] = useState(false);
+  const [hasLoadedEmptyCategories, setHasLoadedEmptyCategories] = useState(false);
   const queryClient = useQueryClient();
 
   const year = currentDate.getFullYear();
@@ -454,7 +456,13 @@ const Dashboard = () => {
     if (categoriesToAdd.length === 0) return;
     
     console.log('🔍 [ADD EMPTY] Adding categories:', categoriesToAdd);
-    setSelectedEmptyCategories(prev => [...prev, ...categoriesToAdd]);
+    console.log('🔍 [ADD EMPTY] Current selectedEmptyCategories before update:', selectedEmptyCategories);
+    
+    setSelectedEmptyCategories(prev => {
+      const newCategories = [...prev, ...categoriesToAdd];
+      console.log('🔍 [ADD EMPTY] Updated selectedEmptyCategories:', newCategories);
+      return newCategories;
+    });
     setShowEmptyCategories(true);
     setEmptyCategoriesModal(false);
     
@@ -552,16 +560,130 @@ const Dashboard = () => {
     }
   }, [selectedCashFlow, refetchDashboard]);
 
-  // Save empty categories to localStorage when they change
+  // Save empty categories to database when they change
   useEffect(() => {
-    try {
-      localStorage.setItem('dashboard-empty-categories', JSON.stringify(selectedEmptyCategories));
-    } catch (error) {
-      console.error('Failed to save empty categories to localStorage:', error);
-    }
-  }, [selectedEmptyCategories]);
+    const saveEmptyCategoriesToDB = async () => {
+      if (!selectedCashFlow?.id || year === undefined || month === undefined || isLoadingEmptyCategories || !hasLoadedEmptyCategories) {
+        console.log('🔍 [SAVE EMPTY] Missing params, loading, or not yet loaded - not saving:', { 
+          cashFlowId: selectedCashFlow?.id, 
+          year, 
+          month, 
+          isLoading: isLoadingEmptyCategories,
+          hasLoaded: hasLoadedEmptyCategories
+        });
+        return;
+      }
 
-  // Initialize showEmptyCategories based on saved data - only on initial load
+      try {
+        console.log('🔍 [SAVE EMPTY] Saving to database:', selectedEmptyCategories);
+        
+        // Always clear existing categories first, then add new ones
+        const clearResponse = await fetch(
+          `/api/user-empty-categories-display?year=${year}&month=${month}&cash_flow_id=${selectedCashFlow.id}`,
+          {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (!clearResponse.ok) {
+          throw new Error('Failed to clear existing categories');
+        }
+
+        // Then add the new categories if there are any
+        if (selectedEmptyCategories.length > 0) {
+          const addResponse = await fetch('/api/user-empty-categories-display/add', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              categories: selectedEmptyCategories,
+              year,
+              month,
+              cash_flow_id: selectedCashFlow.id
+            })
+          });
+
+          if (!addResponse.ok) {
+            throw new Error('Failed to save categories');
+          }
+        }
+
+        console.log('🔍 [SAVE EMPTY] Saved successfully to database');
+      } catch (error) {
+        console.error('🚨 [SAVE EMPTY] Failed to save empty categories to database:', error);
+      }
+    };
+
+    saveEmptyCategoriesToDB();
+  }, [selectedEmptyCategories, selectedCashFlow?.id, year, month, isLoadingEmptyCategories, hasLoadedEmptyCategories]);
+
+  // Initialize showEmptyCategories based on saved data from database
+  useEffect(() => {
+    const loadEmptyCategories = async () => {
+      if (!selectedCashFlow?.id || year === undefined || month === undefined) {
+        console.log('🔍 [EMPTY CATEGORIES RESTORE] Missing params - not loading:', { cashFlowId: selectedCashFlow?.id, year, month });
+        return;
+      }
+
+      setIsLoadingEmptyCategories(true);
+      setHasLoadedEmptyCategories(false);
+      try {
+        console.log('🔍 [EMPTY CATEGORIES RESTORE] Loading from database...');
+        const response = await fetch(
+          `/api/user-empty-categories-display?year=${year}&month=${month}&cash_flow_id=${selectedCashFlow.id}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('🔍 [EMPTY CATEGORIES RESTORE] Database response:', data);
+          
+          if (data.success && data.categories && data.categories.length > 0) {
+            console.log('🔍 [EMPTY CATEGORIES RESTORE] Restoring', data.categories.length, 'categories');
+            setSelectedEmptyCategories(data.categories);
+            setShowEmptyCategories(true);
+            
+            // Trigger dashboard refresh to show restored empty categories
+            setTimeout(() => {
+              console.log('🔍 [EMPTY CATEGORIES RESTORE] Triggering dashboard refresh');
+              refetchDashboard();
+            }, 100);
+          } else {
+            console.log('🔍 [EMPTY CATEGORIES RESTORE] No saved categories found in database');
+            setSelectedEmptyCategories([]);
+            setShowEmptyCategories(false);
+          }
+        } else {
+          console.warn('🔍 [EMPTY CATEGORIES RESTORE] Failed to load from database:', response.statusText);
+          setSelectedEmptyCategories([]);
+          setShowEmptyCategories(false);
+        }
+        
+        // Reset loading flag after successful load
+        setIsLoadingEmptyCategories(false);
+        setHasLoadedEmptyCategories(true);
+      } catch (error) {
+        console.error('🚨 [EMPTY CATEGORIES RESTORE] Error loading from database:', error);
+        setSelectedEmptyCategories([]);
+        setShowEmptyCategories(false);
+        setIsLoadingEmptyCategories(false);
+        setHasLoadedEmptyCategories(true);
+      }
+    };
+
+    loadEmptyCategories();
+  }, [selectedCashFlow?.id, year, month, refetchDashboard]);
 
   // Close modals when pressing escape
   useEffect(() => {
