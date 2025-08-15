@@ -211,15 +211,7 @@ const Dashboard = () => {
   useEffect(() => {
     console.log('🔍 [MODAL STATE] emptyCategoriesModal changed to:', emptyCategoriesModal);
   }, [emptyCategoriesModal]);
-  const [selectedEmptyCategories, setSelectedEmptyCategories] = useState(() => {
-    // Load saved empty categories from localStorage
-    try {
-      const saved = localStorage.getItem('dashboard-empty-categories');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [selectedEmptyCategories, setSelectedEmptyCategories] = useState([]);
   const queryClient = useQueryClient();
 
   const year = currentDate.getFullYear();
@@ -481,6 +473,18 @@ const Dashboard = () => {
     }
   };
 
+  // Toggle empty categories display
+  const toggleEmptyCategories = () => {
+    if (showEmptyCategories) {
+      // Hide empty categories and clear selection
+      setShowEmptyCategories(false);
+      setSelectedEmptyCategories([]);
+    } else {
+      // Show empty categories modal to let user select which ones to display
+      handleShowEmptyCategories();
+    }
+  };
+
 
   // Force refresh all monthly targets (initial setup)
   const forceRefreshAllTargets = async () => {
@@ -557,12 +561,7 @@ const Dashboard = () => {
     }
   }, [selectedEmptyCategories]);
 
-  // Initialize showEmptyCategories based on saved data
-  useEffect(() => {
-    if (selectedEmptyCategories.length > 0) {
-      setShowEmptyCategories(true);
-    }
-  }, [selectedEmptyCategories.length]); // Run only once on mount
+  // Initialize showEmptyCategories based on saved data - only on initial load
 
   // Close modals when pressing escape
   useEffect(() => {
@@ -808,7 +807,8 @@ const Dashboard = () => {
 
   // Add empty categories to the categories list
   const addEmptyCategoriesToList = (categories, emptyCategoriesToShow) => {
-    if (!showEmptyCategories || emptyCategoriesToShow.length === 0) {
+    // Only add empty categories if explicitly requested AND there are categories to show
+    if (!showEmptyCategories || !emptyCategoriesToShow || emptyCategoriesToShow.length === 0) {
       return categories;
     }
 
@@ -1213,9 +1213,9 @@ const Dashboard = () => {
                       ))}
                       
                       {/* Render standalone categories */}
-                      {standalone.map((categoryData) => (
+                      {standalone.map((categoryData, index) => (
                         <CategoryCard
-                          key={categoryData.name}
+                          key={`${categoryData.name}-${index}`}
                           categoryName={categoryData.name}
                           categoryData={categoryData}
                           formatCurrency={formatCurrency}
@@ -1479,13 +1479,18 @@ const Dashboard = () => {
                 <div className="developer-feature-section">
                   <h4>הגדרות תצוגה</h4>
                   <button 
-                    className="developer-action-button"
+                    className={`developer-action-button ${showEmptyCategories ? 'active' : ''}`}
                     onClick={() => {
-                      console.log('🔍 [BUTTON] Empty categories clicked');
-                      handleShowEmptyCategories();
+                      console.log('🔍 [BUTTON] Empty categories toggle clicked');
+                      toggleEmptyCategories();
+                    }}
+                    style={{
+                      backgroundColor: showEmptyCategories ? '#4CAF50' : '#6c757d',
+                      color: 'white'
                     }}
                   >
-                    📋 הצג קטגוריות ללא עסקאות
+                    📋 {showEmptyCategories ? 'הסתר' : 'הצג'} קטגוריות ריקות
+                    {selectedEmptyCategories.length > 0 && ` (${selectedEmptyCategories.length})`}
                   </button>
                   <button 
                     className="developer-action-button"
