@@ -15,6 +15,34 @@ const VerifyEmail = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    const verifyEmail = async () => {
+      try {
+        await api.post('/auth/verify-email', { token });
+        setSuccess(true);
+        
+        // Update user context to reflect email verification
+        updateUser(prevUser => ({
+          ...prevUser,
+          emailVerified: true
+        }));
+  
+        // Redirect to dashboard after 3 seconds
+        setTimeout(() => {
+          navigate('/dashboard', { 
+            state: { message: 'Email verified successfully!' }
+          });
+        }, 3000);
+      } catch (err) {
+        if (err.response?.status === 400) {
+          setError('Verification link has expired or is invalid. Please request a new one.');
+        } else {
+          setError(err.response?.data?.error || 'Failed to verify email');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (!token) {
       setError('Invalid or missing verification token');
       setLoading(false);
@@ -22,35 +50,7 @@ const VerifyEmail = () => {
     }
 
     verifyEmail();
-  }, [token]);
-
-  const verifyEmail = async () => {
-    try {
-      const response = await api.post('/auth/verify-email', { token });
-      setSuccess(true);
-      
-      // Update user context to reflect email verification
-      updateUser(prevUser => ({
-        ...prevUser,
-        emailVerified: true
-      }));
-
-      // Redirect to dashboard after 3 seconds
-      setTimeout(() => {
-        navigate('/dashboard', { 
-          state: { message: 'Email verified successfully!' }
-        });
-      }, 3000);
-    } catch (err) {
-      if (err.response?.status === 400) {
-        setError('Verification link has expired or is invalid. Please request a new one.');
-      } else {
-        setError(err.response?.data?.error || 'Failed to verify email');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [token, updateUser, navigate]);
 
   if (loading) {
     return (

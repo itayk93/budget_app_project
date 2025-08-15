@@ -407,15 +407,6 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
     setIsModalOpen(true);
   };
 
-  const showLinkDepositDialog = (transactionId, businessName) => {
-    const transaction = findTransaction(transactionId);
-    if (transaction) {
-      setSelectedTransaction(transaction);
-      setShowLinkDepositModal(true);
-      setIsModalOpen(true);
-    }
-  };
-
   // Modal handlers
   const handleCategoryTransfer = async (transactionId, newCategory) => {
     try {

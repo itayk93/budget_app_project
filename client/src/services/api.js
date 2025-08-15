@@ -279,8 +279,6 @@ export const uploadAPI = {
     const baseURL = process.env.NODE_ENV === 'production' 
       ? '/api' 
       : 'http://localhost:5001/api';
-    const token = localStorage.getItem('token');
-    const url = `${baseURL}/upload/currency_groups_progress/${tempId}/stream`;
     
     // Note: EventSource doesn't support custom headers, so we need to handle auth differently
     // For now, we'll use the polling endpoint instead

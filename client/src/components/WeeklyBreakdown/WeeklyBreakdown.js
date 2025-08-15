@@ -34,10 +34,6 @@ const WeeklyBreakdown = ({
     }));
   };
 
-  const calculateTotalAmount = () => {
-    return Object.values(weeklyData).reduce((total, week) => total + week.totalAmount, 0);
-  };
-
   const weekNumbers = Object.keys(weeklyData).sort((a, b) => parseInt(a) - parseInt(b));
 
   if (weekNumbers.length === 0) {

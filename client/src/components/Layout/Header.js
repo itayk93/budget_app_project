@@ -4,7 +4,7 @@ import TransactionSearchModal from '../TransactionSearchModal/TransactionSearchM
 import './Header.css';
 
 const Header = ({ onToggleSidebar }) => {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   return (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
-import { transactionsAPI, budgetsAPI, categoriesAPI, cashFlowsAPI, monthlyGoalsAPI, usersAPI } from '../../services/api';
+import { categoriesAPI, cashFlowsAPI, monthlyGoalsAPI, usersAPI } from '../../services/api';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import CategoryCard from '../../components/CategoryCard/CategoryCard';
 import CategoryGroupCard from '../../components/CategoryGroupCard/CategoryGroupCard';
@@ -345,7 +345,7 @@ const Dashboard = () => {
   }, [selectedCashFlow, dashboardData]);
 
   // Fetch monthly goal data
-  const { data: monthlyGoalData, isLoading: monthlyGoalLoading } = useQuery(
+  const { data: monthlyGoalData } = useQuery(
     ['monthlyGoal', year, month, selectedCashFlow?.id],
     () => monthlyGoalsAPI.get(year, month, selectedCashFlow?.id),
     {
@@ -526,7 +526,7 @@ const Dashboard = () => {
     if (selectedEmptyCategories.length > 0) {
       setShowEmptyCategories(true);
     }
-  }, []); // Run only once on mount
+  }, [selectedEmptyCategories.length]); // Run only once on mount
 
   // Close modals when pressing escape
   useEffect(() => {
@@ -679,9 +679,6 @@ const Dashboard = () => {
     console.log('All months:', monthlyBalanceData.months);
     
     // Filter months with transactions and up to current date
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth() + 1;
     
     return monthlyBalanceData.months
       // Show all months from the data

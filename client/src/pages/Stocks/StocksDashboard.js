@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import toast from 'react-hot-toast';
+
 import api from '../../services/api';
 import BlinkScreenshotUpload from '../../components/Stocks/BlinkScreenshotUpload';
 import PortfolioSummary from '../../components/Stocks/PortfolioSummary';
@@ -427,31 +427,7 @@ const Card = ({ title, value, change, icon, className = 'text-gray-900' }) => (
     </div>
 );
 
-const SummaryCards = ({ data }) => {
-    const { portfolioValue, totalPL, totalRealizedPL, cash, deposits } = data;
 
-    const plIcon = totalPL >= 0 ? '▲' : '▼';
-    const totalReturnPercent = (deposits > 0) ? (totalPL / deposits) : 0;
-
-    return (
-        <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
-            gap: '1.5rem',
-            marginBottom: '2rem'
-        }}>
-            <Card title="שווי תיק נוכחי" value={formatCurrency(portfolioValue)} icon="💼" />
-            <Card 
-                title="רווח/הפסד כולל" 
-                value={formatCurrency(totalPL)} 
-                change={`${plIcon} ${formatPercentage(totalReturnPercent)}`}
-                icon="📈"
-            />
-            <Card title="רווח ממומש" value={formatCurrency(totalRealizedPL)} icon="💸" />
-            <Card title="מזומן" value={formatCurrency(cash)} icon="🏦" />
-        </div>
-    );
-};
 
 const HoldingsTable = ({ holdings }) => (
     <div style={{
@@ -699,9 +675,9 @@ export default function StocksDashboard() {
     const { onAction } = useOutletContext();
     const [transactions, setTransactions] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isUpdating, setIsUpdating] = useState(false);
+    const [, setIsUpdating] = useState(false);
     const [error, setError] = useState(null);
-    const [cashFlows, setCashFlows] = useState([]);
+    const [, setCashFlows] = useState([]);
     const [selectedCashFlowId, setSelectedCashFlowId] = useState('');
     const [currentPrices, setCurrentPrices] = useState({});
     const portfolioData = usePortfolioData(transactions, currentPrices);

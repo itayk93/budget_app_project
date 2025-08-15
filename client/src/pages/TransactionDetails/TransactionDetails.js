@@ -51,7 +51,7 @@ const TransactionDetails = () => {
   );
 
   // Fetch business details for the transaction
-  const { data: businessDetails, isLoading: isBusinessLoading } = useQuery(
+  const { data: businessDetails } = useQuery(
     ['transaction-business', id],
     () => {
       console.log('Fetching business details for transaction ID:', id);
@@ -142,11 +142,6 @@ const TransactionDetails = () => {
 
   const handleGoBack = () => {
     navigate(-1);
-  };
-
-  const handleEditSuccess = () => {
-    setIsEditModalOpen(false);
-    // The query will automatically refetch due to cache invalidation
   };
 
   const handleDeleteSuccess = () => {

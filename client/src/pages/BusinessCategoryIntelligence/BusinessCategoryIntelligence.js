@@ -273,7 +273,7 @@ const BusinessCategoryIntelligence = () => {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        await response.json();
         alert(`עודכנו בהצלחה ${selectedTransactionIds.size} רשומות`);
         
         // סגירת הmodal ורענון נתונים
@@ -340,9 +340,7 @@ const BusinessCategoryIntelligence = () => {
         })
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        alert(`מידע העסק "${suggestion.business_name}" נשמר בהצלחה ב-MongoDB`);
+      if (response.ok) {        await response.json();        alert(`מידע העסק "${suggestion.business_name}" נשמר בהצלחה ב-MongoDB`);
       } else {
         console.error('Error saving business intelligence:', response.statusText);
         alert('שגיאה בשמירת המידע');

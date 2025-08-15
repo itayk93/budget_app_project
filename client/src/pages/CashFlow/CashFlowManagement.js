@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import api from '../../utils/api';

@@ -81,12 +81,6 @@ const ChangeMonthModal = ({
     }
   };
 
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   const getCurrentMonthLabel = () => {
     if (!transaction?.flow_month) return 'לא מוגדר';
     

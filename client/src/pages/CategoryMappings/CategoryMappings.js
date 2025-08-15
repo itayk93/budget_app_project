@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { cashFlowsAPI } from '../../services/api';
 import './CategoryMappings.css';
 
@@ -14,25 +14,25 @@ const CategoryMappings = () => {
   const [selectedCashFlow, setSelectedCashFlow] = useState(null);
   const [cashFlowsLoading, setCashFlowsLoading] = useState(true);
 
-  const fetchCashFlows = async () => {
+  const fetchCashFlows = useCallback(async () => {
     try {
       setCashFlowsLoading(true);
       const data = await cashFlowsAPI.getAll();
       setCashFlows(data || []);
       
       // Set default cash flow if available
-      if (data && data.length > 0 && !selectedCashFlow) {
+      if (data && data.length > 0) {
         const defaultFlow = data.find(flow => flow.is_default) || data[0];
-        setSelectedCashFlow(defaultFlow);
+        setSelectedCashFlow(current => current ? current : defaultFlow);
       }
     } catch (err) {
       console.error('Error fetching cash flows:', err);
     } finally {
       setCashFlowsLoading(false);
     }
-  };
+  }, []);
 
-  const fetchMappings = async () => {
+  const fetchMappings = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
@@ -60,17 +60,17 @@ const CategoryMappings = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCashFlow]);
 
   useEffect(() => {
     fetchCashFlows();
-  }, []);
+  }, [fetchCashFlows]);
 
   useEffect(() => {
     if (selectedCashFlow) {
       fetchMappings();
     }
-  }, [selectedCashFlow]);
+  }, [selectedCashFlow, fetchMappings]);
 
   const filteredMappings = mappings.filter(mapping => 
     mapping.business_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -158,7 +158,6 @@ const CategoryMappings = () => {
     };
 
     const headers = parseCSVLine(lines[0]);
-    const expectedHeaders = ['תזרים', 'שם עסק', 'מדינה', 'קטגוריה'];
     const requiredHeaders = ['שם עסק', 'קטגוריה']; // Only these are required
     
     if (!requiredHeaders.every(header => headers.includes(header))) {

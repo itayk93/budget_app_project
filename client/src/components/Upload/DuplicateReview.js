@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation } from 'react-query';
 import { uploadAPI } from '../../services/api';
 import LoadingSpinner from '../Common/LoadingSpinner';

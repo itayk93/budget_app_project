@@ -59,12 +59,6 @@ const CopyTransactionModal = ({
     }
   };
 
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   const modalFooter = (
     <div className="modal-footer">
       <button 

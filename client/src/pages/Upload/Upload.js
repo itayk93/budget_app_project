@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuery, useMutation } from 'react-query';
 import { cashFlowsAPI, uploadAPI } from '../../services/api';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
@@ -148,7 +148,7 @@ const Upload = () => {
   };
 
   // Check for duplicates using the existing upload API
-  const checkForDuplicates = async (transactions, fileSource, paymentIdentifier) => {
+  const checkForDuplicates = useCallback(async (transactions, fileSource, paymentIdentifier) => {
     try {
       console.log('🔍 Checking for duplicates in bank scraper transactions...');
       
@@ -185,7 +185,7 @@ const Upload = () => {
       console.error('❌ Error checking duplicates:', error);
       return null;
     }
-  };
+  }, [selectedCashFlow]);
 
   // Check for bank scraper data in sessionStorage on component mount
   useEffect(() => {
@@ -259,7 +259,7 @@ const Upload = () => {
     // Small delay to ensure component is fully mounted and cash flow is available
     const timer = setTimeout(checkBankScraperData, 500);
     return () => clearTimeout(timer);
-  }, [selectedCashFlow]); // Add selectedCashFlow as dependency
+  }, [selectedCashFlow, checkForDuplicates]); // Add selectedCashFlow as dependency
 
   // Fetch latest transaction date when cash flow is selected
   const fetchLatestTransactionDate = async (cashFlowId, sourceType = null) => {
@@ -310,7 +310,7 @@ const Upload = () => {
         }
       }
     }
-  }, [fileSource, selectedFile]);
+  }, [fileSource, selectedFile, paymentIdentifier]);
 
   // Helper functions for date manipulation
   const formatDateForInput = (dateString) => {

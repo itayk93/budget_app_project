@@ -614,7 +614,6 @@ const Transactions = () => {
     let successCount = 0;
     let errorCount = 0;
 
-    const targetCashFlow = cashFlows.find(cf => cf.id === bulkTargetCashFlowId);
     const sourceCashFlow = selectedCashFlow;
     const totalTransactions = transactions.transactions.length;
 

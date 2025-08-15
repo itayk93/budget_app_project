@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation } from 'react-query';
 import { uploadAPI, cashFlowsAPI } from '../../services/api';
 import LoadingSpinner from '../Common/LoadingSpinner';
@@ -7,7 +7,7 @@ import './CurrencyGroupsReview.css';
 const CurrencyGroupsReview = ({ tempId, onComplete, onBack }) => {
   const [decisions, setDecisions] = useState({});
   const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(null);
+  const [progress] = useState(null);
 
   // Fetch currency groups data
   const { data: currencyData, isLoading: loadingCurrency, error: currencyError } = useQuery(

@@ -66,7 +66,7 @@ const ProgressTracking = ({ uploadId, onComplete, onError }) => {
         clearInterval(intervalId);
       }
     };
-  }, [uploadId, onComplete, onError]);
+  }, [uploadId, onComplete, onError, isMounted, polling]);
 
   const getStageIcon = (stage) => {
     const icons = {

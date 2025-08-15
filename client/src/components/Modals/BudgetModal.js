@@ -75,12 +75,6 @@ const BudgetModal = ({
     }
   };
 
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   const formatCurrency = (amount) => {
     // Handle null, undefined, or invalid amounts
     if (amount === null || amount === undefined || isNaN(amount)) {

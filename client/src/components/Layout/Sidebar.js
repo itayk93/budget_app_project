@@ -116,7 +116,7 @@ const menuItems = [
 ];
 
 const Sidebar = ({ isOpen, onClose, onStockAction }) => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
   const [expandedMenus, setExpandedMenus] = useState({});
 

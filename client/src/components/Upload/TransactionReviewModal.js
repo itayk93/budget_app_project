@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
-import { categoriesAPI, transactionsAPI, cashFlowsAPI } from '../../services/api';
+import { categoriesAPI, cashFlowsAPI } from '../../services/api';
 import LoadingSpinner from '../Common/LoadingSpinner';
 import CategoryDropdown from './CategoryDropdown';
 import Modal from '../Common/Modal';
@@ -19,7 +19,7 @@ const TransactionReviewModal = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState([]);
   const [filteredCategories, setFilteredCategories] = useState([]);
-  const [showNonCashFlowOnly, setShowNonCashFlowOnly] = useState(false);
+  const [showNonCashFlowOnly] = useState(false);
   
   // Duplicate handling state
   const [duplicateTransactionIds, setDuplicateTransactionIds] = useState(new Set());
@@ -38,7 +38,7 @@ const TransactionReviewModal = ({
   const [exchangeRate, setExchangeRate] = useState('');
 
   // Fetch categories for dropdown - using regular categories API for now
-  const { data: categoriesData = [], isLoading: categoriesLoading, error: categoriesError } = useQuery(
+  const { data: categoriesData = [], isLoading: categoriesLoading } = useQuery(
     ['categories'],
     () => {
       console.log('🔍 [React Query] Executing categories query...');
@@ -125,7 +125,6 @@ const TransactionReviewModal = ({
       const transactionsWithRecipients = processedTransactions.map(tx => {
         // For duplicate transactions, prioritize original file data over existing database data
         let notesToProcess = tx.notes;
-        let currentRecipientName = tx.recipient_name;
         
         // If this is a duplicate transaction, check if we have original file notes
         if (tx.isDuplicate && tx.duplicateInfo && tx.duplicateInfo.original_notes !== undefined) {
@@ -402,19 +401,6 @@ const TransactionReviewModal = ({
 
 
   // Bulk duplicate handling functions
-  const handleDeleteAllDuplicatesDirectly = () => {
-    const duplicateOriginalIndices = new Set();
-    editedTransactions.forEach(tx => {
-      if (tx.isDuplicate) {
-        duplicateOriginalIndices.add(tx.originalIndex);
-      }
-    });
-    
-    // Add to deleted set and remove from edited transactions
-    setDeletedTransactionIds(prev => new Set([...prev, ...duplicateOriginalIndices]));
-    setEditedTransactions(prev => prev.filter(tx => !tx.isDuplicate));
-    setDuplicateTransactionIds(new Set());
-  };
 
 
   const formatAmount = (amount, currency = 'ILS') => {

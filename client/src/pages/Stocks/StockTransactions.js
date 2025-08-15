@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
@@ -16,7 +16,7 @@ const StockTransactions = () => {
     });
     const [showUpload, setShowUpload] = useState(false);
 
-    const fetchCashFlows = async () => {
+    const fetchCashFlows = useCallback(async () => {
         try {
             const { data } = await api.get('/stocks/investment-cash-flows');
             console.log('Investment cash flows received:', data);
@@ -28,9 +28,9 @@ const StockTransactions = () => {
             console.error('Error fetching cash flows:', err);
             setError('שגיאה בטעינת חשבונות השקעה');
         }
-    };
+    }, []);
 
-    const fetchTransactions = async () => {
+    const fetchTransactions = useCallback(async () => {
         try {
             setLoading(true);
             const params = new URLSearchParams();
@@ -47,17 +47,17 @@ const StockTransactions = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [selectedCashFlowId, filters]);
 
     useEffect(() => {
         fetchCashFlows();
-    }, []);
+    }, [fetchCashFlows]);
 
     useEffect(() => {
         if (selectedCashFlowId) {
             fetchTransactions();
         }
-    }, [selectedCashFlowId, filters]);
+    }, [selectedCashFlowId, filters, fetchTransactions]);
 
     const handleCashFlowChange = (e) => {
         setSelectedCashFlowId(e.target.value);

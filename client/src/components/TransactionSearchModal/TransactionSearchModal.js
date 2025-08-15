@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { transactionsAPI, categoriesAPI, cashFlowsAPI } from '../../services/api';
+import { useQuery, useQueryClient } from 'react-query';
+import { transactionsAPI, cashFlowsAPI } from '../../services/api';
 import LoadingSpinner from '../Common/LoadingSpinner';
 import TransactionActionsModal from '../Modals/TransactionActionsModal';
 import CategoryTransferModal from '../Modals/CategoryTransferModal';
@@ -27,7 +27,7 @@ const TransactionSearchModal = ({ isOpen, onClose }) => {
   const queryClient = useQueryClient();
 
   // Fetch cash flows
-  const { data: cashFlows, isLoading: cashFlowsLoading } = useQuery(
+  const { data: cashFlows } = useQuery(
     'cashFlows',
     cashFlowsAPI.getAll
   );

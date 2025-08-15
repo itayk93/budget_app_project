@@ -179,12 +179,6 @@ const CategoryTransferModal = ({
     }
   };
 
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   if (!isOpen || !transaction) return null;
 
   const modalFooter = (
