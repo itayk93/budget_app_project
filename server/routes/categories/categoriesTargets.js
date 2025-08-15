@@ -59,43 +59,44 @@ router.post('/calculate-monthly-target', authenticateToken, async (req, res) => 
       message = 'לא נמצאו עסקאות בקטגוריה זו. נקבע יעד ברירת מחדל של 100 ש״ח';
       fallbackUsed = 'default';
     } else {
-      // Group by month and calculate averages
+      // Calculate the date range for the requested months
+      const currentDate = new Date();
+      const startDate = new Date(currentDate);
+      startDate.setMonth(currentDate.getMonth() - finalMonthsBack);
+      
+      console.log(`🗓️ [TARGET] Calculating for ${finalMonthsBack} months back from ${currentDate.toISOString().slice(0, 10)} to ${startDate.toISOString().slice(0, 10)}`);
+      
+      // Filter transactions within the date range and group by month
       const monthlyTotals = new Map();
       
       categoryTransactions.forEach(transaction => {
-        const date = new Date(transaction.payment_date);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const transactionDate = new Date(transaction.payment_date);
         
-        if (!monthlyTotals.has(monthKey)) {
-          monthlyTotals.set(monthKey, 0);
+        // Only include transactions within the requested time range
+        if (transactionDate >= startDate && transactionDate <= currentDate) {
+          const monthKey = `${transactionDate.getFullYear()}-${String(transactionDate.getMonth() + 1).padStart(2, '0')}`;
+          
+          if (!monthlyTotals.has(monthKey)) {
+            monthlyTotals.set(monthKey, 0);
+          }
+          
+          monthlyTotals.set(monthKey, monthlyTotals.get(monthKey) + Math.abs(parseFloat(transaction.amount || 0)));
         }
-        
-        monthlyTotals.set(monthKey, monthlyTotals.get(monthKey) + Math.abs(parseFloat(transaction.amount || 0)));
       });
 
-      // Calculate average from recent months
-      const allMonthlyValues = Array.from(monthlyTotals.entries())
-        .sort(([a], [b]) => b.localeCompare(a)); // Sort by month desc (newest first)
-      
-      const recentMonthlyValues = allMonthlyValues.slice(0, finalMonthsBack).map(([, value]) => value);
+      // Calculate average from months within the date range
+      const recentMonthlyValues = Array.from(monthlyTotals.values());
       
       if (recentMonthlyValues.length > 0) {
         // Found data in requested period
         const averageMonthlySpending = recentMonthlyValues.reduce((sum, val) => sum + val, 0) / recentMonthlyValues.length;
         suggestedTarget = Math.round(averageMonthlySpending);
-        message = `יעד מוצע על בסיס ממוצע ${recentMonthlyValues.length} חודשים אחרונים`;
+        message = `יעד מוצע על בסיס ממוצע ${finalMonthsBack} חודשים אחרונים (נמצאו נתונים עבור ${recentMonthlyValues.length} חודשים)`;
         fallbackUsed = 'average';
-      } else if (allMonthlyValues.length > 0) {
-        // No data in requested period, but have historical data - use latest month
-        const latestMonth = allMonthlyValues[0];
-        suggestedTarget = Math.round(latestMonth[1]);
-        const monthName = getHebrewMonthName(latestMonth[0]);
-        message = `לא נמצאו עסקאות ב-${finalMonthsBack} החודשים האחרונים. נקבע יעד על בסיס החודש האחרון עם עסקאות: ${monthName}`;
-        fallbackUsed = 'latest';
       } else {
-        // Should not reach here, but just in case
+        // No data in requested period - use default
         suggestedTarget = 100;
-        message = 'לא נמצאו עסקאות בקטגוריה זו. נקבע יעד ברירת מחדל של 100 ש״ח';
+        message = `לא נמצאו עסקאות ב-${finalMonthsBack} החודשים האחרונים. נקבע יעד ברירת מחדל של 100 ש״ח`;
         fallbackUsed = 'default';
       }
     }
