@@ -184,107 +184,6 @@ const EmptyCategoriesSelector = ({ year, month, cashFlowId, onAddCategories, onC
   );
 };
 
-// Visible Categories Manager Component
-const VisibleCategoriesManager = ({ categories, hiddenCategories, onToggleVisibility, onClose }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  const filteredCategories = categories.filter(category =>
-    category.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const showAll = () => {
-    filteredCategories.forEach(category => {
-      if (hiddenCategories.includes(category.name)) {
-        onToggleVisibility(category.name);
-      }
-    });
-  };
-
-  const hideAll = () => {
-    filteredCategories.forEach(category => {
-      if (!hiddenCategories.includes(category.name)) {
-        onToggleVisibility(category.name);
-      }
-    });
-  };
-
-  return (
-    <div className="empty-categories-selector">
-      <div className="selector-header">
-        <p>נהל אילו קטגוריות להציג בדשבורד:</p>
-        <div className="search-and-stats">
-          <input
-            type="text"
-            placeholder="חפש קטגוריה..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="category-search-input"
-          />
-          <div className="selection-stats">
-            מוצגות {filteredCategories.filter(cat => !hiddenCategories.includes(cat.name)).length} מתוך {filteredCategories.length} קטגוריות
-          </div>
-        </div>
-        <div className="bulk-actions">
-          <button 
-            className="bulk-action-btn"
-            onClick={showAll}
-            disabled={filteredCategories.length === 0}
-          >
-            הצג הכל
-          </button>
-          <button 
-            className="bulk-action-btn"
-            onClick={hideAll}
-            disabled={filteredCategories.length === 0}
-          >
-            הסתר הכל
-          </button>
-        </div>
-      </div>
-      
-      <div className="categories-list">
-        {filteredCategories.length === 0 ? (
-          <div className="no-categories-found">
-            {searchTerm ? 'לא נמצאו קטגוריות התואמות לחיפוש' : 'אין קטגוריות זמינות'}
-          </div>
-        ) : (
-          filteredCategories.map(category => (
-            <div key={category.name} className="category-checkbox-item">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={!hiddenCategories.includes(category.name)}
-                  onChange={() => onToggleVisibility(category.name)}
-                />
-                <span className="category-name">{category.name}</span>
-                <div className="category-details">
-                  {category.isEmpty ? (
-                    <span className="category-amount">ללא עסקאות</span>
-                  ) : (
-                    <>
-                      {category.amount !== undefined && (
-                        <span className="category-amount">{Math.abs(category.amount).toFixed(1)} ₪</span>
-                      )}
-                      {category.count !== undefined && (
-                        <span className="transaction-count">{category.count} עסקאות</span>
-                      )}
-                    </>
-                  )}
-                </div>
-              </label>
-            </div>
-          ))
-        )}
-      </div>
-      
-      <div className="modal-actions">
-        <button className="developer-action-button secondary" onClick={onClose}>
-          סגור
-        </button>
-      </div>
-    </div>
-  );
-};
 
 ChartJS.register(
   CategoryScale,
@@ -307,17 +206,6 @@ const Dashboard = () => {
   const [showDeveloperFeaturesModal, setShowDeveloperFeaturesModal] = useState(false);
   const [showEmptyCategories, setShowEmptyCategories] = useState(false);
   const [emptyCategoriesModal, setEmptyCategoriesModal] = useState(false);
-  const [visibleCategoriesModal, setVisibleCategoriesModal] = useState(false);
-  const [allAvailableCategories, setAllAvailableCategories] = useState([]);
-  const [hiddenCategories, setHiddenCategories] = useState(() => {
-    // Load saved hidden categories from localStorage
-    try {
-      const saved = localStorage.getItem('dashboard-hidden-categories');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
   
   // Debug state changes
   useEffect(() => {
@@ -453,17 +341,6 @@ const Dashboard = () => {
     }
   }, [dashboardData, year, month, selectedCashFlow, activeTab]);
 
-  // Load all available categories when dashboard data changes
-  useEffect(() => {
-    const loadAllCategories = async () => {
-      if (dashboardData?.orderedCategories) {
-        const allCategories = await getAllCategories();
-        setAllAvailableCategories(allCategories);
-      }
-    };
-    
-    loadAllCategories();
-  }, [dashboardData]);
 
   // Create monthly balance data from current dashboard summary
   const monthlyBalanceData = React.useMemo(() => {
@@ -604,65 +481,6 @@ const Dashboard = () => {
     }
   };
 
-  // Handle managing visible categories
-  const handleManageVisibleCategories = async () => {
-    console.log('🔍 [VISIBLE CATEGORIES] handleManageVisibleCategories called');
-    
-    // Get all categories (both with and without transactions)
-    const allCategories = await getAllCategories();
-    setAllAvailableCategories(allCategories);
-    setVisibleCategoriesModal(true);
-  };
-
-  // Get all categories including empty ones
-  const getAllCategories = async () => {
-    try {
-      const [currentCategories, emptyCategories] = await Promise.all([
-        Promise.resolve(dashboardData?.orderedCategories || []),
-        fetchEmptyCategories()
-      ]);
-      
-      // Combine and deduplicate
-      const allCategoryNames = new Set();
-      const combinedCategories = [];
-      
-      // Add current categories
-      currentCategories.forEach(cat => {
-        allCategoryNames.add(cat.name);
-        combinedCategories.push(cat);
-      });
-      
-      // Add empty categories
-      emptyCategories.forEach(cat => {
-        if (!allCategoryNames.has(cat.name)) {
-          combinedCategories.push({
-            name: cat.name,
-            amount: 0,
-            count: 0,
-            isEmpty: true
-          });
-        }
-      });
-      
-      return combinedCategories;
-    } catch (error) {
-      console.error('Error getting all categories:', error);
-      return dashboardData?.orderedCategories || [];
-    }
-  };
-
-  // Toggle category visibility
-  const toggleCategoryVisibility = (categoryName) => {
-    setHiddenCategories(prev => {
-      const newHidden = prev.includes(categoryName)
-        ? prev.filter(name => name !== categoryName)
-        : [...prev, categoryName];
-      
-      // Save to localStorage
-      localStorage.setItem('dashboard-hidden-categories', JSON.stringify(newHidden));
-      return newHidden;
-    });
-  };
 
   // Force refresh all monthly targets (initial setup)
   const forceRefreshAllTargets = async () => {
@@ -1365,13 +1183,9 @@ const Dashboard = () => {
                 // Use ordered categories array with grouping
                 (() => {
                   console.log('🔍 DASHBOARD: Raw categories before grouping:', dashboardData.orderedCategories);
-                  
-                  // Get all categories that should be shown (not hidden)
-                  const visibleCategories = allAvailableCategories.filter(category => 
-                    !hiddenCategories.includes(category.name)
-                  );
-                  
-                  const { grouped, standalone } = groupCategories(visibleCategories);
+                  // Add empty categories if requested
+                  const categoriesWithEmpty = addEmptyCategoriesToList(dashboardData.orderedCategories, selectedEmptyCategories);
+                  const { grouped, standalone } = groupCategories(categoriesWithEmpty);
                   
                   console.log('🎯 DASHBOARD: Grouped categories:', Object.keys(grouped));
                   console.log('🎯 DASHBOARD: Grouped categories details:', grouped);
@@ -1665,13 +1479,13 @@ const Dashboard = () => {
                 <div className="developer-feature-section">
                   <h4>הגדרות תצוגה</h4>
                   <button 
-                    className="category-manager-button"
+                    className="developer-action-button"
                     onClick={() => {
-                      console.log('🔍 [BUTTON] Manage categories clicked');
-                      handleManageVisibleCategories();
+                      console.log('🔍 [BUTTON] Empty categories clicked');
+                      handleShowEmptyCategories();
                     }}
                   >
-                    נהל קטגוריות
+                    📋 הצג קטגוריות ללא עסקאות
                   </button>
                   <button 
                     className="developer-action-button"
@@ -1746,34 +1560,6 @@ const Dashboard = () => {
           </>
         )}
 
-        {/* Visible Categories Management Modal */}
-        {visibleCategoriesModal && (
-          <>
-            <div 
-              className="developer-modal-backdrop"
-              onClick={() => setVisibleCategoriesModal(false)}
-            ></div>
-            <div className="empty-categories-modal">
-              <div className="developer-modal-header">
-                <h3>ניהול קטגוריות מוצגות - {month}/{year}</h3>
-                <button 
-                  className="close-developer-modal" 
-                  onClick={() => setVisibleCategoriesModal(false)}
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="developer-modal-body">
-                <VisibleCategoriesManager
-                  categories={allAvailableCategories}
-                  hiddenCategories={hiddenCategories}
-                  onToggleVisibility={toggleCategoryVisibility}
-                  onClose={() => setVisibleCategoriesModal(false)}
-                />
-              </div>
-            </div>
-          </>
-        )}
 
         {/* Monthly Goal Modal */}
         <MonthlyGoalModal
