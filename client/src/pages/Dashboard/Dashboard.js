@@ -184,6 +184,102 @@ const EmptyCategoriesSelector = ({ year, month, cashFlowId, onAddCategories, onC
   );
 };
 
+// Visible Categories Manager Component
+const VisibleCategoriesManager = ({ categories, hiddenCategories, onToggleVisibility, onClose }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const filteredCategories = categories.filter(category =>
+    category.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const showAll = () => {
+    filteredCategories.forEach(category => {
+      if (hiddenCategories.includes(category.name)) {
+        onToggleVisibility(category.name);
+      }
+    });
+  };
+
+  const hideAll = () => {
+    filteredCategories.forEach(category => {
+      if (!hiddenCategories.includes(category.name)) {
+        onToggleVisibility(category.name);
+      }
+    });
+  };
+
+  return (
+    <div className="empty-categories-selector">
+      <div className="selector-header">
+        <p>נהל אילו קטגוריות להציג בדשבורד:</p>
+        <div className="search-and-stats">
+          <input
+            type="text"
+            placeholder="חפש קטגוריה..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="category-search-input"
+          />
+          <div className="selection-stats">
+            מוצגות {filteredCategories.filter(cat => !hiddenCategories.includes(cat.name)).length} מתוך {filteredCategories.length} קטגוריות
+          </div>
+        </div>
+        <div className="bulk-actions">
+          <button 
+            className="bulk-action-btn"
+            onClick={showAll}
+            disabled={filteredCategories.length === 0}
+          >
+            הצג הכל
+          </button>
+          <button 
+            className="bulk-action-btn"
+            onClick={hideAll}
+            disabled={filteredCategories.length === 0}
+          >
+            הסתר הכל
+          </button>
+        </div>
+      </div>
+      
+      <div className="categories-list">
+        {filteredCategories.length === 0 ? (
+          <div className="no-categories-found">
+            {searchTerm ? 'לא נמצאו קטגוריות התואמות לחיפוש' : 'אין קטגוריות זמינות'}
+          </div>
+        ) : (
+          filteredCategories.map(category => (
+            <div key={category.name} className="category-checkbox-item">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={!hiddenCategories.includes(category.name)}
+                  onChange={() => onToggleVisibility(category.name)}
+                />
+                <span className="category-name">{category.name}</span>
+                <div className="category-details">
+                  {category.amount !== undefined && (
+                    <span className="category-amount">{Math.abs(category.amount).toFixed(1)} ₪</span>
+                  )}
+                  {category.count !== undefined && (
+                    <span className="transaction-count">{category.count} עסקאות</span>
+                  )}
+                </div>
+              </label>
+            </div>
+          ))
+        )}
+      </div>
+      
+      <div className="modal-actions">
+        <button className="developer-action-button secondary" onClick={onClose}>
+          סגור
+        </button>
+      </div>
+    </div>
+  );
+};
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -205,6 +301,16 @@ const Dashboard = () => {
   const [showDeveloperFeaturesModal, setShowDeveloperFeaturesModal] = useState(false);
   const [showEmptyCategories, setShowEmptyCategories] = useState(false);
   const [emptyCategoriesModal, setEmptyCategoriesModal] = useState(false);
+  const [visibleCategoriesModal, setVisibleCategoriesModal] = useState(false);
+  const [hiddenCategories, setHiddenCategories] = useState(() => {
+    // Load saved hidden categories from localStorage
+    try {
+      const saved = localStorage.getItem('dashboard-hidden-categories');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   
   // Debug state changes
   useEffect(() => {
@@ -477,6 +583,25 @@ const Dashboard = () => {
     if (selectedEmptyCategories.length <= 1) {
       setShowEmptyCategories(false);
     }
+  };
+
+  // Handle managing visible categories
+  const handleManageVisibleCategories = () => {
+    console.log('🔍 [VISIBLE CATEGORIES] handleManageVisibleCategories called');
+    setVisibleCategoriesModal(true);
+  };
+
+  // Toggle category visibility
+  const toggleCategoryVisibility = (categoryName) => {
+    setHiddenCategories(prev => {
+      const newHidden = prev.includes(categoryName)
+        ? prev.filter(name => name !== categoryName)
+        : [...prev, categoryName];
+      
+      // Save to localStorage
+      localStorage.setItem('dashboard-hidden-categories', JSON.stringify(newHidden));
+      return newHidden;
+    });
   };
 
   // Force refresh all monthly targets (initial setup)
@@ -1182,7 +1307,13 @@ const Dashboard = () => {
                   console.log('🔍 DASHBOARD: Raw categories before grouping:', dashboardData.orderedCategories);
                   // Add empty categories if requested
                   const categoriesWithEmpty = addEmptyCategoriesToList(dashboardData.orderedCategories, selectedEmptyCategories);
-                  const { grouped, standalone } = groupCategories(categoriesWithEmpty);
+                  
+                  // Filter out hidden categories
+                  const visibleCategories = categoriesWithEmpty.filter(category => 
+                    !hiddenCategories.includes(category.name)
+                  );
+                  
+                  const { grouped, standalone } = groupCategories(visibleCategories);
                   
                   console.log('🎯 DASHBOARD: Grouped categories:', Object.keys(grouped));
                   console.log('🎯 DASHBOARD: Grouped categories details:', grouped);
@@ -1482,7 +1613,17 @@ const Dashboard = () => {
                       handleShowEmptyCategories();
                     }}
                   >
-                    📋 ניהול קטגוריות ללא עסקאות
+                    📋 הוסף קטגוריות ללא עסקאות
+                  </button>
+                  <button 
+                    className="developer-action-button"
+                    onClick={() => {
+                      console.log('🔍 [BUTTON] Manage visible categories clicked');
+                      handleManageVisibleCategories();
+                    }}
+                    style={{ backgroundColor: '#28a745' }}
+                  >
+                    👁️ נהל קטגוריות מוצגות
                   </button>
                   <button 
                     className="developer-action-button"
@@ -1551,6 +1692,35 @@ const Dashboard = () => {
                   cashFlowId={selectedCashFlow?.id}
                   onAddCategories={addEmptyCategoriesToDisplay}
                   onClose={() => setEmptyCategoriesModal(false)}
+                />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Visible Categories Management Modal */}
+        {visibleCategoriesModal && (
+          <>
+            <div 
+              className="developer-modal-backdrop"
+              onClick={() => setVisibleCategoriesModal(false)}
+            ></div>
+            <div className="empty-categories-modal">
+              <div className="developer-modal-header">
+                <h3>ניהול קטגוריות מוצגות - {month}/{year}</h3>
+                <button 
+                  className="close-developer-modal" 
+                  onClick={() => setVisibleCategoriesModal(false)}
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="developer-modal-body">
+                <VisibleCategoriesManager
+                  categories={dashboardData?.orderedCategories || []}
+                  hiddenCategories={hiddenCategories}
+                  onToggleVisibility={toggleCategoryVisibility}
+                  onClose={() => setVisibleCategoriesModal(false)}
                 />
               </div>
             </div>
