@@ -261,8 +261,8 @@ class AdditionalMethods {
         
         const sharedCategory = sharedCategoryMap.get(sharedName);
         
-        // Add this category as a sub-category (only if it has transactions or hideEmptyCategories is false)
-        if (!hideEmptyCategories || category.count > 0) {
+        // Add this category as a sub-category (only if it has transactions, has monthly target, or hideEmptyCategories is false)
+        if (!hideEmptyCategories || category.count > 0 || (category.monthly_target && category.monthly_target > 0)) {
           sharedCategory.sub_categories[category.name] = {
             name: category.name,
             amount: category.amount,
@@ -281,8 +281,8 @@ class AdditionalMethods {
           sharedCategory.transactions = sharedCategory.transactions.concat(category.transactions);
         }
       } else {
-        // This is a regular category (not shared) - only add if it has transactions or hideEmptyCategories is false
-        if (!hideEmptyCategories || category.count > 0) {
+        // This is a regular category (not shared) - only add if it has transactions, has monthly target, or hideEmptyCategories is false
+        if (!hideEmptyCategories || category.count > 0 || (category.monthly_target && category.monthly_target > 0)) {
           processedCategories[category.name] = {
             ...category,
             spent: category.type === 'income' ? category.amount : -category.amount,
