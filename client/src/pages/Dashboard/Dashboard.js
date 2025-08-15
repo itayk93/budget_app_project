@@ -25,6 +25,9 @@ const EmptyCategoriesSelector = ({ year, month, cashFlowId, onAddCategories, onC
   const [emptyCategories, setEmptyCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  console.log('🔍 [SELECTOR] Component render - selectedCategories:', selectedCategories);
+  console.log('🔍 [SELECTOR] Component render - emptyCategories:', emptyCategories.length);
 
   useEffect(() => {
     const fetchEmptyCategories = async () => {
@@ -57,11 +60,14 @@ const EmptyCategoriesSelector = ({ year, month, cashFlowId, onAddCategories, onC
   }, [year, month, cashFlowId]);
 
   const toggleCategory = (categoryName) => {
-    setSelectedCategories(prev => 
-      prev.includes(categoryName)
+    console.log('🔍 [TOGGLE] Toggling category:', categoryName);
+    setSelectedCategories(prev => {
+      const newSelection = prev.includes(categoryName)
         ? prev.filter(name => name !== categoryName)
-        : [...prev, categoryName]
-    );
+        : [...prev, categoryName];
+      console.log('🔍 [TOGGLE] New selection:', newSelection);
+      return newSelection;
+    });
   };
 
   const handleAddSelected = () => {
@@ -110,9 +116,13 @@ const EmptyCategoriesSelector = ({ year, month, cashFlowId, onAddCategories, onC
       </div>
       <div className="modal-actions">
         <button 
-          className="developer-action-button"
+          className={`developer-action-button ${selectedCategories.length === 0 ? 'disabled' : ''}`}
           onClick={handleAddSelected}
           disabled={selectedCategories.length === 0}
+          style={{ 
+            backgroundColor: selectedCategories.length === 0 ? '#ccc' : '#007bff',
+            cursor: selectedCategories.length === 0 ? 'not-allowed' : 'pointer'
+          }}
         >
           הצג {selectedCategories.length} קטגוריות נבחרות
         </button>
@@ -1461,6 +1471,17 @@ const Dashboard = () => {
                   >
                     📋 הצג קטגוריות ללא עסקאות
                   </button>
+                  <button 
+                    className="developer-action-button"
+                    onClick={() => {
+                      // Test button - force open modal
+                      console.log('📝 [TEST] Force opening modal');
+                      setEmptyCategoriesModal(true);
+                    }}
+                    style={{ backgroundColor: '#ff6b6b' }}
+                  >
+                    🧪 בדיקה - פתח מודל
+                  </button>
                 </div>
 
                 {/* Navigation Section */}
@@ -1511,6 +1532,7 @@ const Dashboard = () => {
               </div>
               <div className="developer-modal-body">
                 <EmptyCategoriesSelector
+                  key={`empty-categories-${year}-${month}-${selectedCashFlow?.id}`}
                   year={year}
                   month={month}
                   cashFlowId={selectedCashFlow?.id}
