@@ -25,13 +25,11 @@ const MonthlyTargetModal = ({
   useEffect(() => {
     // Don't reset target amount if we're in the middle of auto-saving
     if (isAutoSaving) {
-      console.log('🚫 [MODAL] Skipping useEffect reset because auto-save is in progress');
       return;
     }
     
     // Don't reset if we already have a value and the modal is open (prevents clearing during calculations)
     if (isOpen && targetAmount && targetAmount !== '' && targetAmount !== '0') {
-      console.log('🚫 [MODAL] Skipping reset - target amount already set:', targetAmount);
       return;
     }
     
@@ -45,46 +43,35 @@ const MonthlyTargetModal = ({
   }, [isOpen, currentTarget, isAutoSaving, targetAmount]);
 
   const handleSubmit = async (e) => {
-    console.log('🔘 [MODAL] Save button clicked - handleSubmit called');
-    console.log('🔘 [MODAL] targetAmount:', targetAmount);
-    console.log('🔘 [MODAL] categoryName:', categoryName);
-    console.log('🔘 [MODAL] isSharedTarget:', isSharedTarget);
-    
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
     try {
       const amount = parseFloat(targetAmount);
-      console.log('🔘 [MODAL] Parsed amount:', amount);
       
       if (isNaN(amount) || amount < 0) {
         throw new Error('אנא הכנס סכום תקף');
       }
 
-      console.log('🔘 [MODAL] Making API call...');
       if (isSharedTarget) {
-        console.log('🔘 [MODAL] Calling updateSharedTarget');
         await categoriesAPI.updateSharedTarget({
           shared_category_name: sharedCategoryName,
           monthly_target: amount
         });
       } else {
-        console.log('🔘 [MODAL] Calling updateMonthlyTarget');
         await categoriesAPI.updateMonthlyTarget({
           categoryName: categoryName,
           target: amount
         });
       }
 
-      console.log('🔘 [MODAL] API call successful, calling onTargetUpdated');
       if (onTargetUpdated) {
         onTargetUpdated(amount);
       }
-      console.log('🔘 [MODAL] Closing modal');
       onClose();
     } catch (err) {
-      console.error('🔘 [MODAL] Error updating monthly target:', err);
+      console.error('Error updating monthly target:', err);
       setError(err.response?.data?.error || err.message || 'שגיאה בעדכון היעד החודשי');
     } finally {
       setIsLoading(false);
@@ -92,85 +79,61 @@ const MonthlyTargetModal = ({
   };
 
   const calculateAndSetTarget = async (months) => {
-    console.log('🚀 [MODAL] calculateAndSetTarget called with months:', months);
-    console.log('🚀 [MODAL] categoryName:', categoryName);
-    
     setIsLoading(true);
     setError('');
 
     if (!categoryName) {
-      console.error('❌ [MODAL] No category name provided');
       setError('שם הקטגוריה לא נמצא');
       setIsLoading(false);
       return;
     }
 
     try {
-      console.log('🔄 [MODAL] Making API call for category:', categoryName, 'months:', months);
       const response = await categoriesAPI.calculateMonthlyTarget({
         category_name: categoryName,
         months: months
       });
 
-      console.log('✅ [MODAL] API Response received:', JSON.stringify(response, null, 2));
-      console.log('🎯 [MODAL] Monthly target from response:', response.monthly_target);
-      console.log('💬 [MODAL] Message from response:', response.message);
-
       if (response && response.monthly_target !== undefined) {
         const targetValue = response.monthly_target.toString();
-        console.log('📝 [MODAL] Setting target amount to:', targetValue);
         setTargetAmount(targetValue);
         
         // Auto-save the calculated target
-        console.log('💾 [MODAL] Auto-saving calculated target...');
         setIsAutoSaving(true);
         try {
           await categoriesAPI.updateMonthlyTarget({
             categoryName: categoryName,
             target: response.monthly_target
           });
-          console.log('✅ [MODAL] Target auto-saved successfully');
           
           // Call onTargetUpdated after successful save
           if (onTargetUpdated) {
-            console.log('🔄 [MODAL] Calling onTargetUpdated after successful save:', response.monthly_target);
             onTargetUpdated(response.monthly_target);
           }
         } catch (saveError) {
-          console.error('❌ [MODAL] Error auto-saving target:', saveError);
+          console.error('Error auto-saving target:', saveError);
           setError('שגיאה בשמירת היעד: ' + (saveError.response?.data?.error || saveError.message));
         } finally {
           // Reset auto-saving flag after a short delay to allow parent state to update
           setTimeout(() => {
-            console.log('🔄 [MODAL] Resetting auto-saving flag');
             setIsAutoSaving(false);
           }, 500);
         }
         
         // Show message if available
         if (response.message) {
-          console.log('📢 [MODAL] Setting success message:', response.message);
           setSuccessMessage(response.message + ' (נשמר אוטומטית)');
           setTimeout(() => {
-            console.log('🧹 [MODAL] Clearing success message');
             setSuccessMessage('');
           }, 8000);
         }
       } else {
-        console.error('❌ [MODAL] Invalid response structure:', response);
         setError('תגובה לא תקינה מהשרת');
       }
     } catch (err) {
-      console.error('❌ [MODAL] Error calculating monthly target:', err);
-      console.error('❌ [MODAL] Error details:', {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status,
-        config: err.config
-      });
+      console.error('Error calculating monthly target:', err);
       setError(err.response?.data?.error || err.message || 'שגיאה בחישוב היעד החודשי');
     } finally {
-      console.log('🏁 [MODAL] calculateAndSetTarget finished, setting loading to false');
       setIsLoading(false);
     }
   };

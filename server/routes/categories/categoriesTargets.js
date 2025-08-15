@@ -10,18 +10,9 @@ const router = express.Router();
 // Calculate monthly target based on historical average
 router.post('/calculate-monthly-target', authenticateToken, async (req, res) => {
   try {
-    console.log('🚀 [BACKEND] === CALCULATE TARGET REQUEST ===');
-    console.log('🔍 [BACKEND] Full request body:', JSON.stringify(req.body, null, 2));
-    console.log('🔍 [BACKEND] User ID:', req.user?.id);
-    
     const { categoryName, category_name, monthsBack = 6, months = 6 } = req.body;
     const finalCategoryName = categoryName || category_name;
     const finalMonthsBack = months || monthsBack; // Use 'months' from frontend, fallback to 'monthsBack'
-    
-    console.log('🔍 [BACKEND] Final category name:', finalCategoryName);
-    console.log('🔍 [BACKEND] Final months back:', finalMonthsBack);
-    console.log('🔍 [BACKEND] Original months param:', months);
-    console.log('🔍 [BACKEND] Original monthsBack param:', monthsBack);
     
     if (!finalCategoryName) {
       return res.status(400).json({ error: 'categoryName or category_name is required' });
@@ -32,22 +23,9 @@ router.post('/calculate-monthly-target', authenticateToken, async (req, res) => 
       show_all: true 
     }, 1, 5000); // Get up to 5000 transactions for accurate analysis
     
-    console.log(`[DEBUG] Total transactions found: ${transactions.length}`);
-    console.log(`[DEBUG] Looking for category: "${finalCategoryName}"`);
-    console.log(`[DEBUG] Available categories:`, [...new Set(transactions.map(t => t.category_name))].filter(Boolean));
-    
     const categoryTransactions = transactions.filter(t => 
       t.category_name === finalCategoryName
     );
-    
-    console.log(`[DEBUG] Category transactions found: ${categoryTransactions.length}`);
-    if (categoryTransactions.length > 0) {
-      console.log(`[DEBUG] Category transactions dates:`, categoryTransactions.map(t => ({
-        date: t.payment_date,
-        amount: t.amount,
-        category: t.category_name
-      })));
-    }
 
     let suggestedTarget = 100; // Default fallback
     let message = '';
@@ -64,7 +42,6 @@ router.post('/calculate-monthly-target', authenticateToken, async (req, res) => 
       const startDate = new Date(currentDate);
       startDate.setMonth(currentDate.getMonth() - finalMonthsBack);
       
-      console.log(`🗓️ [TARGET] Calculating for ${finalMonthsBack} months back from ${currentDate.toISOString().slice(0, 10)} to ${startDate.toISOString().slice(0, 10)}`);
       
       // Filter transactions within the date range and group by month
       const monthlyTotals = new Map();
@@ -124,10 +101,6 @@ router.post('/calculate-monthly-target', authenticateToken, async (req, res) => 
       }
     };
     
-    console.log('✅ [BACKEND] === SENDING RESPONSE ===');
-    console.log('✅ [BACKEND] Full response:', JSON.stringify(response, null, 2));
-    console.log('✅ [BACKEND] Monthly target value:', response.monthly_target);
-    console.log('✅ [BACKEND] Response success:', response.success);
     res.json(response);
   } catch (error) {
     console.error('Calculate monthly target error:', error);
@@ -138,22 +111,11 @@ router.post('/calculate-monthly-target', authenticateToken, async (req, res) => 
 // Update monthly target manually
 router.post('/update-monthly-target', authenticateToken, async (req, res) => {
   try {
-    console.log('🚀 [UPDATE TARGET] Request received');
-    console.log('🔍 [UPDATE TARGET] Request body:', JSON.stringify(req.body, null, 2));
-    console.log('🔍 [UPDATE TARGET] User ID:', req.user?.id);
-    
     const { categoryName, target } = req.body;
     
-    console.log('🔍 [UPDATE TARGET] Parsed categoryName:', categoryName);
-    console.log('🔍 [UPDATE TARGET] Parsed target:', target);
-    console.log('🔍 [UPDATE TARGET] Target type:', typeof target);
-    
     if (!categoryName || typeof target !== 'number') {
-      console.log('❌ [UPDATE TARGET] Validation failed');
       return res.status(400).json({ error: 'categoryName and target are required' });
     }
-
-    console.log('🔄 [UPDATE TARGET] Starting Supabase upsert...');
     
     // First try to update existing record
     const { data: updateData, error: updateError } = await supabase
@@ -169,7 +131,6 @@ router.post('/update-monthly-target', authenticateToken, async (req, res) => {
     let data, error;
     
     if (updateError || !updateData || updateData.length === 0) {
-      console.log('🔍 [UPDATE TARGET] No existing record found, creating new one...');
       // If update failed or no record exists, try to insert
       const { data: insertData, error: insertError } = await supabase
         .from('category_order')
@@ -185,20 +146,13 @@ router.post('/update-monthly-target', authenticateToken, async (req, res) => {
       data = insertData;
       error = insertError;
     } else {
-      console.log('🔍 [UPDATE TARGET] Updated existing record successfully');
       data = updateData;
       error = updateError;
     }
 
-    console.log('🔍 [UPDATE TARGET] Supabase response data:', data);
-    console.log('🔍 [UPDATE TARGET] Supabase response error:', error);
-
     if (error) {
-      console.log('❌ [UPDATE TARGET] Supabase error:', error);
       throw error;
     }
-
-    console.log('✅ [UPDATE TARGET] Success, sending response');
     res.json({
       success: true,
       message: 'Monthly target updated successfully',

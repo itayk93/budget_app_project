@@ -166,12 +166,10 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
   // Separate useEffect for monthly target to avoid overriding local updates
   useEffect(() => {
     const target = categoryData?.monthly_target || null;
-    console.log(`🎯 [CATEGORY CARD] ${categoryName} - categoryData.monthly_target:`, categoryData?.monthly_target, 'target:', target, 'prevTarget:', monthlyTarget);
     // Only update if the new target is different from current state
     // This prevents overriding local updates while API data propagates
     setMonthlyTarget(prevTarget => {
       if (target !== prevTarget) {
-        console.log(`Monthly target for ${categoryName} updated: ${prevTarget} -> ${target}`);
         return target;
       }
       return prevTarget;
@@ -259,38 +257,15 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                    categoryName.includes('הכנסות') ||
                    categoryData?.shared_category === 'הכנסות';
   
-  // DEBUG: Log shared categories
-  if (categoryData?.is_shared_category) {
-    console.log(`🔍 CLIENT DEBUG - SHARED CATEGORY: "${categoryName}"`);
-    console.log(`   📂 Has Sub Categories: ${categoryData?.sub_categories ? Object.keys(categoryData.sub_categories).length : 0}`);
-    console.log(`   💰 Total Amount: ${categoryData?.amount || categoryData?.spent || 0} ₪`);
-    
-    if (categoryData?.sub_categories) {
-      console.log(`   📋 Sub Categories:`, Object.keys(categoryData.sub_categories));
-      Object.entries(categoryData.sub_categories).forEach(([subName, subData]) => {
-        console.log(`      └─ ${subName}: ${subData.amount || 0} ₪ (${subData.count || 0} transactions)`);
-      });
-    }
-  }
-  
-  // DEBUG: Log specific problematic categories if they're NOT showing as shared
-  const expectedSharedCategories = ['לא בתזרים', 'הוצאות קבועות', 'הכנסות', 'הפקדות לחיסכון'];
-  if (expectedSharedCategories.includes(categoryName) && !categoryData?.is_shared_category) {
-    console.log(`❌ PROBLEM: "${categoryName}" should be shared but showing as regular:`);
-    console.log(`   ✨ Is Shared Category: ${categoryData?.is_shared_category || 'false'}`);
-    console.log(`   📂 Has Sub Categories: ${categoryData?.sub_categories ? Object.keys(categoryData.sub_categories).length : 0}`);
-  }
   
   // Handler functions
   const showSetBudgetDialog = (categoryName, budget, displayName) => {
-    console.log('Setting budget dialog for:', categoryName);
     setShowDropdown(false);
     setShowBudgetModal(true);
     setIsModalOpen(true);
   };
 
   const handleSaveBudget = async (categoryName, budgetAmount) => {
-    console.log('Saving budget:', categoryName, budgetAmount);
     // TODO: Implement API call to save budget
     // For now, just close modal
     return Promise.resolve();
@@ -304,15 +279,11 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
   };
 
   const showMassCategorizeDialog = (categoryName) => {
-    console.log('Mass categorize dialog for:', categoryName);
     setShowDropdown(false);
     // TODO: Implement mass categorize dialog
   };
 
   const showMonthlyTargetDialog = () => {
-    console.log('Monthly target dialog for:', categoryName);
-    console.log('CategoryData:', categoryData);
-    console.log('UseSharedTarget:', useSharedTarget);
     setShowDropdown(false);
     setShowMonthlyTargetModal(true);
     setIsModalOpen(true);
@@ -320,8 +291,6 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
 
   const handleMonthlyTargetUpdated = async (newTarget) => {
     const isSharedCategory = categoryData?.shared_category && useSharedTarget;
-    
-    console.log(`🎯 Target updated for ${categoryName}: ${newTarget} (isShared: ${isSharedCategory})`);
     
     if (isSharedCategory) {
       // Update shared target
@@ -338,12 +307,10 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
     } else {
       // Update individual target immediately
       setMonthlyTarget(newTarget);
-      console.log(`✅ Local monthly target state updated to: ${newTarget}`);
     }
     
     // Refresh dashboard data (but local state should persist until server data arrives)
     if (onDataChange) {
-      console.log(`🔄 Calling onDataChange to refresh dashboard data`);
       onDataChange();
     }
   };

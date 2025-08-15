@@ -140,7 +140,6 @@ class AdditionalMethods {
         // Update category breakdown (create if doesn't exist for categories not in category_order)
         if (!categoryBreakdown[categoryName]) {
           const orderInfo = categoryOrderMap.get(categoryName) || {};
-          console.log(`⚠️  Creating category ${categoryName} from transaction - orderInfo found:`, orderInfo);
           
           categoryBreakdown[categoryName] = {
             name: categoryName,
@@ -193,17 +192,8 @@ class AdditionalMethods {
           return aOrder - bOrder;
         });
 
-      // Debug: log all shared categories
+      // Process shared categories for display
       const sharedCategories = Object.values(processedCategories).filter(c => c.is_shared_category);
-      if (sharedCategories.length > 0) {
-        console.log(`🔍 SERVER DEBUG: Found ${sharedCategories.length} shared categories:`);
-        sharedCategories.forEach(category => {
-          console.log(`   📁 "${category.name}": ${category.sub_categories ? Object.keys(category.sub_categories).length : 0} sub-categories`);
-          if (category.sub_categories) {
-            console.log(`      └─ Sub Categories:`, Object.keys(category.sub_categories));
-          }
-        });
-      }
 
       return SharedUtilities.createSuccessResponse({
         summary: {
