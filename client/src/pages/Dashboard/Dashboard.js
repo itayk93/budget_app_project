@@ -29,6 +29,7 @@ const EmptyCategoriesSelector = ({ year, month, cashFlowId, onAddCategories, onC
   useEffect(() => {
     const fetchEmptyCategories = async () => {
       try {
+        console.log('🔍 [SELECTOR] Fetching with params:', { year, month, cashFlowId });
         const response = await api.get('/categories/empty', {
           params: {
             year: year,
@@ -36,9 +37,10 @@ const EmptyCategoriesSelector = ({ year, month, cashFlowId, onAddCategories, onC
             cash_flow: cashFlowId
           }
         });
+        console.log('🔍 [SELECTOR] Response received:', response);
         setEmptyCategories(response.categories || []);
       } catch (error) {
-        console.error('Error fetching empty categories:', error);
+        console.error('❌ [SELECTOR] Error fetching empty categories:', error);
         setEmptyCategories([]);
       } finally {
         setLoading(false);
@@ -46,7 +48,11 @@ const EmptyCategoriesSelector = ({ year, month, cashFlowId, onAddCategories, onC
     };
 
     if (year && month && cashFlowId) {
+      console.log('🚀 [SELECTOR] Starting fetch...');
       fetchEmptyCategories();
+    } else {
+      console.log('⚠️ [SELECTOR] Missing params:', { year, month, cashFlowId });
+      setLoading(false);
     }
   }, [year, month, cashFlowId]);
 
@@ -59,6 +65,7 @@ const EmptyCategoriesSelector = ({ year, month, cashFlowId, onAddCategories, onC
   };
 
   const handleAddSelected = () => {
+    console.log('🔍 [SELECTOR] Adding selected categories:', selectedCategories);
     if (selectedCategories.length > 0) {
       onAddCategories(selectedCategories);
     }
@@ -139,6 +146,11 @@ const Dashboard = () => {
   const [showDeveloperFeaturesModal, setShowDeveloperFeaturesModal] = useState(false);
   const [showEmptyCategories, setShowEmptyCategories] = useState(false);
   const [emptyCategoriesModal, setEmptyCategoriesModal] = useState(false);
+  
+  // Debug state changes
+  useEffect(() => {
+    console.log('🔍 [MODAL STATE] emptyCategoriesModal changed to:', emptyCategoriesModal);
+  }, [emptyCategoriesModal]);
   const [selectedEmptyCategories, setSelectedEmptyCategories] = useState(() => {
     // Load saved empty categories from localStorage
     try {
@@ -355,6 +367,12 @@ const Dashboard = () => {
   // Fetch all categories and find empty ones
   const fetchEmptyCategories = async () => {
     try {
+      console.log('🔍 [FETCH EMPTY] Making API call with params:', {
+        year: year,
+        month: month,
+        cash_flow: selectedCashFlow?.id
+      });
+      
       const response = await api.get('/categories/empty', {
         params: {
           year: year,
@@ -362,20 +380,35 @@ const Dashboard = () => {
           cash_flow: selectedCashFlow?.id
         }
       });
+      
+      console.log('🔍 [FETCH EMPTY] API response:', response);
       return response.categories || [];
     } catch (error) {
-      console.error('Error fetching empty categories:', error);
+      console.error('❌ [FETCH EMPTY] Error fetching empty categories:', error);
       return [];
     }
   };
 
   // Handle showing empty categories
   const handleShowEmptyCategories = async () => {
+    console.log('🔍 [EMPTY CATEGORIES] handleShowEmptyCategories called');
+    console.log('🔍 [EMPTY CATEGORIES] Current params:', { year, month, cashFlowId: selectedCashFlow?.id });
+    console.log('🔍 [EMPTY CATEGORIES] selectedCashFlow:', selectedCashFlow);
+    
+    // Validate required parameters
+    if (!selectedCashFlow?.id) {
+      alert('אין תזרים נבחר - אנא בחר תזרים תחילה');
+      return;
+    }
+    
     const emptyCategories = await fetchEmptyCategories();
+    console.log('🔍 [EMPTY CATEGORIES] Fetched categories:', emptyCategories);
+    
     if (emptyCategories.length === 0) {
       alert('כל הקטגוריות כבר מוצגות או שאין קטגוריות ריקות');
       return;
     }
+    console.log('🔍 [EMPTY CATEGORIES] Setting modal to true');
     setEmptyCategoriesModal(true);
   };
 
@@ -383,12 +416,14 @@ const Dashboard = () => {
   const addEmptyCategoriesToDisplay = async (categoriesToAdd) => {
     if (categoriesToAdd.length === 0) return;
     
+    console.log('🔍 [ADD EMPTY] Adding categories:', categoriesToAdd);
     setSelectedEmptyCategories(prev => [...prev, ...categoriesToAdd]);
     setShowEmptyCategories(true);
     setEmptyCategoriesModal(false);
     
     // Refresh dashboard to show the added categories
     setTimeout(() => {
+      console.log('🔍 [ADD EMPTY] Refreshing dashboard...');
       refetchDashboard();
     }, 100);
   };
@@ -1419,7 +1454,10 @@ const Dashboard = () => {
                   </button>
                   <button 
                     className="developer-action-button"
-                    onClick={handleShowEmptyCategories}
+                    onClick={() => {
+                      console.log('🔍 [BUTTON] Empty categories button clicked');
+                      handleShowEmptyCategories();
+                    }}
                   >
                     📋 הצג קטגוריות ללא עסקאות
                   </button>

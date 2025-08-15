@@ -211,8 +211,11 @@ router.get('/empty', authenticateToken, async (req, res) => {
   try {
     const { year, month, cash_flow } = req.query;
     const userId = req.user.id;
+    
+    console.log('🔍 [EMPTY API] Request received:', { year, month, cash_flow, userId });
 
     if (!year || !month || !cash_flow) {
+      console.log('❌ [EMPTY API] Missing parameters');
       return res.status(400).json({ 
         error: 'Missing required parameters: year, month, cash_flow' 
       });
@@ -263,7 +266,8 @@ router.get('/empty', authenticateToken, async (req, res) => {
         use_shared_target: category.use_shared_target
       }));
 
-    console.log(`Found ${emptyCategories.length} empty categories for ${flowMonth}`);
+    console.log('🔍 [EMPTY API] Found categories:', emptyCategories.length);
+    console.log('🔍 [EMPTY API] Categories list:', emptyCategories.map(c => c.name));
 
     res.json({ 
       categories: emptyCategories,
