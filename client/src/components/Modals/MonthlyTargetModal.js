@@ -45,34 +45,46 @@ const MonthlyTargetModal = ({
   }, [isOpen, currentTarget, isAutoSaving, targetAmount]);
 
   const handleSubmit = async (e) => {
+    console.log('🔘 [MODAL] Save button clicked - handleSubmit called');
+    console.log('🔘 [MODAL] targetAmount:', targetAmount);
+    console.log('🔘 [MODAL] categoryName:', categoryName);
+    console.log('🔘 [MODAL] isSharedTarget:', isSharedTarget);
+    
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
     try {
       const amount = parseFloat(targetAmount);
+      console.log('🔘 [MODAL] Parsed amount:', amount);
+      
       if (isNaN(amount) || amount < 0) {
         throw new Error('אנא הכנס סכום תקף');
       }
 
+      console.log('🔘 [MODAL] Making API call...');
       if (isSharedTarget) {
+        console.log('🔘 [MODAL] Calling updateSharedTarget');
         await categoriesAPI.updateSharedTarget({
           shared_category_name: sharedCategoryName,
           monthly_target: amount
         });
       } else {
+        console.log('🔘 [MODAL] Calling updateMonthlyTarget');
         await categoriesAPI.updateMonthlyTarget({
           categoryName: categoryName,
           target: amount
         });
       }
 
+      console.log('🔘 [MODAL] API call successful, calling onTargetUpdated');
       if (onTargetUpdated) {
         onTargetUpdated(amount);
       }
+      console.log('🔘 [MODAL] Closing modal');
       onClose();
     } catch (err) {
-      console.error('Error updating monthly target:', err);
+      console.error('🔘 [MODAL] Error updating monthly target:', err);
       setError(err.response?.data?.error || err.message || 'שגיאה בעדכון היעד החודשי');
     } finally {
       setIsLoading(false);
