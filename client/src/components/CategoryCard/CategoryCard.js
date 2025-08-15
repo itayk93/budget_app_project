@@ -166,6 +166,7 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
   // Separate useEffect for monthly target to avoid overriding local updates
   useEffect(() => {
     const target = categoryData?.monthly_target || null;
+    console.log(`🎯 [CATEGORY CARD] ${categoryName} - categoryData.monthly_target:`, categoryData?.monthly_target, 'target:', target, 'prevTarget:', monthlyTarget);
     // Only update if the new target is different from current state
     // This prevents overriding local updates while API data propagates
     setMonthlyTarget(prevTarget => {
@@ -175,7 +176,7 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
       }
       return prevTarget;
     });
-  }, [categoryData?.monthly_target, categoryName]);
+  }, [categoryData?.monthly_target, categoryName, monthlyTarget]);
 
   const toggleDropdown = () => {
     setShowDropdown(!showDropdown);
