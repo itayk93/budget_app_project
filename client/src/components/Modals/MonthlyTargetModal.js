@@ -29,6 +29,12 @@ const MonthlyTargetModal = ({
       return;
     }
     
+    // Don't reset if we already have a value and the modal is open (prevents clearing during calculations)
+    if (isOpen && targetAmount && targetAmount !== '' && targetAmount !== '0') {
+      console.log('🚫 [MODAL] Skipping reset - target amount already set:', targetAmount);
+      return;
+    }
+    
     if (isOpen && currentTarget !== null && currentTarget !== undefined) {
       setTargetAmount(currentTarget.toString());
     } else if (isOpen) {
@@ -36,7 +42,7 @@ const MonthlyTargetModal = ({
     }
     setError('');
     setSuccessMessage('');
-  }, [isOpen, currentTarget, isAutoSaving]);
+  }, [isOpen, currentTarget, isAutoSaving, targetAmount]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

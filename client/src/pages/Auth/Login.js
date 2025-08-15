@@ -70,7 +70,7 @@ const Login = () => {
         <div className="auth-header">
           <div className="logo">
             <img 
-              src="/logo.png" 
+              src="/logo.svg" 
               alt="BudgetLens" 
               className="logo-image"
               onError={(e) => {
