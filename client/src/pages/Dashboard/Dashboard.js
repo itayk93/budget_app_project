@@ -25,6 +25,7 @@ const EmptyCategoriesSelector = ({ year, month, cashFlowId, onAddCategories, onC
   const [emptyCategories, setEmptyCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   
   console.log('🔍 [SELECTOR] Component render - selectedCategories:', selectedCategories);
   console.log('🔍 [SELECTOR] Component render - emptyCategories:', emptyCategories.length);
@@ -59,6 +60,10 @@ const EmptyCategoriesSelector = ({ year, month, cashFlowId, onAddCategories, onC
     }
   }, [year, month, cashFlowId]);
 
+  const filteredCategories = emptyCategories.filter(category =>
+    category.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const toggleCategory = (categoryName) => {
     console.log('🔍 [TOGGLE] Toggling category:', categoryName);
     setSelectedCategories(prev => {
@@ -68,6 +73,14 @@ const EmptyCategoriesSelector = ({ year, month, cashFlowId, onAddCategories, onC
       console.log('🔍 [TOGGLE] New selection:', newSelection);
       return newSelection;
     });
+  };
+
+  const selectAll = () => {
+    setSelectedCategories(filteredCategories.map(cat => cat.name));
+  };
+
+  const clearAll = () => {
+    setSelectedCategories([]);
   };
 
   const handleAddSelected = () => {
@@ -94,39 +107,76 @@ const EmptyCategoriesSelector = ({ year, month, cashFlowId, onAddCategories, onC
 
   return (
     <div className="empty-categories-selector">
-      <p>בחר קטגוריות להצגה בדשבורד (גם ללא עסקאות):</p>
-      <div className="categories-list">
-        {emptyCategories.map(category => (
-          <div key={category.name} className="category-checkbox-item">
-            <label>
-              <input
-                type="checkbox"
-                checked={selectedCategories.includes(category.name)}
-                onChange={() => toggleCategory(category.name)}
-              />
-              <span>{category.name}</span>
-              {category.display_order !== null && (
-                <small style={{ color: '#666', marginRight: '10px' }}>
-                  (סדר: {category.display_order})
-                </small>
-              )}
-            </label>
+      <div className="selector-header">
+        <p>בחר קטגוריות להצגה בדשבורד (גם ללא עסקאות):</p>
+        <div className="search-and-stats">
+          <input
+            type="text"
+            placeholder="חפש קטגוריה..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="category-search-input"
+          />
+          <div className="selection-stats">
+            נבחרו {selectedCategories.length} מתוך {filteredCategories.length} קטגוריות
           </div>
-        ))}
+        </div>
+        <div className="bulk-actions">
+          <button 
+            className="bulk-action-btn"
+            onClick={selectAll}
+            disabled={filteredCategories.length === 0}
+          >
+            בחר הכל
+          </button>
+          <button 
+            className="bulk-action-btn"
+            onClick={clearAll}
+            disabled={selectedCategories.length === 0}
+          >
+            בטל בחירה
+          </button>
+        </div>
       </div>
+      
+      <div className="categories-list">
+        {filteredCategories.length === 0 ? (
+          <div className="no-categories-found">
+            {searchTerm ? 'לא נמצאו קטגוריות התואמות לחיפוש' : 'אין קטגוריות ריקות'}
+          </div>
+        ) : (
+          filteredCategories.map(category => (
+            <div key={category.name} className="category-checkbox-item">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={selectedCategories.includes(category.name)}
+                  onChange={() => toggleCategory(category.name)}
+                />
+                <span className="category-name">{category.name}</span>
+                <div className="category-details">
+                  {category.monthly_target > 0 && (
+                    <span className="monthly-target">יעד: {category.monthly_target} ₪</span>
+                  )}
+                  {category.display_order !== null && (
+                    <span className="display-order">סדר: {category.display_order}</span>
+                  )}
+                </div>
+              </label>
+            </div>
+          ))
+        )}
+      </div>
+      
       <div className="modal-actions">
         <button 
-          className={`developer-action-button ${selectedCategories.length === 0 ? 'disabled' : ''}`}
+          className={`developer-action-button primary ${selectedCategories.length === 0 ? 'disabled' : ''}`}
           onClick={handleAddSelected}
           disabled={selectedCategories.length === 0}
-          style={{ 
-            backgroundColor: selectedCategories.length === 0 ? '#ccc' : '#007bff',
-            cursor: selectedCategories.length === 0 ? 'not-allowed' : 'pointer'
-          }}
         >
           הצג {selectedCategories.length} קטגוריות נבחרות
         </button>
-        <button className="developer-action-button" onClick={onClose}>
+        <button className="developer-action-button secondary" onClick={onClose}>
           ביטול
         </button>
       </div>
@@ -152,7 +202,6 @@ const Dashboard = () => {
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [showChartModal, setShowChartModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
-  const [hideEmptyCategories, setHideEmptyCategories] = useState(true);
   const [showDeveloperFeaturesModal, setShowDeveloperFeaturesModal] = useState(false);
   const [showEmptyCategories, setShowEmptyCategories] = useState(false);
   const [emptyCategoriesModal, setEmptyCategoriesModal] = useState(false);
@@ -177,7 +226,7 @@ const Dashboard = () => {
 
   // Fetch dashboard data using the new API with fallback
   const { data: dashboardData, isLoading: dashboardLoading, refetch: refetchDashboard } = useQuery(
-    ['dashboard', year, month, selectedCashFlow?.id, activeTab, hideEmptyCategories],
+    ['dashboard', year, month, selectedCashFlow?.id, activeTab],
     async () => {
       try {
         return await api.get('/dashboard', {
@@ -186,8 +235,7 @@ const Dashboard = () => {
             month: month,
             cash_flow: selectedCashFlow?.id,
             all_time: activeTab === 'cumulative' ? '1' : '0',
-            hide_empty_categories: hideEmptyCategories,
-            format: 'json'
+              format: 'json'
           }
         });
       } catch (error) {
@@ -250,21 +298,7 @@ const Dashboard = () => {
     cashFlowsAPI.getAll
   );
 
-  // Fetch user preferences
-  const { data: userPreferences } = useQuery(
-    'userPreferences',
-    usersAPI.getUserPreferences,
-    {
-      staleTime: 300000 // 5 minutes
-    }
-  );
 
-  // Update hideEmptyCategories state when preferences load
-  useEffect(() => {
-    if (userPreferences?.data?.hide_empty_categories !== undefined) {
-      setHideEmptyCategories(userPreferences.data.hide_empty_categories);
-    }
-  }, [userPreferences]);
 
   // Debug dashboard data when it changes
   useEffect(() => {
@@ -274,7 +308,6 @@ const Dashboard = () => {
         flow_month: `${year}-${month.toString().padStart(2, '0')}`,
         current_cash_flow: selectedCashFlow?.id,
         cumulative_mode: activeTab === 'cumulative',
-        hide_empty_categories: hideEmptyCategories,
         categories_received: dashboardData.data.orderedCategories?.length || 0,
         categories_debug: dashboardData.data.orderedCategories?.reduce((acc, category) => {
           if (category.is_shared_category && category.sub_categories) {
@@ -305,7 +338,7 @@ const Dashboard = () => {
         }, {})
       });
     }
-  }, [dashboardData, year, month, selectedCashFlow, activeTab, hideEmptyCategories]);
+  }, [dashboardData, year, month, selectedCashFlow, activeTab]);
 
   // Create monthly balance data from current dashboard summary
   const monthlyBalanceData = React.useMemo(() => {
@@ -906,17 +939,6 @@ const Dashboard = () => {
     }
   };
 
-  const toggleHideEmptyCategories = async () => {
-    const newValue = !hideEmptyCategories;
-    setHideEmptyCategories(newValue);
-    
-    try {
-      await usersAPI.setUserPreference('hide_empty_categories', newValue);
-      queryClient.invalidateQueries('userPreferences');
-    } catch (error) {
-      console.error('Error updating preference:', error);
-    }
-  };
 
   const currentGoal = monthlyGoalData?.data || null;
   const goalAmount = currentGoal?.amount || 1000; // Default to 1000 if no goal set
@@ -1454,19 +1476,13 @@ const Dashboard = () => {
                 <div className="developer-feature-section">
                   <h4>הגדרות תצוגה</h4>
                   <button 
-                    className={`developer-toggle-button ${hideEmptyCategories ? 'active' : ''}`}
-                    onClick={toggleHideEmptyCategories}
-                  >
-                    {hideEmptyCategories ? '👁️' : '👁️‍🗨️'} הסתר קטגוריות ריקות
-                  </button>
-                  <button 
                     className="developer-action-button"
                     onClick={() => {
-                      console.log('🔍 [BUTTON] Empty categories button clicked');
+                      console.log('🔍 [BUTTON] Manage empty categories clicked');
                       handleShowEmptyCategories();
                     }}
                   >
-                    📋 הצג קטגוריות ללא עסקאות
+                    📋 ניהול קטגוריות ללא עסקאות
                   </button>
                   <button 
                     className="developer-action-button"

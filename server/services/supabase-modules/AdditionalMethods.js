@@ -19,7 +19,6 @@ class AdditionalMethods {
         allTime = false,
         year = new Date().getFullYear(), 
         month = new Date().getMonth() + 1,
-        hideEmptyCategories = false
       } = options;
 
       // If allTime is true, get data for all time instead of specific month
@@ -182,7 +181,7 @@ class AdditionalMethods {
       }
 
       // Process shared categories
-      const processedCategories = AdditionalMethods.processSharedCategories(categoryBreakdown, hideEmptyCategories);
+      const processedCategories = AdditionalMethods.processSharedCategories(categoryBreakdown);
       
       // Sort by display order - ensure we're comparing numbers, not strings
       const sortedCategories = Object.values(processedCategories)
@@ -215,7 +214,7 @@ class AdditionalMethods {
   }
 
   // Helper method to process shared categories
-  static processSharedCategories(categoryBreakdown, hideEmptyCategories = false) {
+  static processSharedCategories(categoryBreakdown) {
     const processedCategories = {};
     const sharedCategoryMap = new Map();
 
@@ -251,8 +250,8 @@ class AdditionalMethods {
         
         const sharedCategory = sharedCategoryMap.get(sharedName);
         
-        // Add this category as a sub-category (only if it has transactions, has monthly target, or hideEmptyCategories is false)
-        if (!hideEmptyCategories || category.count > 0 || (category.monthly_target && category.monthly_target > 0)) {
+        // Add this category as a sub-category (only if it has transactions)
+        if (category.count > 0) {
           sharedCategory.sub_categories[category.name] = {
             name: category.name,
             amount: category.amount,
@@ -271,8 +270,8 @@ class AdditionalMethods {
           sharedCategory.transactions = sharedCategory.transactions.concat(category.transactions);
         }
       } else {
-        // This is a regular category (not shared) - only add if it has transactions, has monthly target, or hideEmptyCategories is false
-        if (!hideEmptyCategories || category.count > 0 || (category.monthly_target && category.monthly_target > 0)) {
+        // This is a regular category (not shared) - only add if it has transactions
+        if (category.count > 0) {
           processedCategories[category.name] = {
             ...category,
             spent: category.type === 'income' ? category.amount : -category.amount,

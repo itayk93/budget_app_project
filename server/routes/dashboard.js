@@ -109,8 +109,6 @@ router.get('/', authenticateToken, async (req, res) => {
       );
     }
 
-    // Get hide empty categories preference from query params
-    const hideEmptyCategories = req.query.hide_empty_categories === 'true';
 
     // Get dashboard data - use AdditionalMethods for proper shared categories
     const AdditionalMethods = require('../services/supabase-modules/AdditionalMethods');
@@ -120,7 +118,6 @@ router.get('/', authenticateToken, async (req, res) => {
       allTime: allTime,
       year: finalYear,
       month: finalMonth,
-      hideEmptyCategories: hideEmptyCategories
     });
     
     // Extract data from result wrapper
@@ -132,7 +129,6 @@ router.get('/', authenticateToken, async (req, res) => {
       flow_month: flow_month || (finalYear && finalMonth ? `${finalYear}-${finalMonth.toString().padStart(2, '0')}` : null),
       current_cash_flow: cash_flow,
       cumulative_mode: allTime,
-      hide_empty_categories: hideEmptyCategories,
       categories_debug: {}
     };
 

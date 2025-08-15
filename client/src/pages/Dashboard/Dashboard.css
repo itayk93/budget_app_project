@@ -98,6 +98,149 @@
   cursor: not-allowed;
 }
 
+/* Enhanced Empty Categories Selector Styles */
+.selector-header {
+  margin-bottom: 20px;
+}
+
+.search-and-stats {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin: 15px 0;
+  flex-wrap: wrap;
+}
+
+.category-search-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px 12px;
+  border: 2px solid #e1e5e9;
+  border-radius: 6px;
+  font-size: 14px;
+  direction: rtl;
+  text-align: right;
+}
+
+.category-search-input:focus {
+  outline: none;
+  border-color: #2196f3;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
+.selection-stats {
+  font-size: 13px;
+  color: #666;
+  background: #f8f9fa;
+  padding: 6px 12px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.bulk-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.bulk-action-btn {
+  padding: 6px 12px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #495057;
+  transition: all 0.2s ease;
+}
+
+.bulk-action-btn:hover:not(:disabled) {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.bulk-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.no-categories-found {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-style: italic;
+}
+
+.category-checkbox-item {
+  margin-bottom: 8px;
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e1e5e9;
+  transition: all 0.2s ease;
+}
+
+.category-checkbox-item label {
+  display: flex;
+  align-items: flex-start;
+  cursor: pointer;
+  width: 100%;
+}
+
+.category-name {
+  font-weight: 500;
+  color: #333;
+  flex: 1;
+}
+
+.category-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  margin-right: 12px;
+}
+
+.monthly-target {
+  background: #e8f5e8;
+  color: #2e7d32;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.display-order {
+  background: #f0f0f0;
+  color: #666;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+}
+
+.developer-action-button.primary {
+  background: #007bff;
+  color: white;
+}
+
+.developer-action-button.primary:hover:not(:disabled) {
+  background: #0056b3;
+}
+
+.developer-action-button.primary.disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.developer-action-button.secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.developer-action-button.secondary:hover {
+  background: #545b62;
+}
+
 .dashboard-header {
   display: flex;
   justify-content: space-between;
