@@ -107,16 +107,20 @@ export const usersAPI = {
 
 // Categories API
 export const categoriesAPI = {
-  getAll: async () => {
+  getAll: () => {
     console.log('🔍 [Categories API] Making getAll request...');
-    try {
-      const result = await api.get('/categories');
+    return api.get('/categories').then(result => {
       console.log('🔍 [Categories API] getAll response:', result);
+      console.log('🔍 [Categories API] response type:', typeof result);
+      console.log('🔍 [Categories API] is array?', Array.isArray(result));
+      console.log('🔍 [Categories API] length:', result?.length);
       return result;
-    } catch (error) {
+    }).catch(error => {
       console.error('❌ [Categories API] getAll error:', error);
+      console.error('❌ [Categories API] error status:', error.response?.status);
+      console.error('❌ [Categories API] error data:', error.response?.data);
       throw error;
-    }
+    });
   },
   getByType: (type) => api.get(`/categories/type/${type}`),
   getDefault: () => api.get('/categories/default'),

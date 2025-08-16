@@ -937,22 +937,29 @@ const Dashboard = () => {
     const existingCategoryNames = new Set(categories.map(cat => cat.name));
     const emptyCategoriesToAdd = emptyCategoriesToShow
       .filter(categoryName => !existingCategoryNames.has(categoryName))
-      .map(categoryName => ({
-        name: categoryName,
-        amount: 0,
-        count: 0,
-        type: 'expense', // Default type
-        transactions: [],
-        category_type: 'expense',
-        display_order: 999, // Will be sorted properly later
-        shared_category: null,
-        weekly_display: false,
-        monthly_target: null,
-        use_shared_target: false,
-        is_shared_category: false,
-        sub_categories: null,
-        isEmpty: true // Mark as empty for special handling
-      }));
+      .map(categoryName => {
+        // Try to find category data from the dashboard data that might have monthly target
+        // This can happen if the category exists in category_order but has no transactions
+        const categoryWithTarget = dashboardData?.orderedCategories?.find(cat => cat.name === categoryName) || 
+                                  dashboardData?.category_breakdown?.find(cat => cat.name === categoryName);
+        
+        return {
+          name: categoryName,
+          amount: 0,
+          count: 0,
+          type: 'expense', // Default type
+          transactions: [],
+          category_type: 'expense',
+          display_order: categoryWithTarget?.display_order || 999, // Will be sorted properly later
+          shared_category: categoryWithTarget?.shared_category || null,
+          weekly_display: categoryWithTarget?.weekly_display || false,
+          monthly_target: categoryWithTarget?.monthly_target || null, // Get the actual target from dashboard data
+          use_shared_target: categoryWithTarget?.use_shared_target || false,
+          is_shared_category: categoryWithTarget?.is_shared_category || false,
+          sub_categories: null,
+          isEmpty: true // Mark as empty for special handling
+        };
+      });
 
     return [...categories, ...emptyCategoriesToAdd];
   };

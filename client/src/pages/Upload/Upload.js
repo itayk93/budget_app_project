@@ -474,8 +474,8 @@ const Upload = () => {
     console.log('🔍 Result transactions:', result.transactions?.length || 0);
     
     // Prevent duplicate calls using both state and ref
-    if (isFinalizingImport || isFinalizingImportRef.current) {
-      console.log('⏭️ Already finalizing import, skipping duplicate call');
+    if (isFinalizingImport || isFinalizingImportRef.current || showTransactionReview) {
+      console.log('⏭️ Already finalizing import or transaction review modal is open, skipping duplicate call');
       return;
     }
     
@@ -679,6 +679,9 @@ const Upload = () => {
         duplicateActions: reviewData.duplicateActions || {}
       };
       
+      // Clear upload ID after using it to stop progress tracking
+      setUploadId(null);
+      
       // Debug: Check recipient_name in transactions being sent
       reviewData.transactions.forEach((tx, index) => {
         if (tx.business_name && tx.business_name.includes('PAYBOX')) {
@@ -708,6 +711,7 @@ const Upload = () => {
     setShowTransactionReview(false);
     setReviewTransactions([]);
     setReviewFileSource('');
+    setUploadId(null); // Clear upload ID to stop progress tracking
     handleBackToUpload();
   };
 
@@ -1211,7 +1215,7 @@ const Upload = () => {
         )}
         
         {/* Step 1: Progress Tracking */}
-        {currentStep === 1 && (
+        {currentStep === 1 && !showTransactionReview && (
           <ProgressTracking
             uploadId={uploadId}
             onComplete={handleProgressComplete}

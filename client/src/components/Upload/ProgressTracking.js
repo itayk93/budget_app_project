@@ -9,11 +9,14 @@ const ProgressTracking = ({ uploadId, onComplete, onError }) => {
     message: 'מתחיל עיבוד...',
     details: null
   });
-  const [polling, setPolling] = useState(null);
-  const [isMounted, setIsMounted] = useState(true);
+  const [maxRetries] = useState(10);
 
   useEffect(() => {
     if (!uploadId) return;
+
+    let intervalId;
+    let isActive = true;
+    let currentRetryCount = 0;
 
     // Polling function to check progress
     const pollProgress = async () => {
@@ -32,41 +35,60 @@ const ProgressTracking = ({ uploadId, onComplete, onError }) => {
 
         const data = response.data;
         
-        // Only update state if component is still mounted
-        if (isMounted) {
+        // Only update state if component is still active
+        if (isActive) {
           setProgress(data);
 
           // Check if upload is complete or needs user interaction
           if (data.stage === 'completed' || data.stage === 'needs_currency_selection' || data.stage === 'needs_duplicates_review' || data.stage === 'needs_transaction_review') {
-            clearInterval(polling);
+            if (intervalId) clearInterval(intervalId);
             onComplete(data.result);
           } else if (data.stage === 'error') {
-            clearInterval(polling);
+            if (intervalId) clearInterval(intervalId);
             onError(data.error);
           }
         }
       } catch (error) {
         console.error('Error polling progress:', error);
-        clearInterval(polling);
-        onError('שגיאה בתקשורת עם השרת');
+        
+        // Increment retry count and stop if exceeded max retries
+        currentRetryCount++;
+        
+        if (currentRetryCount >= maxRetries) {
+          console.error('Max retries exceeded, stopping polling');
+          if (intervalId) clearInterval(intervalId);
+          if (isActive) {
+            onError('שגיאה בתקשורת עם השרת - נסה שוב מאוחר יותר');
+          }
+          return;
+        }
+        
+        // For network errors, wait longer before next retry
+        if (error.code === 'ERR_INSUFFICIENT_RESOURCES' || error.code === 'ERR_NETWORK') {
+          console.warn(`Network error (attempt ${currentRetryCount}/${maxRetries}), backing off...`);
+          return; // Don't fail immediately, let the interval continue with backoff
+        }
       }
     };
 
-    // Start polling every 5 seconds to avoid rate limiting
-    const intervalId = setInterval(pollProgress, 5000);
-    setPolling(intervalId);
+    // Start polling with adaptive timing based on retry count
+    const getPollingInterval = () => {
+      return 5000 + (currentRetryCount * 2000); // Increase delay after each retry
+    };
+    
+    intervalId = setInterval(pollProgress, getPollingInterval());
 
     // Initial call after a short delay
     setTimeout(pollProgress, 1000);
 
     // Cleanup on unmount
     return () => {
-      setIsMounted(false);
+      isActive = false;
       if (intervalId) {
         clearInterval(intervalId);
       }
     };
-  }, [uploadId, onComplete, onError, isMounted, polling]);
+  }, [uploadId, onComplete, onError, maxRetries]);
 
   const getStageIcon = (stage) => {
     const icons = {

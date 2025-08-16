@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import './CategoryDropdown.css';
 
-const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "בחר קטגוריה..." }) => {
+const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "בחר קטגוריה...", preserveOrder = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
@@ -54,8 +54,18 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
     }
   };
 
-  // Group categories by type
-  const groupedCategories = categories.reduce((groups, category) => {
+  // Group categories by type (only if preserveOrder is false)
+  const groupedCategories = preserveOrder ? {
+    'כל הקטגוריות': {
+      icon: '📋',
+      order: 1,
+      categories: categories.map(category => 
+        typeof category === 'string' 
+          ? { name: category, category_name: category, id: null }
+          : category
+      )
+    }
+  } : categories.reduce((groups, category) => {
     const group = getCategoryGroup(category);
     const groupName = group.name;
     
@@ -97,9 +107,11 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
       name: groupName,
       ...groupData,
       categories: filterCategories(
-        groupData.categories.sort((a, b) => 
-          (a.category_name || a.name).localeCompare(b.category_name || b.name, 'he')
-        ),
+        preserveOrder ? 
+          groupData.categories : // Keep original order if preserveOrder is true
+          groupData.categories.sort((a, b) => 
+            (a.category_name || a.name).localeCompare(b.category_name || b.name, 'he')
+          ),
         searchTerm
       )
     }))

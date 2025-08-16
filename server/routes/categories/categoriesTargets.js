@@ -117,7 +117,24 @@ router.post('/update-monthly-target', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'categoryName and target are required' });
     }
     
-    // First try to update existing record
+    console.log(`[UPDATE TARGET] Updating monthly target for "${categoryName}" to ${target} for user ${req.user.id}`);
+    
+    // Check if this is an empty category (exists in user_empty_categories_display)
+    const { data: emptyCategory, error: emptyError } = await supabase
+      .from('user_empty_categories_display')
+      .select('*')
+      .eq('user_id', req.user.id)
+      .eq('category_name', categoryName)
+      .limit(1);
+    
+    if (emptyError) {
+      console.error('[UPDATE TARGET] Error checking empty categories:', emptyError);
+    }
+    
+    const isEmptyCategory = emptyCategory && emptyCategory.length > 0;
+    console.log(`[UPDATE TARGET] Is empty category: ${isEmptyCategory}`);
+    
+    // First try to update existing record in category_order
     const { data: updateData, error: updateError } = await supabase
       .from('category_order')
       .update({
@@ -131,6 +148,7 @@ router.post('/update-monthly-target', authenticateToken, async (req, res) => {
     let data, error;
     
     if (updateError || !updateData || updateData.length === 0) {
+      console.log(`[UPDATE TARGET] No existing record in category_order, creating new one`);
       // If update failed or no record exists, try to insert
       const { data: insertData, error: insertError } = await supabase
         .from('category_order')
@@ -145,7 +163,14 @@ router.post('/update-monthly-target', authenticateToken, async (req, res) => {
       
       data = insertData;
       error = insertError;
+      
+      if (insertError) {
+        console.error('[UPDATE TARGET] Insert error:', insertError);
+      } else {
+        console.log('[UPDATE TARGET] Successfully inserted new category_order record');
+      }
     } else {
+      console.log('[UPDATE TARGET] Successfully updated existing category_order record');
       data = updateData;
       error = updateError;
     }
@@ -153,10 +178,14 @@ router.post('/update-monthly-target', authenticateToken, async (req, res) => {
     if (error) {
       throw error;
     }
+    
+    console.log(`[UPDATE TARGET] Monthly target update completed successfully for "${categoryName}"`);
+    
     res.json({
       success: true,
       message: 'Monthly target updated successfully',
-      category: data && data.length > 0 ? data[0] : null
+      category: data && data.length > 0 ? data[0] : null,
+      is_empty_category: isEmptyCategory
     });
   } catch (error) {
     console.error('Update monthly target error:', error);

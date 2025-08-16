@@ -869,6 +869,39 @@
   min-width: 120px;
 }
 
+/* Buttons container for cash flow and foreign currency buttons */
+.buttons-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.buttons-container .cash-flow-badge,
+.buttons-container .foreign-currency-btn {
+  flex-shrink: 0;
+}
+
+/* Mobile responsive adjustments for buttons */
+@media (max-width: 768px) {
+  .buttons-container {
+    gap: 6px;
+    margin-top: 6px;
+  }
+  
+  .buttons-container .cash-flow-badge {
+    font-size: 10px !important;
+    padding: 2px 6px !important;
+  }
+  
+  .buttons-container .foreign-currency-btn {
+    font-size: 11px !important;
+    padding: 3px 6px !important;
+  }
+}
+
 /* Duplicate card styling for mobile */
 .transaction-card.duplicate-card {
   border: 2px solid #f59e0b;

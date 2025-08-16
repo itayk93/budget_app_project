@@ -11,8 +11,11 @@ const router = express.Router();
 // Get all categories
 router.get('/', authenticateToken, async (req, res) => {
   try {
+    console.log('🔍 [CATEGORIES ROUTE] User ID:', req.user.id);
     const userClient = createUserClient(req.user.token);
     const result = await CategoryService.getCategories(req.user.id, userClient);
+    console.log('🔍 [CATEGORIES ROUTE] Service result:', result);
+    console.log('🔍 [CATEGORIES ROUTE] Categories count:', result.data?.length || 0);
     if (result.success) {
       res.json(result.data);
     } else {

@@ -32,6 +32,7 @@ const authenticateToken = async (req, res, next) => {
     }
 
     req.user = user;
+    console.log('🔍 [AUTH] Authenticated user ID:', user.id);
     next();
   } catch (error) {
     // Log error without exposing sensitive data

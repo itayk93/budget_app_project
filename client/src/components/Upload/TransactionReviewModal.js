@@ -37,23 +37,44 @@ const TransactionReviewModal = ({
   const [foreignAmount, setForeignAmount] = useState('');
   const [exchangeRate, setExchangeRate] = useState('');
 
-  // Fetch categories for dropdown - using regular categories API for now
-  const { data: categoriesData = [], isLoading: categoriesLoading } = useQuery(
-    ['categories'],
-    () => {
-      console.log('🔍 [React Query] Executing categories query...');
-      return categoriesAPI.getAll();
-    },
-    {
-      enabled: isOpen,
-      onSuccess: (data) => {
-        console.log('🔍 [React Query] Categories query success:', data);
-      },
-      onError: (error) => {
-        console.error('❌ [React Query] Categories query error:', error);
-      }
+  // Simplified categories loading - directly manage loading state
+  const [categoriesData, setCategoriesData] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [categoriesError, setCategoriesError] = useState(null);
+
+  // Load categories when modal opens
+  useEffect(() => {
+    if (isOpen && categoriesData.length === 0) {
+      setCategoriesLoading(true);
+      setCategoriesError(null);
+      
+      console.log('🔍 [CATEGORIES] Starting to load categories...');
+      console.log('🔍 [CATEGORIES] Token exists:', !!localStorage.getItem('token'));
+      console.log('🔍 [CATEGORIES] Token preview:', localStorage.getItem('token')?.substring(0, 20) + '...');
+      
+      categoriesAPI.getAll()
+        .then(result => {
+          console.log('🔍 [CATEGORIES] Raw API response:', result);
+          console.log('🔍 [CATEGORIES] Is array?', Array.isArray(result));
+          console.log('🔍 [CATEGORIES] Length:', result?.length || 'N/A');
+          if (result && result.length > 0) {
+            console.log('🔍 [CATEGORIES] First category structure:', result[0]);
+          }
+          setCategoriesData(result || []);
+          setCategoriesLoading(false);
+        })
+        .catch(error => {
+          console.error('❌ [CATEGORIES] Error loading categories:', error);
+          console.error('❌ [CATEGORIES] Error status:', error.response?.status);
+          console.error('❌ [CATEGORIES] Error message:', error.response?.data);
+          console.error('❌ [CATEGORIES] Error headers:', error.response?.headers);
+          setCategoriesError(error);
+          setCategoriesLoading(false);
+          // Set empty array as fallback
+          setCategoriesData([]);
+        });
     }
-  );
+  }, [isOpen, categoriesData.length]);
 
   // Fetch cash flows for transfer modal
   const { data: cashFlows = [] } = useQuery(
@@ -85,23 +106,48 @@ const TransactionReviewModal = ({
 
   // Handle categories data when received
   useEffect(() => {
+    console.log('🔍 [MODAL DEBUG] Categories effect triggered - categoriesData:', categoriesData);
+    console.log('🔍 [MODAL DEBUG] categoriesLoading:', categoriesLoading);
+    console.log('🔍 [MODAL DEBUG] Number of categories:', categoriesData.length);
+    if (categoriesData.length > 0) {
+      console.log('🔍 [MODAL DEBUG] First 5 categories:', categoriesData.slice(0, 5).map(cat => ({
+        name: cat.name,
+        category_name: cat.category_name,
+        display_order: cat.display_order
+      })));
+    }
+    console.log('🔍 [MODAL DEBUG] categoriesError:', categoriesError);
+    
     if (categoriesData && Array.isArray(categoriesData) && categoriesData.length > 0) {
       console.log('🔍 [MODAL DEBUG] Setting categories from API:', categoriesData);
-      // For regular categories API, just extract category names
-      const categoryNames = categoriesData
-        .map(cat => cat.category_name || cat.name)
-        .filter(name => name !== null && name !== undefined && name !== '');
-      console.log('🔍 [MODAL DEBUG] Extracted category names:', categoryNames);
-      setCategories(categoryNames);
+      // Pass the full category objects to preserve ordering from the API
+      console.log('🔍 [MODAL DEBUG] Setting full category objects to preserve order');
+      setCategories(categoriesData);
+    } else if (categoriesData && !Array.isArray(categoriesData)) {
+      console.log('⚠️ [MODAL DEBUG] categoriesData is not an array:', typeof categoriesData, categoriesData);
+    } else if (categoriesError || (!categoriesLoading && categoriesData.length === 0)) {
+      console.log('🔄 [MODAL DEBUG] Using fallback categories due to error or empty result');
+      console.log('🔄 [MODAL DEBUG] categoriesError:', categoriesError);
+      console.log('🔄 [MODAL DEBUG] categoriesLoading:', categoriesLoading);
+      console.log('🔄 [MODAL DEBUG] categoriesData.length:', categoriesData.length);
+      // Use fallback categories
+      const fallbackCategories = [
+        'דיור', 'מזון ומשקאות', 'תחבורה', 'בריאות', 'חינוך', 'בילויים', 
+        'קניות', 'ביטוח', 'תשלומים קבועים', 'הוצאות משפחה', 'הכנסות', 
+        'הכנסות משתנות', 'הוצאות משתנות', 'הוצאות קבועות'
+      ];
+      console.log('🔄 [MODAL DEBUG] Setting fallback categories:', fallbackCategories);
+      setCategories(fallbackCategories);
     }
-  }, [categoriesData]);
+  }, [categoriesData, categoriesLoading, categoriesError]);
 
   // Filter categories based on non-cash flow checkbox
   useEffect(() => {
     if (showNonCashFlowOnly) {
-      const nonCashFlowCategories = categories.filter(categoryName => 
-        categoryName.includes('לא תזרימיות')
-      );
+      const nonCashFlowCategories = categories.filter(category => {
+        const categoryName = typeof category === 'string' ? category : (category.name || category.category_name || '');
+        return categoryName.includes('לא תזרימיות');
+      });
       setFilteredCategories(nonCashFlowCategories);
     } else {
       setFilteredCategories(categories);
@@ -555,11 +601,23 @@ const TransactionReviewModal = ({
         </div>
 
         <div className="modal-body">
-          {categoriesLoading ? (
+          {categoriesLoading && categoriesData.length === 0 && editedTransactions.length === 0 ? (
             <div className="loading-container">
-              <LoadingSpinner size="medium" text="טוען קטגוריות..." />
+              <div className="d-flex flex-column align-center justify-center gap-md">
+                <div className="spinner w-8 h-8"></div>
+                <span className="text-muted text-sm">טוען קטגוריות...</span>
+                <span className="text-muted text-xs">categoriesLoading: {String(categoriesLoading)}</span>
+              </div>
             </div>
-          ) : (
+          ) : categoriesError ? (
+            <div className="error-container">
+              <p>שגיאה בטעינת קטגוריות: {categoriesError.message}</p>
+              <p>ממשיך עם רשימת קטגוריות מוגבלת</p>
+            </div>
+          ) : null}
+          
+          {/* Show transactions even if categories are still loading */}
+          {(editedTransactions.length > 0 || !categoriesLoading) && (
             <>
               {/* Combined Summary and Cash Flow Selection */}
               <div style={{
@@ -684,41 +742,49 @@ const TransactionReviewModal = ({
                                 כפול
                               </span>
                             )}
-                            {isDifferentCashFlow && (
-                              <span className="cash-flow-badge" style={{
-                                background: 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)',
-                                color: 'white',
-                                fontSize: '11px',
-                                padding: '3px 8px',
-                                borderRadius: '4px',
-                                marginLeft: '8px',
-                                fontWeight: '500'
-                              }}>
-                                → {getTargetCashFlowName(transaction)}
-                              </span>
-                            )}
                           </div>
-                          {detectForeignCurrency(transaction.business_name) && (
-                            <button
-                              type="button"
-                              className="foreign-currency-btn"
-                              onClick={() => handleForeignCopy(transaction)}
-                              title={`זוהה מטבע זר: ${detectForeignCurrency(transaction.business_name)} - לחץ להעתקה לתזרים אחר`}
-                              style={{
-                                background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
-                                border: 'none',
-                                borderRadius: '4px',
-                                color: 'white',
-                                fontSize: '12px',
-                                padding: '4px 8px',
-                                marginTop: '4px',
-                                cursor: 'pointer',
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                                display: 'block'
-                              }}
-                            >
-                              {detectForeignCurrency(transaction.business_name)} 🔄
-                            </button>
+                          {(isDifferentCashFlow || detectForeignCurrency(transaction.business_name)) && (
+                            <div className="buttons-container" style={{
+                              display: 'flex',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              gap: '8px',
+                              marginTop: '4px',
+                              flexWrap: 'wrap'
+                            }}>
+                              {isDifferentCashFlow && (
+                                <span className="cash-flow-badge" style={{
+                                  background: 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)',
+                                  color: 'white',
+                                  fontSize: '11px',
+                                  padding: '3px 8px',
+                                  borderRadius: '4px',
+                                  fontWeight: '500'
+                                }}>
+                                  → {getTargetCashFlowName(transaction)}
+                                </span>
+                              )}
+                              {detectForeignCurrency(transaction.business_name) && (
+                                <button
+                                  type="button"
+                                  className="foreign-currency-btn"
+                                  onClick={() => handleForeignCopy(transaction)}
+                                  title={`זוהה מטבע זר: ${detectForeignCurrency(transaction.business_name)} - לחץ להעתקה לתזרים אחר`}
+                                  style={{
+                                    background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    color: 'white',
+                                    fontSize: '12px',
+                                    padding: '4px 8px',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                  }}
+                                >
+                                  {detectForeignCurrency(transaction.business_name)} 🔄
+                                </button>
+                              )}
+                            </div>
                           )}
                         </td>
                         <td>
@@ -745,6 +811,7 @@ const TransactionReviewModal = ({
                             onChange={(categoryData) => handleCategoryChange(transaction.tempId, categoryData)}
                             categories={filteredCategories}
                             placeholder="בחר קטגוריה..."
+                            preserveOrder={true}
                           />
                         </td>
                         <td>
@@ -887,6 +954,7 @@ const TransactionReviewModal = ({
                           onChange={(categoryData) => handleCategoryChange(transaction.tempId, categoryData)}
                           categories={filteredCategories}
                           placeholder="בחר קטגוריה..."
+                          preserveOrder={true}
                         />
                       </div>
 
@@ -955,6 +1023,8 @@ const TransactionReviewModal = ({
               )}
             </>
           )}
+          
+          {/* End of transaction section */}
         </div>
 
         <div className="modal-footer" style={{

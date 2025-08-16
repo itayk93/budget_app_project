@@ -13,7 +13,43 @@ class CategoryService {
   
   static async getCategories(userId = null, userClient = null) {
     try {
+      console.log('🔍 [CATEGORY SERVICE] Getting categories for user:', userId);
       const client = userClient || adminClient;
+      
+      // TEMP FIX: Get categories from category_order instead of category table
+      if (userId) {
+        console.log('🔍 [CATEGORY SERVICE] Using category_order table as temp fix...');
+        const { data: categoryOrder, error } = await client
+          .from('category_order')
+          .select('*')
+          .eq('user_id', userId)
+          .order('display_order');
+          
+        if (error) {
+          console.error('🔍 [CATEGORY SERVICE] category_order error:', error);
+          throw error;
+        }
+        
+        console.log('🔍 [CATEGORY SERVICE] Category order results:', categoryOrder?.length || 0);
+        
+        // Convert category_order to category format
+        const categories = categoryOrder?.map(order => ({
+          id: order.id,
+          name: order.category_name,
+          category_name: order.category_name,
+          user_id: order.user_id,
+          created_at: order.created_at,
+          updated_at: order.updated_at,
+          category_type: 'variable_expense',
+          color: '#2196F3',
+          is_default: false,
+          display_order: order.display_order
+        })) || [];
+        
+        console.log('🔍 [CATEGORY SERVICE] Converted categories:', categories.length);
+        return SharedUtilities.createSuccessResponse(categories);
+      }
+
       // Initialize category order if user is provided
       if (userId) {
         await this.initializeCategoryOrder(userId, client);
@@ -28,9 +64,16 @@ class CategoryService {
         query = query.eq('user_id', userId);
       }
 
+      console.log('🔍 [CATEGORY SERVICE] Executing query...');
       const { data: categories, error } = await query.order('name');
-
-      if (error) throw error;
+      console.log('🔍 [CATEGORY SERVICE] Raw categories from DB:', categories?.length || 0);
+      if (categories && categories.length > 0) {
+        console.log('🔍 [CATEGORY SERVICE] First category:', categories[0]);
+      }
+      if (error) {
+        console.error('🔍 [CATEGORY SERVICE] DB Error:', error);
+        throw error;
+      }
 
       // Ensure each category has required fields
       const processedCategories = categories.map(category => ({
@@ -42,7 +85,9 @@ class CategoryService {
 
       // Apply user's preferred category order if user_id is provided
       if (userId) {
+        console.log('🔍 [CATEGORY SERVICE] Getting user category order...');
         const preferredOrder = await this.getUserCategoryOrder(userId, client);
+        console.log('🔍 [CATEGORY SERVICE] Preferred order count:', preferredOrder?.length || 0);
         if (preferredOrder && preferredOrder.length > 0) {
           const categoryMap = {};
           processedCategories.forEach(cat => {
