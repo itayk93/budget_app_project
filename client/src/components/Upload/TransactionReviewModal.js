@@ -104,40 +104,108 @@ const TransactionReviewModal = ({
     }
   }, [cashFlows]);
 
+  // Build category hierarchy from database categories
+  const buildCategoryHierarchy = (categories) => {
+    console.log('🔍 [HIERARCHY] Building hierarchy from categories:', categories);
+    
+    if (!categories || !Array.isArray(categories) || categories.length === 0) {
+      console.log('⚠️ [HIERARCHY] No categories provided');
+      return [];
+    }
+    
+    const hierarchicalCategories = [];
+    const processedCategories = new Set();
+    
+    // First, group categories by shared_category
+    const sharedGroups = {};
+    const standaloneCategories = [];
+    
+    categories.forEach(category => {
+      const categoryName = typeof category === 'string' ? category : (category.name || category.category_name || '');
+      const sharedCategory = typeof category === 'object' ? category.shared_category : null;
+      const useSharedTarget = typeof category === 'object' ? category.use_shared_target : false;
+      
+      if (sharedCategory && useSharedTarget) {
+        if (!sharedGroups[sharedCategory]) {
+          sharedGroups[sharedCategory] = [];
+        }
+        sharedGroups[sharedCategory].push(category);
+      } else {
+        standaloneCategories.push(category);
+      }
+    });
+    
+    // Add shared category groups first
+    Object.entries(sharedGroups).forEach(([sharedCategoryName, groupCategories]) => {
+      // Add the shared category as parent
+      hierarchicalCategories.push({
+        name: sharedCategoryName,
+        isParent: true,
+        level: 0
+      });
+      
+      // Add children categories
+      groupCategories.forEach(category => {
+        const categoryName = typeof category === 'string' ? category : (category.name || category.category_name || '');
+        hierarchicalCategories.push({
+          name: categoryName,
+          isChild: true,
+          level: 1,
+          parent: sharedCategoryName
+        });
+        processedCategories.add(categoryName);
+      });
+    });
+    
+    // Add standalone categories
+    standaloneCategories.forEach(category => {
+      const categoryName = typeof category === 'string' ? category : (category.name || category.category_name || '');
+      if (!processedCategories.has(categoryName)) {
+        hierarchicalCategories.push({
+          name: categoryName,
+          isStandalone: true,
+          level: 0
+        });
+      }
+    });
+    
+    console.log('✅ [HIERARCHY] Built hierarchy:', hierarchicalCategories);
+    return hierarchicalCategories;
+  };
+
   // Handle categories data when received
   useEffect(() => {
     console.log('🔍 [MODAL DEBUG] Categories effect triggered - categoriesData:', categoriesData);
     console.log('🔍 [MODAL DEBUG] categoriesLoading:', categoriesLoading);
     console.log('🔍 [MODAL DEBUG] Number of categories:', categoriesData.length);
+    console.log('🔍 [MODAL DEBUG] categoriesError:', categoriesError);
+    console.log('🔍 [MODAL DEBUG] Type of categoriesData:', typeof categoriesData);
+    console.log('🔍 [MODAL DEBUG] Array check:', Array.isArray(categoriesData));
     if (categoriesData.length > 0) {
       console.log('🔍 [MODAL DEBUG] First 5 categories:', categoriesData.slice(0, 5).map(cat => ({
         name: cat.name,
         category_name: cat.category_name,
-        display_order: cat.display_order
+        display_order: cat.display_order,
+        shared_category: cat.shared_category,
+        use_shared_category: cat.use_shared_category
       })));
     }
-    console.log('🔍 [MODAL DEBUG] categoriesError:', categoriesError);
     
     if (categoriesData && Array.isArray(categoriesData) && categoriesData.length > 0) {
       console.log('🔍 [MODAL DEBUG] Setting categories from API:', categoriesData);
-      // Pass the full category objects to preserve ordering from the API
-      console.log('🔍 [MODAL DEBUG] Setting full category objects to preserve order');
-      setCategories(categoriesData);
+      // Build hierarchy from database categories
+      const hierarchicalCategories = buildCategoryHierarchy(categoriesData);
+      console.log('🔍 [MODAL DEBUG] Setting hierarchical categories:', hierarchicalCategories);
+      setCategories(hierarchicalCategories);
     } else if (categoriesData && !Array.isArray(categoriesData)) {
       console.log('⚠️ [MODAL DEBUG] categoriesData is not an array:', typeof categoriesData, categoriesData);
-    } else if (categoriesError || (!categoriesLoading && categoriesData.length === 0)) {
-      console.log('🔄 [MODAL DEBUG] Using fallback categories due to error or empty result');
+    } else {
+      console.log('🔄 [MODAL DEBUG] No categories or error - setting empty array');
       console.log('🔄 [MODAL DEBUG] categoriesError:', categoriesError);
       console.log('🔄 [MODAL DEBUG] categoriesLoading:', categoriesLoading);
       console.log('🔄 [MODAL DEBUG] categoriesData.length:', categoriesData.length);
-      // Use fallback categories
-      const fallbackCategories = [
-        'דיור', 'מזון ומשקאות', 'תחבורה', 'בריאות', 'חינוך', 'בילויים', 
-        'קניות', 'ביטוח', 'תשלומים קבועים', 'הוצאות משפחה', 'הכנסות', 
-        'הכנסות משתנות', 'הוצאות משתנות', 'הוצאות קבועות'
-      ];
-      console.log('🔄 [MODAL DEBUG] Setting fallback categories:', fallbackCategories);
-      setCategories(fallbackCategories);
+      // Set empty array - no fallback categories, use only database data
+      setCategories([]);
     }
   }, [categoriesData, categoriesLoading, categoriesError]);
 
@@ -812,6 +880,7 @@ const TransactionReviewModal = ({
                             categories={filteredCategories}
                             placeholder="בחר קטגוריה..."
                             preserveOrder={true}
+                            useHierarchy={true}
                           />
                         </td>
                         <td>
@@ -955,6 +1024,7 @@ const TransactionReviewModal = ({
                           categories={filteredCategories}
                           placeholder="בחר קטגוריה..."
                           preserveOrder={true}
+                          useHierarchy={true}
                         />
                       </div>
 

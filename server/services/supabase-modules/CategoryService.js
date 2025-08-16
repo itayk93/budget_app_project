@@ -32,7 +32,7 @@ class CategoryService {
         
         console.log('🔍 [CATEGORY SERVICE] Category order results:', categoryOrder?.length || 0);
         
-        // Convert category_order to category format
+        // Convert category_order to category format - include ALL fields for hierarchy
         const categories = categoryOrder?.map(order => ({
           id: order.id,
           name: order.category_name,
@@ -43,7 +43,11 @@ class CategoryService {
           category_type: 'variable_expense',
           color: '#2196F3',
           is_default: false,
-          display_order: order.display_order
+          display_order: order.display_order,
+          // Include hierarchy fields for dropdown grouping
+          shared_category: order.shared_category,
+          use_shared_category: order.use_shared_category,
+          icon: order.icon || '📝'
         })) || [];
         
         console.log('🔍 [CATEGORY SERVICE] Converted categories:', categories.length);

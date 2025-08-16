@@ -6,6 +6,8 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [dbCategories, setDbCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
   const dropdownId = useRef(`dropdown-${Math.random().toString(36).substr(2, 9)}`).current;
@@ -15,76 +17,115 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
     console.log('🔍 [CategoryDropdown] Categories updated:', categories, 'Length:', categories?.length);
   }, [categories]);
 
-  // Function to categorize categories into groups
-  const getCategoryGroup = (category) => {
-    // Handle both object format and string format
-    const categoryName = (typeof category === 'string' ? category : (category.category_name || category.name || '')).toLowerCase();
+  // Fetch categories from database in hierarchy order
+  useEffect(() => {
+    const fetchCategoriesFromDB = async () => {
+      try {
+        setLoadingCategories(true);
+        const response = await fetch('/api/categories/order');
+        if (response.ok) {
+          const data = await response.json();
+          console.log('🔍 [CategoryDropdown] Fetched categories from DB:', data);
+          setDbCategories(data);
+        } else {
+          console.error('Failed to fetch categories from database');
+          setDbCategories([]);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setDbCategories([]);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategoriesFromDB();
+  }, []);
+
+  // Function to build category hierarchy from database categories
+  const buildCategoryHierarchy = (categories) => {
+    if (!categories || categories.length === 0) return {};
     
-    if (categoryName.includes('הכנסה') || categoryName.includes('משכורת') || categoryName.includes('עבודה') || categoryName.includes('פנסיה')) {
-      return { name: 'הכנסות', icon: '💰', order: 1 };
-    } else if (categoryName.includes('משכנתא') || categoryName.includes('שכר דירה') || categoryName.includes('ארנונה') || 
-               categoryName.includes('חשמל') || categoryName.includes('גז') || categoryName.includes('מים') || 
-               categoryName.includes('אינטרנט') || categoryName.includes('טלפון') || categoryName.includes('ביטוח דירה') ||
-               categoryName.includes('ועד בית') || categoryName.includes('תיקון')) {
-      return { name: 'דיור', icon: '🏠', order: 2 };
-    } else if (categoryName.includes('סופר') || categoryName.includes('אוכל') || categoryName.includes('מסעדה') || 
-               categoryName.includes('בגדים') || categoryName.includes('קניות') || categoryName.includes('קוסמטיקה')) {
-      return { name: 'הוצאות משתנות', icon: '🛒', order: 3 };
-    } else if (categoryName.includes('דלק') || categoryName.includes('תחבורה') || categoryName.includes('ביטוח רכב') || 
-               categoryName.includes('תחזוקת רכב') || categoryName.includes('חנייה') || categoryName.includes('רכב')) {
-      return { name: 'תחבורה', icon: '🚗', order: 4 };
-    } else if (categoryName.includes('רופא') || categoryName.includes('תרופות') || categoryName.includes('פארמה') || 
-               categoryName.includes('בריאות') || categoryName.includes('רפואה')) {
-      return { name: 'בריאות', icon: '🏥', order: 5 };
-    } else if (categoryName.includes('קולנוע') || categoryName.includes('ספורט') || categoryName.includes('חופשות') || 
-               categoryName.includes('טיסות') || categoryName.includes('נופש') || categoryName.includes('פנאי') || 
-               categoryName.includes('טיסה') || categoryName.includes('ירח דבש')) {
-      return { name: 'פנאי ובידור', icon: '🎭', order: 6 };
-    } else if (categoryName.includes('נטפליקס') || categoryName.includes('ספוטיפיי') || categoryName.includes('משחקים') || 
-               categoryName.includes('אפליקציות') || categoryName.includes('דיגיטל')) {
-      return { name: 'דיגיטל', icon: '💻', order: 7 };
-    } else if (categoryName.includes('לימודים') || categoryName.includes('ספרים') || categoryName.includes('קורסים') || 
-               categoryName.includes('חינוך')) {
-      return { name: 'חינוך', icon: '🎓', order: 8 };
-    } else if (categoryName.includes('חסכון') || categoryName.includes('השקעות') || categoryName.includes('קרן פנסיה') || 
-               categoryName.includes('ביטוח חיים') || categoryName.includes('הפקדות')) {
-      return { name: 'חסכון והשקעות', icon: '💎', order: 9 };
-    } else {
-      return { name: 'אחר', icon: '📝', order: 10 };
-    }
+    // Handle mixed format (some string, some objects)
+    const normalizedCategories = categories.map((cat, index) => {
+      if (typeof cat === 'string') {
+        return {
+          category_name: cat,
+          name: cat,
+          display_order: 999 + index,
+          shared_category: null,
+          use_shared_target: false,
+          icon: '📝',
+          id: `fallback_${index}`
+        };
+      }
+      return cat;
+    });
+
+    // First, sort all categories by display_order
+    const sortedCategories = [...normalizedCategories].sort((a, b) => {
+      const orderA = a.display_order || 999;
+      const orderB = b.display_order || 999;
+      return orderA - orderB;
+    });
+
+    // Create groups based on shared_category hierarchy
+    const groups = {};
+    
+    // Process categories to build hierarchy
+    sortedCategories.forEach(cat => {
+      const categoryName = cat.category_name || cat.name;
+      
+      if (cat.shared_category && cat.use_shared_target) {
+        // This is a child category - group it under its shared parent
+        const parentName = cat.shared_category;
+        if (!groups[parentName]) {
+          groups[parentName] = {
+            icon: '📁',
+            order: 0, // Will be updated when we find the actual parent
+            categories: []
+          };
+        }
+        groups[parentName].categories.push(cat);
+      } else {
+        // This is either a standalone category or a parent category
+        if (!groups[categoryName]) {
+          groups[categoryName] = {
+            icon: cat.icon || '📝',
+            order: cat.display_order || 999,
+            categories: []
+          };
+        }
+        // Add the category itself to its group
+        groups[categoryName].categories.unshift(cat); // Add parent first
+        // Update group order to match parent's order
+        groups[categoryName].order = cat.display_order || 999;
+      }
+    });
+
+    return groups;
   };
 
+  // Determine which categories to use - database categories if available, otherwise fallback to props
+  const categoriesToUse = !loadingCategories && dbCategories.length > 0 ? dbCategories : categories;
+
   // Group categories by type (only if preserveOrder is false)
-  const groupedCategories = preserveOrder ? {
+  const groupedCategories = !categoriesToUse || categoriesToUse.length === 0 ? {} : preserveOrder ? {
     'כל הקטגוריות': {
       icon: '📋',
       order: 1,
-      categories: categories.map(category => 
+      categories: categoriesToUse.map(category => 
         typeof category === 'string' 
           ? { name: category, category_name: category, id: null }
           : category
       )
     }
-  } : categories.reduce((groups, category) => {
-    const group = getCategoryGroup(category);
-    const groupName = group.name;
-    
-    if (!groups[groupName]) {
-      groups[groupName] = {
-        icon: group.icon,
-        order: group.order,
-        categories: []
-      };
-    }
-    
-    // Convert string categories to object format for consistency
-    const categoryObj = typeof category === 'string' 
-      ? { name: category, category_name: category, id: null }
-      : category;
-    
-    groups[groupName].categories.push(categoryObj);
-    return groups;
-  }, {});
+  } : buildCategoryHierarchy(categoriesToUse.map(category => 
+      // Ensure all categories are in object format for hierarchy processing
+      typeof category === 'string' 
+        ? { name: category, category_name: category, id: null, display_order: 999 }
+        : category
+    ));
 
   // Filter categories based on search term
   const filterCategories = (categories, searchTerm) => {
@@ -109,9 +150,16 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
       categories: filterCategories(
         preserveOrder ? 
           groupData.categories : // Keep original order if preserveOrder is true
-          groupData.categories.sort((a, b) => 
-            (a.category_name || a.name).localeCompare(b.category_name || b.name, 'he')
-          ),
+          groupData.categories.sort((a, b) => {
+            // Sort by display_order first, then alphabetically for database categories
+            const orderA = a.display_order || 999;
+            const orderB = b.display_order || 999;
+            if (orderA !== orderB) {
+              return orderA - orderB;
+            }
+            // Fallback to alphabetical sort
+            return (a.category_name || a.name).localeCompare(b.category_name || b.name, 'he');
+          }),
         searchTerm
       )
     }))
@@ -425,7 +473,9 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
             />
           </div>
           <div className="dropdown-options-simple">
-            {sortedGroups.length > 0 ? (
+            {loadingCategories ? (
+              <div className="no-categories-simple">טוען קטגוריות...</div>
+            ) : sortedGroups.length > 0 ? (
               sortedGroups.map((group) => (
                 <div key={group.name} className="category-group-simple">
                   <div className="group-header-simple">

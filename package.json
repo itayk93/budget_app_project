@@ -17,6 +17,7 @@
     "dev-start": "node start.js"
   },
   "dependencies": {
+    "@anthropic-ai/claude-code": "^1.0.83",
     "@getbrevo/brevo": "^2.5.0",
     "@supabase/supabase-js": "^2.50.4",
     "archiver": "^7.0.1",
