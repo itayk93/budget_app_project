@@ -1,5 +1,33 @@
 # Claude Development Guidelines
 
+## CRITICAL: Process Management Rules
+
+### Server and Development Process Management
+**⚠️ ALWAYS CLOSE ALL RUNNING PROCESSES BEFORE FINISHING TASKS ⚠️**
+
+When working with servers, development tools, or background processes:
+
+1. **Before Ending Session**: Always kill all running Node.js processes, servers, and background tasks
+2. **Check Running Processes**: Use `lsof -i :<port>` to identify processes on specific ports
+3. **Kill Processes**: Use `kill -9 <PID>` or KillBash tool to terminate background processes
+4. **Verify Cleanup**: Confirm all ports are cleared before ending the session
+5. **User Will Restart**: The user will manually restart servers when needed - DO NOT leave them running
+
+**Example Cleanup Commands:**
+```bash
+# Check what's running on ports
+lsof -i :4000
+lsof -i :5001
+
+# Kill specific processes
+kill -9 <PID>
+
+# Use KillBash for background shells
+KillBash bash_1
+```
+
+**WHY**: Leaving processes running can cause port conflicts, memory leaks, and system instability.
+
 ## Code Refactoring Best Practices
 
 ### Incremental Refactoring Approach

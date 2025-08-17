@@ -63,7 +63,7 @@ app.use((req, res, next) => {
 });
 
 // Session configuration
-app.use(session({
+const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'hard-to-guess-string',
   resave: false,
   saveUninitialized: false,
@@ -72,7 +72,26 @@ app.use(session({
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
-}));
+};
+
+// Use Redis store in production, memory store in development
+if (process.env.NODE_ENV === 'production' && process.env.REDIS_URL) {
+  const RedisStore = require('connect-redis').default;
+  const { createClient } = require('redis');
+  
+  const redisClient = createClient({
+    url: process.env.REDIS_URL
+  });
+  
+  redisClient.connect().catch(console.error);
+  
+  sessionConfig.store = new RedisStore({
+    client: redisClient,
+    prefix: 'sess:',
+  });
+}
+
+app.use(session(sessionConfig));
 
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));

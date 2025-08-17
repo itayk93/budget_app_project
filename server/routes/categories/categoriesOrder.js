@@ -21,29 +21,14 @@ router.get('/order', authenticateToken, async (req, res) => {
     const categories = await SupabaseService.getCategories(req.user.id);
     console.log('📝 Found categories count:', categories.length);
     
-    // Add transaction counts for each category
-    const categoriesWithCounts = await Promise.all(
-      categories.map(async (category) => {
-        const { totalCount } = await SupabaseService.getTransactions(
-          req.user.id, 
-          { category_id: category.id },
-          1,
-          1
-        );
-        
-        return {
-          ...category,
-          transaction_count: totalCount
-        };
-      })
-    );
-
-    console.log('✅ About to send response with', categoriesWithCounts.length, 'categories');
-    console.log('🎯 Sample category names:', categoriesWithCounts.slice(0, 3).map(c => c.name));
+    // Return categories without transaction counts to avoid 44 DB queries
+    // Transaction counts can be fetched separately if needed
+    console.log('✅ About to send response with', categories.length, 'categories');
+    console.log('🎯 Sample category names:', categories.slice(0, 3).map(c => c.name));
     
     res.json({
-      categories: categoriesWithCounts,
-      total_count: categoriesWithCounts.length
+      categories: categories,
+      total_count: categories.length
     });
   } catch (error) {
     console.error('Get category order error:', error);

@@ -138,30 +138,17 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
 
   // Load current spending and update monthly target
   useEffect(() => {
-    const loadCurrentSpending = async () => {
-      try {
-        // ALWAYS load individual spending for each category card
-        console.log(`🔄 LOADING INDIVIDUAL SPENDING: "${categoryName}" for ${year}/${month}`);
-        const response = await categoriesAPI.getMonthlySpending(categoryName, year, month);
-        const spending = response.total_spending || response.current_spending || 0;
-        setCurrentSpending(spending);
-        console.log(`💸 INDIVIDUAL SPENDING API RESPONSE for "${categoryName}":`, {
-          total_spending: response.total_spending,
-          current_spending: response.current_spending,
-          transaction_count: response.transaction_count,
-          final_spending: spending,
-          success: response.success
-        });
-      } catch (error) {
-        console.error(`❌ ERROR loading spending for "${categoryName}":`, error);
-        setCurrentSpending(0);
-      }
-    };
-
-    if (categoryName && year && month) {
-      loadCurrentSpending();
-    }
-  }, [categoryName, year, month]);
+    // Use spending data from categoryData instead of making API calls
+    // This prevents infinite loops and reduces server load
+    const spending = Math.abs(categoryData?.spent || 0);
+    setCurrentSpending(spending);
+    
+    console.log(`💸 USING CATEGORY DATA SPENDING for "${categoryName}":`, {
+      spent: categoryData?.spent,
+      final_spending: spending,
+      from_api: false
+    });
+  }, [categoryName, categoryData?.spent]);
 
   // Separate useEffect for monthly target to avoid overriding local updates
   useEffect(() => {
