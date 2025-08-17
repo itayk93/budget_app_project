@@ -1,7 +1,6 @@
-const jwt = require('jsonwebtoken');
-const SupabaseService = require('../../server/services/supabaseService');
-
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
+  const jwt = require('jsonwebtoken');
+  const SupabaseService = require('../../server/services/supabaseService');
   // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -78,4 +77,4 @@ export default async function handler(req, res) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Login failed' });
   }
-}
+};

@@ -1,11 +1,10 @@
-const SupabaseService = require('../../server/services/supabaseService');
-const EmailService = require('../../server/services/emailService');
-const TokenService = require('../../server/services/tokenService');
+module.exports = async function handler(req, res) {
+  const SupabaseService = require('../../server/services/supabaseService');
+  const EmailService = require('../../server/services/emailService');
+  const TokenService = require('../../server/services/tokenService');
 
-const emailService = new EmailService();
-const tokenService = new TokenService();
-
-export default async function handler(req, res) {
+  const emailService = new EmailService();
+  const tokenService = new TokenService();
   // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -77,4 +76,4 @@ export default async function handler(req, res) {
     console.error('Registration error:', error);
     res.status(500).json({ error: 'Failed to create user' });
   }
-}
+};

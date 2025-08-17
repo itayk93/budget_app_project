@@ -1,9 +1,8 @@
-// Import all transaction modules
-const transactionsCrud = require('./crud');
-const transactionsAnalytics = require('./analytics');
-const transactionsBatch = require('./batch');
-
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
+  // Import all transaction modules
+  // const transactionsCrud = require('./crud');
+  // const transactionsAnalytics = require('./analytics');
+  // const transactionsBatch = require('./batch');
   // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -20,19 +19,15 @@ export default async function handler(req, res) {
   const path = query.path || [];
   
   try {
-    // Route to appropriate handler based on path
-    if (path.length === 0) {
-      // Base transactions route - CRUD operations
-      return await transactionsCrud(req, res);
-    } else if (path[0] === 'analytics') {
-      return await transactionsAnalytics(req, res);
-    } else if (path[0] === 'batch') {
-      return await transactionsBatch(req, res);
-    } else {
-      return res.status(404).json({ error: 'Not found' });
-    }
+    // Simple response for now - will expand later
+    res.json({ 
+      message: 'Transactions API endpoint', 
+      path: path,
+      method: req.method,
+      timestamp: new Date().toISOString()
+    });
   } catch (error) {
     console.error('Transaction API error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-}
+};
