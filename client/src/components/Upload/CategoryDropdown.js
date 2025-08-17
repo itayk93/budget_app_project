@@ -1,46 +1,46 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useQuery } from 'react-query';
+import { categoriesAPI } from '../../services/api';
 import './CategoryDropdown.css';
 
 const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "בחר קטגוריה...", preserveOrder = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
-  const [dbCategories, setDbCategories] = useState([]);
-  const [loadingCategories, setLoadingCategories] = useState(true);
+  // Use react-query for categories to prevent multiple API calls
+  const { 
+    data: dbCategoriesData, 
+    isLoading: loadingCategories, 
+    error: categoriesError 
+  } = useQuery(
+    'categoriesOrder',
+    categoriesAPI.getOrder,
+    {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 10 * 60 * 1000, // 10 minutes
+      refetchOnWindowFocus: false,
+      onSuccess: (data) => {
+        console.log('🔍 [CategoryDropdown] Fetched categories from DB (react-query):', data);
+      },
+      onError: (error) => {
+        console.error('Error fetching categories:', error);
+      }
+    }
+  );
+  
+  const dbCategories = dbCategoriesData?.categories || [];
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
   const dropdownId = useRef(`dropdown-${Math.random().toString(36).substr(2, 9)}`).current;
 
-  // Debug: Log categories received only when they change
+  // Debug: Log categories received only when they change (reduced logging)
   useEffect(() => {
-    console.log('🔍 [CategoryDropdown] Categories updated:', categories, 'Length:', categories?.length);
-  }, [categories]);
+    if (categories && categories.length > 0) {
+      console.log('🔍 [CategoryDropdown] Categories loaded:', categories.length, 'categories');
+    }
+  }, [categories?.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch categories from database in hierarchy order
-  useEffect(() => {
-    const fetchCategoriesFromDB = async () => {
-      try {
-        setLoadingCategories(true);
-        const response = await fetch('/api/categories/order');
-        if (response.ok) {
-          const data = await response.json();
-          console.log('🔍 [CategoryDropdown] Fetched categories from DB:', data);
-          setDbCategories(data);
-        } else {
-          console.error('Failed to fetch categories from database');
-          setDbCategories([]);
-        }
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-        setDbCategories([]);
-      } finally {
-        setLoadingCategories(false);
-      }
-    };
-
-    fetchCategoriesFromDB();
-  }, []);
 
   // Function to build category hierarchy from database categories
   const buildCategoryHierarchy = (categories) => {

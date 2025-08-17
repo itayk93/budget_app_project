@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from 'react-query';
 import { categoriesAPI, cashFlowsAPI } from '../../services/api';
 import LoadingSpinner from '../Common/LoadingSpinner';
@@ -18,7 +18,6 @@ const TransactionReviewModal = ({
   const [deletedTransactionIds, setDeletedTransactionIds] = useState(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState([]);
-  const [filteredCategories, setFilteredCategories] = useState([]);
   const [showNonCashFlowOnly] = useState(false);
   
   // Duplicate handling state
@@ -172,54 +171,54 @@ const TransactionReviewModal = ({
     return hierarchicalCategories;
   };
 
-  // Handle categories data when received
-  useEffect(() => {
-    console.log('🔍 [MODAL DEBUG] Categories effect triggered - categoriesData:', categoriesData);
+  // Memoize the hierarchical categories to prevent infinite loops
+  const hierarchicalCategories = useMemo(() => {
+    console.log('🔍 [MODAL DEBUG] Categories useMemo triggered - categoriesData:', categoriesData);
     console.log('🔍 [MODAL DEBUG] categoriesLoading:', categoriesLoading);
     console.log('🔍 [MODAL DEBUG] Number of categories:', categoriesData.length);
     console.log('🔍 [MODAL DEBUG] categoriesError:', categoriesError);
     console.log('🔍 [MODAL DEBUG] Type of categoriesData:', typeof categoriesData);
     console.log('🔍 [MODAL DEBUG] Array check:', Array.isArray(categoriesData));
-    if (categoriesData.length > 0) {
-      console.log('🔍 [MODAL DEBUG] First 5 categories:', categoriesData.slice(0, 5).map(cat => ({
-        name: cat.name,
-        category_name: cat.category_name,
-        display_order: cat.display_order,
-        shared_category: cat.shared_category,
-        use_shared_category: cat.use_shared_category
-      })));
-    }
     
     if (categoriesData && Array.isArray(categoriesData) && categoriesData.length > 0) {
-      console.log('🔍 [MODAL DEBUG] Setting categories from API:', categoriesData);
+      console.log('🔍 [MODAL DEBUG] Building hierarchy from API data:', categoriesData);
+      if (categoriesData.length > 0) {
+        console.log('🔍 [MODAL DEBUG] First 5 categories:', categoriesData.slice(0, 5).map(cat => ({
+          name: cat.name,
+          category_name: cat.category_name,
+          display_order: cat.display_order,
+          shared_category: cat.shared_category,
+          use_shared_category: cat.use_shared_category
+        })));
+      }
       // Build hierarchy from database categories
-      const hierarchicalCategories = buildCategoryHierarchy(categoriesData);
-      console.log('🔍 [MODAL DEBUG] Setting hierarchical categories:', hierarchicalCategories);
-      setCategories(hierarchicalCategories);
+      const hierarchy = buildCategoryHierarchy(categoriesData);
+      console.log('🔍 [MODAL DEBUG] Built hierarchical categories:', hierarchy);
+      return hierarchy;
     } else if (categoriesData && !Array.isArray(categoriesData)) {
       console.log('⚠️ [MODAL DEBUG] categoriesData is not an array:', typeof categoriesData, categoriesData);
+      return [];
     } else {
-      console.log('🔄 [MODAL DEBUG] No categories or error - setting empty array');
+      console.log('🔄 [MODAL DEBUG] No categories or error - returning empty array');
       console.log('🔄 [MODAL DEBUG] categoriesError:', categoriesError);
       console.log('🔄 [MODAL DEBUG] categoriesLoading:', categoriesLoading);
-      console.log('🔄 [MODAL DEBUG] categoriesData.length:', categoriesData.length);
-      // Set empty array - no fallback categories, use only database data
-      setCategories([]);
+      console.log('🔄 [MODAL DEBUG] categoriesData.length:', categoriesData?.length || 0);
+      // Return empty array - no fallback categories, use only database data
+      return [];
     }
-  }, [categoriesData, categoriesLoading, categoriesError]);
+  }, [categoriesData]);
 
-  // Filter categories based on non-cash flow checkbox
-  useEffect(() => {
+  // Filter categories based on non-cash flow checkbox using hierarchical categories directly
+  const filteredCategories = useMemo(() => {
     if (showNonCashFlowOnly) {
-      const nonCashFlowCategories = categories.filter(category => {
+      return hierarchicalCategories.filter(category => {
         const categoryName = typeof category === 'string' ? category : (category.name || category.category_name || '');
         return categoryName.includes('לא תזרימיות');
       });
-      setFilteredCategories(nonCashFlowCategories);
     } else {
-      setFilteredCategories(categories);
+      return hierarchicalCategories;
     }
-  }, [categories, showNonCashFlowOnly]);
+  }, [hierarchicalCategories, showNonCashFlowOnly]);
 
   // Initialize edited transactions when modal opens
   useEffect(() => {
