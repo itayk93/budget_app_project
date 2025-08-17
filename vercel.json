@@ -3,11 +3,6 @@
   "outputDirectory": "client/build",
   "installCommand": "npm install",
   "devCommand": "cd client && npm start",
-  "functions": {
-    "api/**/*.js": {
-      "runtime": "@vercel/node"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/transactions/(.*)",
