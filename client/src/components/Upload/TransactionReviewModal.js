@@ -876,9 +876,7 @@ const TransactionReviewModal = ({
                             value={transaction.category_name || ''}
                             onChange={(categoryData) => handleCategoryChange(transaction.tempId, categoryData)}
                             categories={filteredCategories}
-                            placeholder="בחר קטגוריה..."
-                            preserveOrder={true}
-                            useHierarchy={true}
+                            preserveOrder={false}
                           />
                         </td>
                         <td>
@@ -1020,9 +1018,7 @@ const TransactionReviewModal = ({
                           value={transaction.category_name || ''}
                           onChange={(categoryData) => handleCategoryChange(transaction.tempId, categoryData)}
                           categories={filteredCategories}
-                          placeholder="בחר קטגוריה..."
-                          preserveOrder={true}
-                          useHierarchy={true}
+                          preserveOrder={false}
                         />
                       </div>
 

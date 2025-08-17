@@ -42,6 +42,17 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
   }, [categories?.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
+  // Get appropriate icon for group based on group name
+  const getGroupIcon = (groupName) => {
+    const iconMap = {
+      'הוצאות קבועות': '🏠',
+      'הפקדות לחיסכון': '💰',
+      'הכנסות': '💵',
+      'לא בתזרים': '📊',
+    };
+    return iconMap[groupName] || '📁';
+  };
+
   // Function to build category hierarchy from database categories
   const buildCategoryHierarchy = (categories) => {
     if (!categories || categories.length === 0) return {};
@@ -73,41 +84,62 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
     const groups = {};
     
     // Process categories to build hierarchy
+    // First pass: group categories by shared_category
+    const sharedGroups = {};
+    const standaloneCategories = [];
+    
     sortedCategories.forEach(cat => {
       const categoryName = cat.category_name || cat.name;
       
-      if (cat.shared_category && cat.use_shared_target) {
-        // This is a child category - group it under its shared parent
-        const parentName = cat.shared_category;
-        if (!groups[parentName]) {
-          groups[parentName] = {
-            icon: '📁',
-            order: 0, // Will be updated when we find the actual parent
-            categories: []
-          };
-        }
-        groups[parentName].categories.push(cat);
-      } else {
-        // This is either a standalone category or a parent category
-        if (!groups[categoryName]) {
-          groups[categoryName] = {
-            icon: cat.icon || '📝',
+      if (cat.shared_category) {
+        // This category belongs to a shared group
+        const groupName = cat.shared_category;
+        if (!sharedGroups[groupName]) {
+          sharedGroups[groupName] = {
+            icon: getGroupIcon(groupName),
             order: cat.display_order || 999,
             categories: []
           };
         }
-        // Add the category itself to its group
-        groups[categoryName].categories.unshift(cat); // Add parent first
-        // Update group order to match parent's order
-        groups[categoryName].order = cat.display_order || 999;
+        sharedGroups[groupName].categories.push(cat);
+        // Update group order to be the minimum display_order of its categories
+        sharedGroups[groupName].order = Math.min(sharedGroups[groupName].order, cat.display_order || 999);
+      } else {
+        // This is a standalone category
+        standaloneCategories.push(cat);
       }
     });
+    
+    // Second pass: add shared groups and standalone categories to final groups
+    Object.entries(sharedGroups).forEach(([groupName, groupData]) => {
+      groups[groupName] = groupData;
+    });
+    
+    // Add standalone categories under a general group
+    if (standaloneCategories.length > 0) {
+      groups['קטגוריות אישיות'] = {
+        icon: '📝',
+        order: -1, // Show at the top
+        categories: standaloneCategories
+      };
+    }
 
     return groups;
   };
 
-  // Determine which categories to use - database categories if available, otherwise fallback to props
-  const categoriesToUse = !loadingCategories && dbCategories.length > 0 ? dbCategories : categories;
+  // Determine which categories to use - prioritize dbCategories when not preserving order
+  const categoriesToUse = !preserveOrder && !loadingCategories && dbCategories.length > 0 
+    ? dbCategories 
+    : categories;
+  
+  // Debug logging
+  console.log('🔍 [CategoryDropdown] Debug info:', {
+    loadingCategories,
+    dbCategoriesLength: dbCategories.length,
+    categoriesLength: categories.length,
+    preserveOrder,
+    usingDbCategories: !loadingCategories && dbCategories.length > 0
+  });
 
   // Group categories by type (only if preserveOrder is false)
   const groupedCategories = !categoriesToUse || categoriesToUse.length === 0 ? {} : preserveOrder ? {
