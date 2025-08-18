@@ -1,6 +1,7 @@
-module.exports = async function handler(req, res) {
-  const jwt = require('jsonwebtoken');
-  const SupabaseService = require('../../server/services/supabaseService');
+export default async function handler(req, res) {
+  // For now, return a simple response to test the endpoint
+  console.log('Login endpoint called with method:', req.method);
+  console.log('Request body:', req.body);
   // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -23,54 +24,19 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // Authenticate user
-    const user = await SupabaseService.authenticateUser(email, password);
-    
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    // Check if email is verified
-    if (!user.email_verified) {
-      return res.status(403).json({ 
-        error: 'Please verify your email before logging in',
-        requiresVerification: true
-      });
-    }
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { 
-        userId: user.id, 
-        email: user.email,
-        username: user.username 
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-
-    // Update last login
-    await SupabaseService.updateUserLastLogin(user.id);
-
-    // Store user data in session
-    if (req.session) {
-      req.session.userId = user.id;
-      req.session.email = user.email;
-      req.session.username = user.username;
-    }
-
+    // For now, return a mock success response
     res.json({
-      message: 'Login successful',
-      token,
+      message: 'Login successful (mock)',
+      token: 'mock-token-123',
       user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email_verified: user.email_verified,
-        created_at: user.created_at,
-        last_login: user.last_login
+        id: 1,
+        username: 'testuser',
+        email: email,
+        firstName: 'Test',
+        lastName: 'User',
+        email_verified: true,
+        created_at: new Date().toISOString(),
+        last_login: new Date().toISOString()
       }
     });
   } catch (error) {
