@@ -280,10 +280,6 @@ export const uploadAPI = {
   
   // Create EventSource for currency groups progress (SSE)
   createCurrencyGroupsProgressStream: (tempId) => {
-    const baseURL = process.env.NODE_ENV === 'production' 
-      ? '/api' 
-      : 'http://localhost:5001/api';
-    
     // Note: EventSource doesn't support custom headers, so we need to handle auth differently
     // For now, we'll use the polling endpoint instead
     return null;

@@ -17,7 +17,6 @@ const TransactionReviewModal = ({
   const [editedTransactions, setEditedTransactions] = useState([]);
   const [deletedTransactionIds, setDeletedTransactionIds] = useState(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [categories, setCategories] = useState([]);
   const [showNonCashFlowOnly] = useState(false);
   
   // Duplicate handling state
@@ -213,7 +212,7 @@ const TransactionReviewModal = ({
       // Return empty array - no fallback categories, use only database data
       return [];
     }
-  }, [categoriesData]);
+  }, [categoriesData, categoriesError, categoriesLoading]);
 
   // Filter categories based on non-cash flow checkbox using hierarchical categories directly
   const filteredCategories = useMemo(() => {

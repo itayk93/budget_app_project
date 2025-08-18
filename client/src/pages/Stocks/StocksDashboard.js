@@ -405,27 +405,7 @@ const usePortfolioData = (transactions, currentPrices = {}) => {
 
 // --- UI Components ---
 
-const Card = ({ title, value, change, icon, className = 'text-gray-900' }) => (
-    <div style={{
-        backgroundColor: 'white',
-        padding: '1.5rem',
-        borderRadius: '1.5rem',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        minHeight: '120px'
-    }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-            <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#64748b', margin: 0 }}>{title}</h3>
-            <div style={{ fontSize: '1.5rem' }}>{icon}</div>
-        </div>
-        <div>
-            <p className="currency-value" style={{ fontSize: '2rem', fontWeight: '800', color: '#1f2937', margin: 0, lineHeight: 1.1 }}>{value}</p>
-            {change && <p style={{ fontSize: '0.875rem', fontWeight: '500', color: change.startsWith('+') ? '#10b981' : '#ef4444', margin: '0.25rem 0 0 0' }}>{change}</p>}
-        </div>
-    </div>
-);
+// Removed unused Card component
 
 
 
