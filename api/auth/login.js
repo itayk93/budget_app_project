@@ -18,10 +18,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { email, password } = req.body;
+    // Handle both email and username field names
+    const { email, username, password } = req.body;
+    const userEmail = email || username;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    if (!userEmail || !password) {
+      return res.status(400).json({ error: 'Email/username and password are required' });
     }
 
     // For now, return a mock success response
@@ -31,7 +33,7 @@ export default async function handler(req, res) {
       user: {
         id: 1,
         username: 'testuser',
-        email: email,
+        email: userEmail,
         firstName: 'Test',
         lastName: 'User',
         email_verified: true,
