@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5001/api',
+  baseURL: process.env.NODE_ENV === 'production' 
+    ? 'https://budget-app-project-kc5uo0n96-itays-projects-8e2b877e.vercel.app/api' 
+    : 'http://localhost:5001/api',
   headers: {
     'Content-Type': 'application/json'
   }
