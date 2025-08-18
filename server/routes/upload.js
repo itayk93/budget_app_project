@@ -1304,10 +1304,55 @@ router.get('/review_currency_groups/:temp_id', authenticateToken, async (req, re
     const { temp_id } = req.params;
     const userId = req.user.id;
 
-    // Get session data
-    const sessionData = currencyGroupsSessions.get(temp_id);
-    if (!sessionData || sessionData.userId !== userId) {
-      return res.status(404).json({ error: 'Currency groups session not found' });
+    // Try to get from temp file first (workingExcelService stores here)
+    const uploadFolder = path.join(__dirname, '../uploads');
+    const tempFilePath = path.join(uploadFolder, `currency_groups_${temp_id}.json`);
+    
+    let sessionData;
+    
+    if (fs.existsSync(tempFilePath)) {
+      console.log(`📁 [CURRENCY GROUPS] Loading from temp file: ${tempFilePath}`);
+      try {
+        const fileData = fs.readFileSync(tempFilePath, 'utf8');
+        const currencyGroupsData = JSON.parse(fileData);
+        
+        if (currencyGroupsData.user_id !== userId) {
+          return res.status(404).json({ error: 'Currency groups session not found' });
+        }
+        
+        sessionData = {
+          userId: currencyGroupsData.user_id,
+          currencyGroups: currencyGroupsData.currencies,
+          originalDetails: {
+            original_file: currencyGroupsData.original_file || 'uploaded_file',
+            total_transactions: Object.values(currencyGroupsData.currencies).reduce((sum, group) => sum + group.count, 0)
+          }
+        };
+        
+        console.log(`✅ [CURRENCY GROUPS] Successfully loaded from temp file with ${Object.keys(currencyGroupsData.currencies).length} currencies`);
+        
+        // Check if any transactions have recipient_name
+        for (const [currency, group] of Object.entries(currencyGroupsData.currencies)) {
+          const withRecipient = group.transactions.filter(t => t.recipient_name);
+          if (withRecipient.length > 0) {
+            console.log(`🎯 [CURRENCY GROUPS] Found ${withRecipient.length} transactions with recipient_name in ${currency}:`);
+            withRecipient.slice(0, 3).forEach(t => {
+              console.log(`  - "${t.business_name}" -> recipient: "${t.recipient_name}"`);
+            });
+          }
+        }
+        
+      } catch (error) {
+        console.error(`❌ [CURRENCY GROUPS] Error reading temp file:`, error);
+        return res.status(500).json({ error: 'Failed to load currency groups data' });
+      }
+    } else {
+      // Fallback to in-memory session
+      console.log(`💾 [CURRENCY GROUPS] Temp file not found, trying in-memory session`);
+      sessionData = currencyGroupsSessions.get(temp_id);
+      if (!sessionData || sessionData.userId !== userId) {
+        return res.status(404).json({ error: 'Currency groups session not found' });
+      }
     }
 
     // Get user's cash flows for the selection
@@ -1343,13 +1388,61 @@ router.post('/handle_currency_groups', authenticateToken, async (req, res) => {
       });
     }
 
-    // Get session data
-    const sessionData = currencyGroupsSessions.get(temp_id);
-    if (!sessionData || sessionData.userId !== userId) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Currency groups session not found' 
-      });
+    // Try to get from temp file first (workingExcelService stores here with recipient_name)
+    const uploadFolder = path.join(__dirname, '../uploads');
+    const tempFilePath = path.join(uploadFolder, `currency_groups_${temp_id}.json`);
+    
+    let sessionData;
+    
+    if (fs.existsSync(tempFilePath)) {
+      console.log(`📁 [HANDLE CURRENCY] Loading from temp file: ${tempFilePath}`);
+      try {
+        const fileData = fs.readFileSync(tempFilePath, 'utf8');
+        const currencyGroupsData = JSON.parse(fileData);
+        
+        if (currencyGroupsData.user_id !== userId) {
+          return res.status(404).json({ 
+            success: false, 
+            message: 'Currency groups session not found' 
+          });
+        }
+        
+        sessionData = {
+          userId: currencyGroupsData.user_id,
+          currencyGroups: currencyGroupsData.currencies
+        };
+        
+        console.log(`✅ [HANDLE CURRENCY] Successfully loaded from temp file with ${Object.keys(currencyGroupsData.currencies).length} currencies`);
+        
+        // Log recipient_name preservation
+        for (const [currency, group] of Object.entries(currencyGroupsData.currencies)) {
+          const withRecipient = group.transactions.filter(t => t.recipient_name);
+          if (withRecipient.length > 0) {
+            console.log(`🎯 [HANDLE CURRENCY] Found ${withRecipient.length} transactions with recipient_name in ${currency}:`);
+            withRecipient.slice(0, 3).forEach(t => {
+              console.log(`  - "${t.business_name}" -> recipient: "${t.recipient_name}"`);
+            });
+          }
+        }
+        
+      } catch (error) {
+        console.error(`❌ [HANDLE CURRENCY] Error reading temp file:`, error);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to load currency groups data',
+          details: error.message
+        });
+      }
+    } else {
+      // Fallback to in-memory session
+      console.log(`💾 [HANDLE CURRENCY] Temp file not found, trying in-memory session`);
+      sessionData = currencyGroupsSessions.get(temp_id);
+      if (!sessionData || sessionData.userId !== userId) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Currency groups session not found' 
+        });
+      }
     }
 
     // Process each currency decision
@@ -1420,8 +1513,19 @@ router.post('/handle_currency_groups', authenticateToken, async (req, res) => {
       });
     }
 
-    // Clean up currency groups session
+    // Clean up currency groups session and temp file
     currencyGroupsSessions.delete(temp_id);
+    
+    // Clean up temp file if it exists
+    const cleanupTempFilePath = path.join(uploadFolder, `currency_groups_${temp_id}.json`);
+    if (fs.existsSync(cleanupTempFilePath)) {
+      try {
+        fs.unlinkSync(cleanupTempFilePath);
+        console.log(`🗑️ [CLEANUP] Deleted temp file: ${cleanupTempFilePath}`);
+      } catch (error) {
+        console.error(`⚠️ [CLEANUP] Failed to delete temp file: ${cleanupTempFilePath}`, error);
+      }
+    }
 
     const response = {
       success: true,

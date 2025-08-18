@@ -28,6 +28,13 @@ const TransactionReviewModal = ({
   // Source cash flow selection state
   const [selectedSourceCashFlowId, setSelectedSourceCashFlowId] = useState(cashFlowId || '');
   
+  // Update selected cash flow when cashFlowId prop changes
+  useEffect(() => {
+    if (cashFlowId) {
+      setSelectedSourceCashFlowId(cashFlowId);
+    }
+  }, [cashFlowId]);
+  
   // Foreign currency copy state
   const [isForeignCopyModalOpen, setIsForeignCopyModalOpen] = useState(false);
   const [selectedTransactionForCopy, setSelectedTransactionForCopy] = useState(null);
@@ -233,64 +240,8 @@ const TransactionReviewModal = ({
         originalIndex: tx.originalIndex !== undefined ? tx.originalIndex : index
       }));
       
-      // Extract recipient names from PAYBOX transactions before setting state
-      const transactionsWithRecipients = processedTransactions.map(tx => {
-        // For duplicate transactions, prioritize original file data over existing database data
-        let notesToProcess = tx.notes;
-        
-        // If this is a duplicate transaction, check if we have original file notes
-        if (tx.isDuplicate && tx.duplicateInfo && tx.duplicateInfo.original_notes !== undefined) {
-          // Use original notes from the file, not the existing database notes
-          notesToProcess = tx.duplicateInfo.original_notes;
-          console.log(`🔄 [DUPLICATE FIX] Using original notes for duplicate: "${notesToProcess}" instead of: "${tx.notes}"`);
-          
-          // If original file notes are null/empty, don't extract recipient
-          if (!notesToProcess) {
-            console.log(`⚠️ [DUPLICATE FIX] Original file has no notes - skipping recipient extraction`);
-            // Keep existing recipient_name if user has manually entered it, or clear if it was auto-extracted
-            return {
-              ...tx,
-              recipient_name: tx.recipient_name || null, // Preserve manual entry or clear auto-extracted
-              notes: notesToProcess // Use original file notes (null/empty)
-            };
-          }
-        }
-        
-        if (tx.business_name && tx.business_name.includes('PAYBOX') && notesToProcess) {
-          // Try multiple patterns for recipient extraction
-          let recipientMatch = null;
-          let pattern = null;
-          let recipientName = null;
-          
-          // Pattern 1: "למי: [name]"
-          recipientMatch = notesToProcess.match(/למי:\s*(.+?)(?:\s+(?:some|additional|notes|info|details|comment|remark)|$)/);
-          if (recipientMatch) {
-            recipientName = recipientMatch[1].trim();
-            pattern = new RegExp(`למי:\\s*${recipientName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s+|$)`, 'g');
-            console.log(`🎯 [FRONTEND EXTRACTION] Found recipient with "למי:" pattern: "${recipientName}"`);
-          } else {
-            // Pattern 2: "שובר ל-[name]" or "שוברים ל-[name]" or "שוברים לקניה ב-[name]"
-            recipientMatch = notesToProcess.match(/שוברי?ם?\s+ל(?:קניה\s+ב)?-(.+?)(?:\s+|$)/);
-            if (recipientMatch) {
-              recipientName = recipientMatch[1].trim();
-              pattern = new RegExp(`שוברי?ם?\\s+ל(?:קניה\\s+ב)?-${recipientName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s+|$)`, 'g');
-              console.log(`🎯 [FRONTEND EXTRACTION] Found recipient with "שובר/שוברים" pattern: "${recipientName}"`);
-            }
-          }
-          
-          if (recipientName) {
-            // Clean the notes by removing the recipient pattern
-            const cleanedNotes = notesToProcess.replace(pattern, '').trim();
-            
-            return {
-              ...tx,
-              recipient_name: recipientName,
-              notes: cleanedNotes || null
-            };
-          }
-        }
-        return tx;
-      });
+      // Don't extract recipients here - server already handled this
+      const transactionsWithRecipients = processedTransactions;
 
       setEditedTransactions(transactionsWithRecipients);
       setDeletedTransactionIds(new Set());

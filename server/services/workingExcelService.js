@@ -1693,9 +1693,77 @@ class WorkingExcelService {
     transaction.notes = transaction.notes || '';
     transaction.flow_month = transaction.flow_month || '2000-01';
     
+    // Extract recipient_name from notes if pattern exists
+    this.extractRecipientFromNotes(transaction);
+    
+    // Debug: Log recipient_name after extraction
+    if (transaction.recipient_name) {
+      console.log(`✅ [RECIPIENT PRESERVED] Transaction ${transaction.business_name} has recipient_name: "${transaction.recipient_name}"`);
+    }
+    
     transaction.transaction_hash = SupabaseService.generateTransactionHash(transaction);
+    
+    // Debug: Final check that recipient_name is still there
+    if (transaction.recipient_name) {
+      console.log(`🔧 [FINAL CHECK] Transaction ${transaction.business_name} still has recipient_name: "${transaction.recipient_name}" before return`);
+    }
 
     return transaction;
+  }
+
+  extractRecipientFromNotes(transaction) {
+    if (!transaction.notes || typeof transaction.notes !== 'string') {
+      return;
+    }
+    
+    const notes = transaction.notes.trim();
+    if (!notes) {
+      return;
+    }
+    
+    // Debug: Log the notes we're trying to extract from
+    console.log(`🔍 [EXTRACTION DEBUG] Processing notes: "${notes}" for business: "${transaction.business_name}"`);
+    console.log(`🔍 [EXTRACTION DEBUG] Notes length: ${notes.length}, Contains ל-: ${notes.includes('ל-')}`);
+    console.log(`🔍 [EXTRACTION DEBUG] Notes includes שוברים: ${notes.includes('שוברים')}, שובר: ${notes.includes('שובר')}`);
+    console.log(`🔍 [EXTRACTION DEBUG] Notes includes למי: ${notes.includes('למי:')}`);
+    
+    
+    // Pattern 1: "למי: [name]" - capture the full name until end of line or string
+    let recipientMatch = notes.match(/למי:\s*(.+?)(?:\n|$)/);
+    if (recipientMatch) {
+      const recipientName = recipientMatch[1].trim();
+      transaction.recipient_name = recipientName;
+      // Remove the entire "למי: [name]" pattern from notes
+      transaction.notes = notes.replace(/למי:\s*.+?(?:\n|$)/g, '').trim() || null;
+      console.log(`🎯 [SERVER EXTRACTION] Found recipient with "למי:" pattern: "${recipientName}"`);
+      return;
+    }
+    
+    // Pattern 2: "שובר ל-[name]" or "שוברים ל-[name]" or "שוברים לקניה ב-[name]"
+    recipientMatch = notes.match(/שוברי?ם?\s*ל(?:קניה\s+ב)?-(.+?)(?:\s|$)/);
+    if (recipientMatch) {
+      const recipientName = recipientMatch[1].trim();
+      transaction.recipient_name = recipientName;
+      // Remove the entire pattern from notes  
+      transaction.notes = notes.replace(/שוברי?ם?\s*ל(?:קניה\s+ב)?-.+?(?:\s|$)/g, '').trim() || null;
+      console.log(`🎯 [SERVER EXTRACTION] Found recipient with "שובר/שוברים ל-" pattern: "${recipientName}"`);
+      console.log(`🎯 [SERVER EXTRACTION] Original notes: "${notes}"`);
+      console.log(`🎯 [SERVER EXTRACTION] Updated notes: "${transaction.notes}"`);
+      return;
+    }
+    
+    // Pattern 3: "שובר מ-[name]" or "שוברים מ-[name]"
+    recipientMatch = notes.match(/שוברי?ם?\s*מ-(.+?)(?:\s|$)/);
+    if (recipientMatch) {
+      const recipientName = recipientMatch[1].trim();
+      transaction.recipient_name = recipientName;
+      // Remove the entire pattern from notes
+      transaction.notes = notes.replace(/שוברי?ם?\s*מ-.+?(?:\s|$)/g, '').trim() || null;
+      console.log(`🎯 [SERVER EXTRACTION] Found recipient with "שובר/שוברים מ-" pattern: "${recipientName}"`);
+      console.log(`🎯 [SERVER EXTRACTION] Original notes: "${notes}"`);
+      console.log(`🎯 [SERVER EXTRACTION] Updated notes: "${transaction.notes}"`);
+      return;
+    }
   }
 
   findColumnValue(row, possibleColumns) {
@@ -1941,6 +2009,11 @@ class WorkingExcelService {
       groups[currency].transactions.push(transaction);
       groups[currency].totalAmount += Math.abs(transaction.amount || 0);
       groups[currency].count++;
+      
+      // Debug: Check if recipient_name survives groupByCurrency
+      if (transaction.recipient_name) {
+        console.log(`📦 [GROUP BY CURRENCY] Transaction ${transaction.business_name} has recipient_name: "${transaction.recipient_name}"`);
+      }
     }
 
     console.log('💱 Currency grouping complete:', 
@@ -4064,8 +4137,20 @@ class WorkingExcelService {
 
     // Step 3: Handle duplicates - if found, don't import anything automatically
     const allTransactions = Object.values(currencyGroups).flat();
+    
+    // Debug: Check for undefined transactions
+    const undefinedCount = allTransactions.filter(t => !t).length;
+    if (undefinedCount > 0) {
+      console.log(`⚠️ [UNDEFINED CHECK] Found ${undefinedCount} undefined transactions out of ${allTransactions.length} total`);
+    }
+    
+    // Debug: Check if recipient_name survives the flattening process
+    const recipientTransactionsAfterFlat = allTransactions.filter(t => t && t.recipient_name);
+    console.log(`🚨 [AFTER FLAT] Found ${recipientTransactionsAfterFlat.length} transactions with recipient_name after flattening:`, 
+      recipientTransactionsAfterFlat.map(t => ({ business_name: t.business_name, recipient_name: t.recipient_name })));
+    
     const duplicateHashes = new Set(potentialDuplicates.map(d => d.transaction_hash));
-    const nonDuplicateTransactions = allTransactions.filter(t => !duplicateHashes.has(t.transaction_hash));
+    const nonDuplicateTransactions = allTransactions.filter(t => t && !duplicateHashes.has(t.transaction_hash));
     
     console.log(`📊 [BATCH IMPORT] Found ${nonDuplicateTransactions.length} non-duplicate transactions out of ${allTransactions.length} total`);
     console.log(`📋 Batch transaction analysis: ${allTransactions.length} total transactions processed from ${Object.keys(currencyGroups).length} currency groups`);
@@ -4088,6 +4173,8 @@ class WorkingExcelService {
       const tempId = uuidv4();
       result.temp_duplicates_id = tempId;
       result.has_duplicates = true;
+      // Include non-duplicate transactions with recipient_name for modal review
+      result.nonDuplicateTransactions = nonDuplicateTransactions;
       
       console.log(`✅ [BATCH DUPLICATES] Found ${potentialDuplicates.length} duplicates with temp_id: ${tempId}`);
 
@@ -4097,6 +4184,13 @@ class WorkingExcelService {
         fs.mkdirSync(uploadFolder, { recursive: true });
       }
       
+      // Debug: Check if recipient_name is preserved in allTransactions
+      const recipientTransactions = allTransactions.filter(t => t && t.recipient_name);
+      if (recipientTransactions.length > 0) {
+        console.log(`🎯 [DUPLICATES DEBUG] Found ${recipientTransactions.length} transactions with recipient_name:`, 
+          recipientTransactions.map(t => ({ business_name: t.business_name, recipient_name: t.recipient_name })));
+      }
+
       const duplicatesData = {
         duplicates: potentialDuplicates,
         transactions: allTransactions, // Include ALL transactions for user decision

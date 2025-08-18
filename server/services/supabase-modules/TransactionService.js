@@ -455,51 +455,6 @@ class TransactionService {
     }
   }
 
-  // ===== RECIPIENT NAME EXTRACTION =====
-  
-  static extractRecipientName(businessName, notes) {
-    // Check if this is a PAYBOX transaction and has recipient info in notes
-    if (businessName && businessName.includes('PAYBOX') && notes) {
-      // Try multiple patterns for recipient extraction
-      let recipientMatch = null;
-      let pattern = null;
-      let recipientName = null;
-      
-      // Pattern 1: "למי: [name]"
-      recipientMatch = notes.match(/למי:\s*(.+?)(?:\s+(?:some|additional|notes|info|details|comment|remark)|$)/);
-      if (recipientMatch) {
-        recipientName = recipientMatch[1].trim();
-        pattern = new RegExp(`למי:\\s*${recipientName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s+|$)`, 'g');
-        console.log(`🎯 [RECIPIENT EXTRACTION] Found recipient with "למי:" pattern: "${recipientName}"`);
-      } else {
-        // Pattern 2: "שובר ל-[name]" or "שוברים ל-[name]" or "שוברים לקניה ב-[name]"
-        recipientMatch = notes.match(/שוברי?ם?\s+ל(?:קניה\s+ב)?-(.+?)(?:\s+|$)/);
-        if (recipientMatch) {
-          recipientName = recipientMatch[1].trim();
-          pattern = new RegExp(`שוברי?ם?\\s+ל(?:קניה\\s+ב)?-${recipientName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s+|$)`, 'g');
-          console.log(`🎯 [RECIPIENT EXTRACTION] Found recipient with "שובר/שוברים" pattern: "${recipientName}"`);
-        }
-      }
-      
-      if (recipientName) {
-        // Clean the notes by removing the recipient pattern
-        const cleanedNotes = notes.replace(pattern, '').trim();
-        
-        return {
-          recipientName: recipientName,
-          cleanedNotes: cleanedNotes || null
-        };
-      }
-    }
-    
-    // For other transfer types (can be extended later)
-    // TODO: Add support for BIT transfers, bank transfers, etc.
-    
-    return {
-      recipientName: null,
-      cleanedNotes: notes
-    };
-  }
 
   // ===== TRANSACTION CREATION =====
   
@@ -565,23 +520,20 @@ class TransactionService {
         }
       }
 
-      // Only extract recipient name if user didn't manually provide one
+      // Use recipient name and notes as provided from file processing
       let finalRecipientName = transactionData.recipient_name;
       let finalNotes = transactionData.notes;
       
-      if (!transactionData.recipient_name && transactionData.business_name && transactionData.business_name.includes('PAYBOX') && transactionData.notes) {
-        // Only auto-extract if user didn't provide recipient_name manually
-        const recipientInfo = this.extractRecipientName(
-          transactionData.business_name,
-          transactionData.notes
-        );
-        finalRecipientName = recipientInfo.recipientName;
-        finalNotes = recipientInfo.cleanedNotes;
-        
-        if (recipientInfo.recipientName) {
-          console.log(`🎯 [AUTO-EXTRACT] Auto-extracted recipient_name: "${recipientInfo.recipientName}"`);
+      // Extract recipient_name from notes if not already present
+      if (!finalRecipientName && finalNotes) {
+        const recipientMatch = finalNotes.match(/למי:\s*([^,\n\r]+)/);
+        if (recipientMatch) {
+          finalRecipientName = recipientMatch[1].trim();
+          console.log(`🎯 [DB EXTRACTION] Extracted recipient_name from notes: "${finalRecipientName}"`);
         }
-      } else if (transactionData.recipient_name) {
+      }
+      
+      if (transactionData.recipient_name) {
         console.log(`👤 [MANUAL ENTRY] Using manually entered recipient_name: "${transactionData.recipient_name}"`);
       }
 
@@ -715,26 +667,20 @@ class TransactionService {
       }
       const client = userClient || adminClient;
 
-      // Only extract recipient name if user didn't manually provide one
+      // Use recipient name and notes as provided
       let finalRecipientName = updateData.recipient_name;
       let finalNotes = updateData.notes;
       
-      // Only auto-extract if:
-      // 1. User didn't provide recipient_name manually
-      // 2. It's a PAYBOX transaction 
-      // 3. There are notes to extract from
-      if (!updateData.recipient_name && updateData.business_name && updateData.business_name.includes('PAYBOX') && updateData.notes) {
-        const recipientInfo = this.extractRecipientName(
-          updateData.business_name,
-          updateData.notes
-        );
-        finalRecipientName = recipientInfo.recipientName;
-        finalNotes = recipientInfo.cleanedNotes;
-        
-        if (recipientInfo.recipientName) {
-          console.log(`🎯 [UPDATE AUTO-EXTRACT] Auto-extracted recipient_name: "${recipientInfo.recipientName}"`);
+      // Extract recipient_name from notes if not already present
+      if (!finalRecipientName && finalNotes) {
+        const recipientMatch = finalNotes.match(/למי:\s*([^,\n\r]+)/);
+        if (recipientMatch) {
+          finalRecipientName = recipientMatch[1].trim();
+          console.log(`🎯 [DB UPDATE EXTRACTION] Extracted recipient_name from notes: "${finalRecipientName}"`);
         }
-      } else if (updateData.recipient_name) {
+      }
+      
+      if (updateData.recipient_name) {
         console.log(`👤 [UPDATE MANUAL] Using manually entered recipient_name: "${updateData.recipient_name}"`);
       }
 
@@ -858,32 +804,17 @@ class TransactionService {
       // Extract and prepare the new transaction data, excluding system fields
       const { tempId, originalIndex, isDuplicate, duplicateInfo, ...cleanData } = newTransactionData;
       
-      // For replace operations, only extract recipient if new data actually has notes
-      // Don't preserve old recipient data if the new file doesn't contain recipient info
-      let finalRecipientName = null;
+      // Use recipient name and notes as provided from file processing
+      let finalRecipientName = cleanData.recipient_name;
       let finalNotes = cleanData.notes;
       
-      if (cleanData.business_name && cleanData.business_name.includes('PAYBOX') && cleanData.notes) {
-        // Only extract recipient if new transaction actually has notes
-        const { recipientName, cleanedNotes } = this.extractRecipientName(
-          cleanData.business_name, 
-          cleanData.notes
-        );
-        finalRecipientName = recipientName;
-        finalNotes = cleanedNotes !== null ? cleanedNotes : cleanData.notes;
-        
-        if (recipientName) {
-          console.log(`🎯 [REPLACE] Extracted recipient "${recipientName}" from new transaction notes`);
+      // Extract recipient_name from notes if not already present
+      if (!finalRecipientName && finalNotes) {
+        const recipientMatch = finalNotes.match(/למי:\s*([^,\n\r]+)/);
+        if (recipientMatch) {
+          finalRecipientName = recipientMatch[1].trim();
+          console.log(`🎯 [DB BULK UPDATE EXTRACTION] Extracted recipient_name from notes: "${finalRecipientName}"`);
         }
-      } else if (cleanData.business_name && cleanData.business_name.includes('PAYBOX')) {
-        // PAYBOX transaction with no notes - preserve manual recipient entry
-        console.log(`🧹 [REPLACE] PAYBOX transaction with no notes - preserving manual recipient entry`);
-        finalRecipientName = cleanData.recipient_name; // Keep what user manually entered
-        finalNotes = cleanData.notes;
-      } else {
-        // Non-PAYBOX transaction - preserve as-is
-        finalRecipientName = cleanData.recipient_name;
-        finalNotes = cleanData.notes;
       }
 
       const updateData = {

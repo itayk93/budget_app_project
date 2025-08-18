@@ -291,7 +291,7 @@ const Upload = () => {
     }
   }, [selectedCashFlow, fileSource]);
 
-  // Watch for file source changes to auto-detect payment identifier
+  // Watch for file source changes to auto-detect payment identifier and payment method
   useEffect(() => {
     if ((fileSource === 'cal' || fileSource === 'americanexpress') && selectedFile) {
       const fileName = selectedFile.name;
@@ -310,7 +310,15 @@ const Upload = () => {
         }
       }
     }
-  }, [fileSource, selectedFile, paymentIdentifier]);
+    
+    // Auto-select payment method for credit card sources
+    if (fileSource === 'cal' || fileSource === 'max' || fileSource === 'americanexpress') {
+      setPaymentMethod('creditCard');
+    } else if (fileSource !== 'cal' && fileSource !== 'max' && fileSource !== 'americanexpress' && paymentMethod === 'creditCard') {
+      // Clear auto-selected payment method when switching away from credit card sources
+      setPaymentMethod('');
+    }
+  }, [fileSource, selectedFile, paymentIdentifier, paymentMethod]);
 
   // Helper functions for date manipulation
   const formatDateForInput = (dateString) => {
