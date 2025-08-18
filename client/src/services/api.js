@@ -2,7 +2,9 @@ import axios from 'axios';
 
 // Create axios instance
 const api = axios.create({
-  baseURL: 'http://localhost:5001/api',
+  baseURL: process.env.NODE_ENV === 'production' 
+    ? '/api' 
+    : 'http://localhost:5001/api',
   timeout: 600000, // 10 minutes for large file processing
   headers: {
     'Content-Type': 'application/json',
@@ -11,7 +13,9 @@ const api = axios.create({
 
 // Create separate axios instance for auth calls (without interceptors to prevent infinite loops)
 const authAxios = axios.create({
-  baseURL: 'http://localhost:5001/api',
+  baseURL: process.env.NODE_ENV === 'production' 
+    ? '/api' 
+    : 'http://localhost:5001/api',
   timeout: 30000, // 30 seconds for auth calls
   headers: {
     'Content-Type': 'application/json',
