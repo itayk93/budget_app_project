@@ -11,8 +11,7 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "×‘×
   // Use react-query for categories to prevent multiple API calls
   const { 
     data: dbCategoriesData, 
-    isLoading: loadingCategories, 
-    error: categoriesError 
+    isLoading: loadingCategories 
   } = useQuery(
     'categoriesOrder',
     categoriesAPI.getOrder,
@@ -89,8 +88,6 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "×‘×
     const standaloneCategories = [];
     
     sortedCategories.forEach(cat => {
-      const categoryName = cat.category_name || cat.name;
-      
       if (cat.shared_category) {
         // This category belongs to a shared group
         const groupName = cat.shared_category;
