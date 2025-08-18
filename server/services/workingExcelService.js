@@ -4024,7 +4024,7 @@ class WorkingExcelService {
           'updated_at', 'cash_flow_id', 'is_transfer', 'linked_transaction_id',
           'category_name', 'payment_number', 'total_payments', 'original_currency',
           'exchange_rate', 'exchange_date', 'quantity', 'transaction_type', 'business_category',
-          'source_category', 'business_country', 'execution_method'
+          'source_category', 'business_country', 'execution_method', 'recipient_name'
         ]);
 
         // Remove invalid columns
@@ -4033,6 +4033,11 @@ class WorkingExcelService {
             delete transaction[key];
           }
         });
+
+        // Debug: Check if recipient_name survived column validation
+        if (transaction.recipient_name) {
+          console.log(`✅ [COLUMN VALIDATION] Transaction ${transaction.business_name} kept recipient_name: "${transaction.recipient_name}"`);
+        }
 
         // Group by currency
         const currency = (transaction.currency || 'ILS').toUpperCase();
@@ -4066,7 +4071,7 @@ class WorkingExcelService {
       console.log(`🔍 [BATCH STEP 2] Starting batch duplicate detection`);
       
       // Get all transaction hashes for batch lookup
-      const allTransactions = Object.values(currencyGroups).flat();
+      const allTransactions = Object.values(currencyGroups).flatMap(group => group.transactions || group);
       const allHashes = allTransactions.map(t => t.transaction_hash).filter(Boolean);
       
       console.log(`🔍 [BATCH DUPLICATE CHECK] Checking ${allHashes.length} hashes in database`);
@@ -4136,7 +4141,7 @@ class WorkingExcelService {
     }
 
     // Step 3: Handle duplicates - if found, don't import anything automatically
-    const allTransactions = Object.values(currencyGroups).flat();
+    const allTransactions = Object.values(currencyGroups).flatMap(group => group.transactions || group);
     
     // Debug: Check for undefined transactions
     const undefinedCount = allTransactions.filter(t => !t).length;
@@ -4148,6 +4153,15 @@ class WorkingExcelService {
     const recipientTransactionsAfterFlat = allTransactions.filter(t => t && t.recipient_name);
     console.log(`🚨 [AFTER FLAT] Found ${recipientTransactionsAfterFlat.length} transactions with recipient_name after flattening:`, 
       recipientTransactionsAfterFlat.map(t => ({ business_name: t.business_name, recipient_name: t.recipient_name })));
+    
+    // Debug the structure of allTransactions
+    console.log(`🔍 [FLAT DEBUG] Total allTransactions: ${allTransactions.length}`);
+    console.log(`🔍 [FLAT DEBUG] Sample allTransactions[0]:`, allTransactions[0] ? {
+      business_name: allTransactions[0].business_name,
+      recipient_name: allTransactions[0].recipient_name,
+      type: typeof allTransactions[0],
+      keys: Object.keys(allTransactions[0]).slice(0, 10)
+    } : 'undefined');
     
     const duplicateHashes = new Set(potentialDuplicates.map(d => d.transaction_hash));
     const nonDuplicateTransactions = allTransactions.filter(t => t && !duplicateHashes.has(t.transaction_hash));
