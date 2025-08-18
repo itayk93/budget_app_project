@@ -148,12 +148,6 @@ const Login = () => {
 
         <div className="auth-footer">
           <p>
-            עדיין אין לכם חשבון?{' '}
-            <Link to="/register" className="auth-link">
-              הירשמו כאן
-            </Link>
-          </p>
-          <p>
             שכחתם את הסיסמה?{' '}
             <Link to="/forgot-password" className="auth-link">
               איפוס סיסמה
