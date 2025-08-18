@@ -2,6 +2,13 @@
 
 ## CRITICAL: Process Management Rules
 
+### End-of-Session Checklist
+2. Update documentation if needed
+3. Free ports: `lsof -i :5001 lsof -i :4000 | xargs kill -9`
+4. Auto-commit changes with timestamp
+5. Update git log in Excel at "git_commits_log.xlsx" (if exists)
+
+
 ### Server and Development Process Management
 **⚠️ ALWAYS CLOSE ALL RUNNING PROCESSES BEFORE FINISHING TASKS ⚠️**
 
