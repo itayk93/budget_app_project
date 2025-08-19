@@ -385,7 +385,7 @@ const Dashboard = () => {
 
   // Set default cash flow and tab
   useEffect(() => {
-    if (cashFlows && !selectedCashFlow) {
+    if (Array.isArray(cashFlows) && cashFlows.length > 0 && !selectedCashFlow) {
       const defaultCashFlow = cashFlows.find(cf => cf.is_default) || cashFlows[0];
       setSelectedCashFlow(defaultCashFlow);
       
@@ -934,14 +934,17 @@ const Dashboard = () => {
       return categories;
     }
 
-    const existingCategoryNames = new Set(categories.map(cat => cat.name));
-    const emptyCategoriesToAdd = emptyCategoriesToShow
+    const existingCategoryNames = new Set(Array.isArray(categories) ? categories.map(cat => cat.name) : []);
+    const emptyCategoriesToAdd = Array.isArray(emptyCategoriesToShow) ? emptyCategoriesToShow
       .filter(categoryName => !existingCategoryNames.has(categoryName))
       .map(categoryName => {
         // Try to find category data from the dashboard data that might have monthly target
         // This can happen if the category exists in category_order but has no transactions
-        const categoryWithTarget = dashboardData?.orderedCategories?.find(cat => cat.name === categoryName) || 
-                                  dashboardData?.category_breakdown?.find(cat => cat.name === categoryName);
+        const orderedCats = Array.isArray(dashboardData?.orderedCategories) ? dashboardData.orderedCategories : [];
+        const breakdownCats = Array.isArray(dashboardData?.category_breakdown) ? dashboardData.category_breakdown : [];
+        const categoryWithTarget = orderedCats.find(cat => cat.name === categoryName) || 
+                                  breakdownCats.find(cat => cat.name === categoryName);
+    
         
         return {
           name: categoryName,
@@ -959,9 +962,9 @@ const Dashboard = () => {
           sub_categories: null,
           isEmpty: true // Mark as empty for special handling
         };
-      });
+      }) : [];
 
-    return [...categories, ...emptyCategoriesToAdd];
+    return [...(Array.isArray(categories) ? categories : []), ...emptyCategoriesToAdd];
   };
 
   // Group categories - handle both old system (CategoryGroupCard) and new system (Shared Categories)
@@ -1120,15 +1123,19 @@ const Dashboard = () => {
               className="mobile-flow-select"
               value={selectedCashFlow?.id || ''}
               onChange={(e) => {
-                const cashFlow = (dashboardData?.cash_flows || cashFlows)?.find(cf => cf.id === e.target.value);
+                const availableCashFlows = Array.isArray(dashboardData?.cash_flows) ? dashboardData.cash_flows : (Array.isArray(cashFlows) ? cashFlows : []);
+                const cashFlow = availableCashFlows.find(cf => cf.id === e.target.value);
                 setSelectedCashFlow(cashFlow);
               }}
             >
-              {(dashboardData?.cash_flows || cashFlows || []).map(cashFlow => (
-                <option key={cashFlow.id} value={cashFlow.id}>
-                  {cashFlow.name}
-                </option>
-              ))}
+              {(() => {
+                const availableCashFlows = Array.isArray(dashboardData?.cash_flows) ? dashboardData.cash_flows : (Array.isArray(cashFlows) ? cashFlows : []);
+                return availableCashFlows.map(cashFlow => (
+                  <option key={cashFlow.id} value={cashFlow.id}>
+                    {cashFlow.name}
+                  </option>
+                ));
+              })()}
             </select>
           </div>
 
