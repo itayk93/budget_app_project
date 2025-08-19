@@ -1173,15 +1173,19 @@ const Dashboard = () => {
           className="form-select"
           value={selectedCashFlow?.id || ''}
           onChange={(e) => {
-            const cashFlow = (dashboardData?.cash_flows || cashFlows)?.find(cf => cf.id === e.target.value);
+            const availableCashFlows = Array.isArray(dashboardData?.cash_flows) ? dashboardData.cash_flows : (Array.isArray(cashFlows) ? cashFlows : []);
+            const cashFlow = availableCashFlows.find(cf => cf.id === e.target.value);
             setSelectedCashFlow(cashFlow);
           }}
         >
-          {(dashboardData?.cash_flows || cashFlows || []).map(cashFlow => (
-            <option key={cashFlow.id} value={cashFlow.id}>
-              {cashFlow.name}
-            </option>
-          ))}
+          {(() => {
+            const availableCashFlows = Array.isArray(dashboardData?.cash_flows) ? dashboardData.cash_flows : (Array.isArray(cashFlows) ? cashFlows : []);
+            return availableCashFlows.map(cashFlow => (
+              <option key={cashFlow.id} value={cashFlow.id}>
+                {cashFlow.name}
+              </option>
+            ));
+          })()}
         </select>
         
       </div>
