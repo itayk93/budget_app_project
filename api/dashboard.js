@@ -105,19 +105,26 @@ export default async function handler(req, res) {
       }
     }
 
+    console.log('🔍 DEBUG - Starting data fetch for user:', userId);
+    console.log('🔍 DEBUG - Parameters:', { cash_flow, flow_month, allTime, finalYear, finalMonth });
+
     // Get cash flows for selector
-    const { data: cashFlows } = await supabase
+    const { data: cashFlows, error: cashFlowsError } = await supabase
       .from('cash_flows')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: true });
 
+    console.log('🔍 DEBUG - Cash flows result:', { data: cashFlows, error: cashFlowsError });
+
     // Get categories
-    const { data: categories } = await supabase
+    const { data: categories, error: categoriesError } = await supabase
       .from('categories')
       .select('*')
       .eq('user_id', userId)
       .order('display_order', { ascending: true });
+
+    console.log('🔍 DEBUG - Categories result:', { count: categories?.length, error: categoriesError });
 
     // Get transactions for the specified period
     let transactionsQuery = supabase
@@ -133,7 +140,8 @@ export default async function handler(req, res) {
       transactionsQuery = transactionsQuery.eq('flow_month', flow_month);
     }
 
-    const { data: transactions } = await transactionsQuery;
+    const { data: transactions, error: transactionsError } = await transactionsQuery;
+    console.log('🔍 DEBUG - Transactions result:', { count: transactions?.length, error: transactionsError });
 
     // Process categories and transactions
     const categoryBreakdown = [];
@@ -212,6 +220,14 @@ export default async function handler(req, res) {
       monthly_savings: 0,
       transaction_count: transactions?.length || 0
     };
+
+    console.log('🔍 DEBUG - Final response data:', {
+      categories_count: Object.keys(processedCategories).length,
+      category_breakdown_count: categoryBreakdown.length,
+      cash_flows_count: cashFlows?.length || 0,
+      transaction_count: transactions?.length || 0,
+      totals: { totalBalance, expenseTotal, incomeTotal }
+    });
 
     res.json(responseData);
 
