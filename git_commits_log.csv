@@ -1,2 +1,0 @@
-Date,Commit Hash,Message,Description
-2025-08-24,8aee52c4,Fix Bank Scraper duplicate detection system,"תיקון מערכת זיהוי הכפילויות של Bank Scraper - יצירת endpoint מיוחד, תיקון סדר פרמטרים, עדכון הקליינט להשתמש ב-JSON payload במקום FormData מזויף, הוספת לוגים מפורטים, הסתרת לוגים של CategoryDropdown. כעת זיהוי כפילויות עובד תקין עבור עסקאות Bank Scraper ומציג עסקאות קיימות בצהוב."
