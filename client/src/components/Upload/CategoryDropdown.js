@@ -129,14 +129,14 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
     ? dbCategories 
     : categories;
   
-  // Debug logging
-  console.log('🔍 [CategoryDropdown] Debug info:', {
-    loadingCategories,
-    dbCategoriesLength: dbCategories.length,
-    categoriesLength: categories.length,
-    preserveOrder,
-    usingDbCategories: !loadingCategories && dbCategories.length > 0
-  });
+  // Debug logging - commented out to reduce console noise
+  // console.log('🔍 [CategoryDropdown] Debug info:', {
+  //   loadingCategories,
+  //   dbCategoriesLength: dbCategories.length,
+  //   categoriesLength: categories.length,
+  //   preserveOrder,
+  //   usingDbCategories: !loadingCategories && dbCategories.length > 0
+  // });
 
   // Group categories by type (only if preserveOrder is false)
   const groupedCategories = !categoriesToUse || categoriesToUse.length === 0 ? {} : preserveOrder ? {

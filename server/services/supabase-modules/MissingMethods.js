@@ -105,6 +105,11 @@ class MissingMethods {
 
       SharedUtilities.validateUserId(userId);
 
+      console.log(`🔍 [DUPLICATE CHECK] Looking for duplicates:`);
+      console.log(`🔍 [DUPLICATE CHECK] - Hash: ${transactionHash}`);
+      console.log(`🔍 [DUPLICATE CHECK] - UserId: ${userId}`);
+      console.log(`🔍 [DUPLICATE CHECK] - CashFlowId: ${cashFlowId}`);
+
       let query = supabase
         .from('transactions')
         .select('*')
@@ -112,10 +117,23 @@ class MissingMethods {
         .eq('user_id', userId);
 
       if (cashFlowId) {
-        query = query.eq('cash_flow_id', cashFlowId);
+        // Look for transactions with matching cash_flow_id OR null cash_flow_id (for legacy transactions)
+        console.log(`🔍 [DUPLICATE CHECK] Using OR query: cash_flow_id.eq.${cashFlowId},cash_flow_id.is.null`);
+        query = query.or(`cash_flow_id.eq.${cashFlowId},cash_flow_id.is.null`);
+      } else {
+        console.log(`🔍 [DUPLICATE CHECK] No cashFlowId provided, searching all transactions`);
       }
 
       const { data, error } = await query;
+
+      console.log(`🔍 [DUPLICATE CHECK] Query result:`);
+      console.log(`🔍 [DUPLICATE CHECK] - Error: ${error ? error.message : 'null'}`);
+      console.log(`🔍 [DUPLICATE CHECK] - Found ${data ? data.length : 0} transactions`);
+      if (data && data.length > 0) {
+        data.forEach((tx, index) => {
+          console.log(`🔍 [DUPLICATE CHECK] - Transaction ${index + 1}: ID=${tx.id}, cash_flow_id=${tx.cash_flow_id}`);
+        });
+      }
       
       if (error) throw error;
       return SharedUtilities.createSuccessResponse(data || []);

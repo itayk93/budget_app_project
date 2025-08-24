@@ -147,43 +147,39 @@ const Upload = () => {
     }));
   };
 
-  // Check for duplicates using the existing upload API
-  const checkForDuplicates = useCallback(async (transactions, fileSource, paymentIdentifier) => {
+  // Check for duplicates using the dedicated duplicate checking endpoint
+  const checkForDuplicates = useCallback(async (transactions, fileSource, paymentIdentifier, cashFlowId) => {
     try {
       console.log('🔍 Checking for duplicates in bank scraper transactions...');
+      console.log('🔍 Using cash flow ID for duplicate check:', cashFlowId);
       
       const token = localStorage.getItem('token');
-      const formData = new FormData();
       
-      // Create a temporary file-like object for the API
-      const transactionsBlob = new Blob([JSON.stringify(transactions)], { type: 'application/json' });
-      formData.append('file', transactionsBlob, 'bank_scraper_transactions.json');
-      formData.append('cashFlowId', selectedCashFlow);
-      formData.append('fileSource', fileSource || 'bank_scraper');
-      formData.append('paymentIdentifier', paymentIdentifier || '');
-      formData.append('forceImport', 'false');
-      formData.append('bankScraperMode', 'true'); // Flag to indicate this is from bank scraper
-      
-      const response = await fetch('/api/upload/initiate', {
+      const response = await fetch('/api/upload/check-duplicates', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
-        body: formData
+        body: JSON.stringify({
+          transactions,
+          cash_flow_id: cashFlowId || selectedCashFlow
+        })
       });
       
-      const result = await response.json();
-      
-      if (result.success) {
-        console.log(`✅ Duplicate check completed: ${result.has_duplicates ? 'Found duplicates' : 'No duplicates'}`);
-        return result;
-      } else {
-        console.error('❌ Duplicate check failed:', result.error);
-        return null;
+      if (!response.ok) {
+        console.error('❌ Duplicate check request failed:', response.status, response.statusText);
+        return { has_duplicates: false, transactions };
       }
+      
+      const result = await response.json();
+      console.log('🔍 Duplicate check result:', result);
+      
+      return result;
+      
     } catch (error) {
-      console.error('❌ Error checking duplicates:', error);
-      return null;
+      console.error('❌ Error checking for duplicates:', error);
+      return { has_duplicates: false, transactions };
     }
   }, [selectedCashFlow]);
 
@@ -200,6 +196,11 @@ const Upload = () => {
           if (data.transactions && Array.isArray(data.transactions) && data.transactions.length > 0) {
             console.log(`✅ Found ${data.transactions.length} bank scraper transactions from ${data.configName || 'Unknown'}`);
             
+            // Create a dummy uploadId for bank scraper transactions
+            const dummyUploadId = `bank-scraper-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+            setUploadId(dummyUploadId);
+            console.log(`📝 Created dummy uploadId for bank scraper: ${dummyUploadId}`);
+            
             // Clean business names - replace slashes with spaces
             const cleanedTransactions = cleanBusinessNames(data.transactions);
             console.log('🧹 Cleaned business names (replaced / with spaces)');
@@ -212,10 +213,20 @@ const Upload = () => {
             // Set file source to bank scraper
             setFileSource('bank_scraper');
             
-            // Check for duplicates if cash flow is selected
-            if (selectedCashFlow) {
+            // Find default cash flow for duplicate checking
+            const defaultCashFlow = cashFlows?.find(cf => cf.is_default) || cashFlows?.[0];
+            const cashFlowForDuplicateCheck = selectedCashFlow || defaultCashFlow?.id;
+            
+            console.log('🔍 Cash flow for duplicate check:', { 
+              selectedCashFlow, 
+              defaultCashFlow: defaultCashFlow?.name, 
+              cashFlowForDuplicateCheck 
+            });
+
+            // Check for duplicates with either selected cash flow or default
+            if (cashFlowForDuplicateCheck) {
               console.log('🔍 Checking for duplicates before opening modal...');
-              const duplicateResult = await checkForDuplicates(cleanedTransactions, 'bank_scraper', data.accountNumber);
+              const duplicateResult = await checkForDuplicates(cleanedTransactions, 'bank_scraper', data.accountNumber, cashFlowForDuplicateCheck);
               
               if (duplicateResult && duplicateResult.has_duplicates) {
                 console.log('⚠️ Duplicates found, using system duplicate handling');
@@ -233,8 +244,8 @@ const Upload = () => {
                 setShowTransactionReview(true);
               }
             } else {
-              // No cash flow selected, just open the modal with cleaned transactions
-              console.log('ℹ️ No cash flow selected, opening modal without duplicate check');
+              // No cash flows available, just open the modal with cleaned transactions
+              console.log('ℹ️ No cash flows available, opening modal without duplicate check');
               setReviewTransactions(cleanedTransactions);
               setReviewFileSource(data.source || 'bank_scraper');
               setShowTransactionReview(true);
@@ -259,7 +270,7 @@ const Upload = () => {
     // Small delay to ensure component is fully mounted and cash flow is available
     const timer = setTimeout(checkBankScraperData, 500);
     return () => clearTimeout(timer);
-  }, [selectedCashFlow, checkForDuplicates]); // Add selectedCashFlow as dependency
+  }, [selectedCashFlow, checkForDuplicates, cashFlows]); // Add cashFlows as dependency
 
   // Fetch latest transaction date when cash flow is selected
   const fetchLatestTransactionDate = async (cashFlowId, sourceType = null) => {
@@ -393,6 +404,7 @@ const Upload = () => {
         setUploadResult(data);
         setIsFinalizingImport(false); // Reset finalization state
         isFinalizingImportRef.current = false; // Reset ref as well
+        setUploadId(null); // Clear upload ID after successful completion
         setCurrentStep(4); // Move to completion step
       },
       onError: (error) => {
@@ -677,18 +689,21 @@ const Upload = () => {
     try {
       setShowTransactionReview(false);
       
+      // Debug: Check uploadId before sending
+      console.log(`🔍 [FRONTEND DEBUG] uploadId before finalize:`, uploadId);
+      console.log(`🔍 [FRONTEND DEBUG] selectedCashFlow:`, selectedCashFlow);
+      
       // Send reviewed transactions to backend for final import
       const finalData = {
         uploadId,
         transactions: reviewData.transactions,
         deletedIndices: reviewData.deletedIndices,
-        cashFlowId: selectedCashFlow,
+        cashFlowId: reviewData.cashFlowId || selectedCashFlow,
         fileSource: reviewFileSource,
         duplicateActions: reviewData.duplicateActions || {}
       };
       
-      // Clear upload ID after using it to stop progress tracking
-      setUploadId(null);
+      console.log(`🔍 [FRONTEND DEBUG] finalData:`, finalData);
       
       // Debug: Check recipient_name in transactions being sent
       reviewData.transactions.forEach((tx, index) => {

@@ -177,9 +177,12 @@ setInterval(() => {
   const now = new Date();
   for (const [uploadId, session] of uploadSessions.entries()) {
     const sessionAge = now - new Date(session.createdAt);
-    // Remove sessions older than 2 hours
-    if (sessionAge > 2 * 60 * 60 * 1000) {
-      console.log(`Cleaning up old upload session: ${uploadId}`);
+    // Remove sessions older than 4 hours (extended timeout) OR completed sessions older than 30 minutes
+    const isOldSession = sessionAge > 4 * 60 * 60 * 1000;
+    const isOldCompletedSession = session.status === 'finalized' && sessionAge > 30 * 60 * 1000;
+    
+    if (isOldSession || isOldCompletedSession) {
+      console.log(`Cleaning up old upload session: ${uploadId} (age: ${Math.round(sessionAge / 60000)} minutes, status: ${session.status})`);
       
       // Clean up file if it still exists
       if (session.filePath && fs.existsSync(session.filePath)) {
@@ -323,6 +326,101 @@ router.get('/progress/:uploadId', authenticateToken, (req, res) => {
   }
 
   res.json(response);
+});
+
+// Bank Scraper duplicate checking endpoint
+router.post('/check-duplicates', authenticateToken, async (req, res) => {
+  const requestId = logger.setRequestContext(req);
+  logger.info('UPLOAD', 'Bank scraper duplicate check endpoint hit', { requestId });
+  
+  try {
+    const { transactions, cash_flow_id } = req.body;
+    const userId = req.user.id;
+
+    if (!transactions || !Array.isArray(transactions)) {
+      return res.status(400).json({ error: 'Transactions array is required' });
+    }
+
+    if (!cash_flow_id) {
+      return res.status(400).json({ error: 'Cash flow ID is required' });
+    }
+
+    // Verify cash flow belongs to user
+    const cashFlow = await SupabaseService.getCashFlow(cash_flow_id);
+    if (!cashFlow || cashFlow.user_id !== userId) {
+      return res.status(404).json({ error: 'Cash flow not found' });
+    }
+
+    logger.info('UPLOAD', 'Checking for duplicates in bank scraper transactions', {
+      requestId,
+      userId,
+      cashFlowId: cash_flow_id,
+      transactionCount: transactions.length
+    });
+
+    // Check for duplicates using the existing MissingMethods service
+    const MissingMethods = require('../services/supabase-modules/MissingMethods');
+    const duplicateData = { has_duplicates: false, transactions: [] };
+    const transactionsWithDuplicates = [];
+
+    for (const transaction of transactions) {
+      if (transaction.transaction_hash) {
+        logger.info('UPLOAD', 'Checking transaction hash for duplicates', {
+          requestId,
+          hash: transaction.transaction_hash,
+          cashFlowId: cash_flow_id
+        });
+
+        const existingTransactionsResult = await MissingMethods.getTransactionsByHash(
+          transaction.transaction_hash, 
+          userId,
+          cash_flow_id
+        );
+
+        const existingTransactions = existingTransactionsResult.success ? existingTransactionsResult.data : [];
+
+        if (existingTransactions && existingTransactions.length > 0) {
+          logger.info('UPLOAD', 'Found duplicate transaction', {
+            requestId,
+            hash: transaction.transaction_hash,
+            duplicateCount: existingTransactions.length
+          });
+
+          transaction.isDuplicate = true;
+          duplicateData.has_duplicates = true;
+        } else {
+          transaction.isDuplicate = false;
+        }
+      } else {
+        transaction.isDuplicate = false;
+      }
+      
+      transactionsWithDuplicates.push(transaction);
+    }
+
+    duplicateData.transactions = transactionsWithDuplicates;
+
+    logger.info('UPLOAD', 'Duplicate check completed', {
+      requestId,
+      hasDuplicates: duplicateData.has_duplicates,
+      duplicateCount: transactionsWithDuplicates.filter(t => t.isDuplicate).length
+    });
+
+    res.json(duplicateData);
+
+  } catch (error) {
+    console.error('Bank scraper duplicate check error:', error);
+    logger.error('UPLOAD', 'Bank scraper duplicate check failed', {
+      requestId,
+      error: error.message,
+      stack: error.stack
+    });
+
+    res.status(500).json({
+      error: 'Duplicate check failed',
+      details: error.message
+    });
+  }
 });
 
 // Multi-step upload: Get duplicates data for review
@@ -618,37 +716,61 @@ router.post('/check-duplicates', authenticateToken, async (req, res) => {
 
 // Multi-step upload: Step 4 - Finalize import
 router.post('/finalize', authenticateToken, async (req, res) => {
+  const { uploadId, selectedCurrency, duplicateResolutions, cashFlowId, transactions: reviewedTransactions, deletedIndices, fileSource, duplicateActions } = req.body;
+  
+  console.log(`🔍 Looking for upload session: ${uploadId}, user: ${req.user.id}`);
+  console.log(`📊 Total sessions in memory: ${uploadSessions.size}`);
+  
+  const session = uploadSessions.get(uploadId);
+  
   try {
-    const { uploadId, selectedCurrency, duplicateResolutions, cashFlowId, transactions: reviewedTransactions, deletedIndices, fileSource, duplicateActions } = req.body;
-    const session = uploadSessions.get(uploadId);
-
-    if (!session || session.userId !== req.user.id) {
-      return res.status(404).json({ error: 'Upload session not found' });
+    
+    // Special handling for bank scraper transactions (dummy uploadId)
+    const isBankScraperUpload = uploadId && uploadId.startsWith('bank-scraper-');
+    
+    if (!session && !isBankScraperUpload) {
+      console.log(`❌ Upload session ${uploadId} not found. Available sessions:`, Array.from(uploadSessions.keys()));
+      return res.status(404).json({ 
+        error: 'Upload session not found',
+        availableSessions: Array.from(uploadSessions.keys()),
+        requestedSession: uploadId
+      });
+    }
+    
+    if (session && session.userId !== req.user.id) {
+      console.log(`❌ Session user mismatch. Session userId: ${session.userId}, Request userId: ${req.user.id}`);
+      return res.status(404).json({ error: 'Upload session not found or access denied' });
+    }
+    
+    if (isBankScraperUpload) {
+      console.log(`🏦 Bank scraper upload detected with dummy uploadId: ${uploadId}`);
     }
 
-    // Prevent double finalization
-    if (session.status === 'finalized') {
+    // Prevent double finalization (only for regular uploads, not bank scraper)
+    if (session && session.status === 'finalized') {
       console.log(`⏭️ Session ${uploadId} is already finalized, skipping`);
       return res.status(400).json({ error: 'Upload already finalized' });
     }
 
-    // Prevent finalization while still processing
-    if (session.isProcessing || session.status === 'processing') {
+    // Prevent finalization while still processing (only for regular uploads)
+    if (session && (session.isProcessing || session.status === 'processing')) {
       console.log(`⏳ Session ${uploadId} is still processing, please wait`);
       return res.status(400).json({ error: 'Upload still processing, please wait' });
     }
 
-    // Prevent double finalization
-    if (session.isFinalizingImport) {
+    // Prevent double finalization (only for regular uploads)
+    if (session && session.isFinalizingImport) {
       console.log(`⏭️ Session ${uploadId} is already being finalized, skipping`);
       return res.status(400).json({ error: 'Upload already being finalized' });
     }
 
-    // Mark as being finalized
-    session.isFinalizingImport = true;
+    // Mark as being finalized (only for regular uploads)
+    if (session) {
+      session.isFinalizingImport = true;
+    }
 
     // Get processed data
-    const processedData = session.processedData;
+    const processedData = session ? session.processedData : null;
     let transactions;
 
     // Check if we have reviewed transactions from the modal
@@ -666,7 +788,7 @@ router.post('/finalize', authenticateToken, async (req, res) => {
         }
       });
       transactions = reviewedTransactions;
-    } else if (selectedCurrency && processedData.currencyGroups) {
+    } else if (selectedCurrency && processedData && processedData.currencyGroups) {
       // Handle different currency group structures
       if (processedData.currencyGroups[selectedCurrency] && processedData.currencyGroups[selectedCurrency].transactions) {
         // New format: currencyGroups[currency].transactions
@@ -678,10 +800,10 @@ router.post('/finalize', authenticateToken, async (req, res) => {
         // Fallback: filter from all data
         transactions = processedData.data ? processedData.data.filter(t => t.currency === selectedCurrency) : [];
       }
-    } else if (processedData.data) {
+    } else if (processedData && processedData.data) {
       transactions = processedData.data;
     } else {
-      transactions = processedData.transactions || [];
+      transactions = processedData ? (processedData.transactions || []) : [];
     }
     
     console.log('📊 Final transactions count for import:', transactions ? transactions.length : 0);
@@ -704,10 +826,10 @@ router.post('/finalize', authenticateToken, async (req, res) => {
     // Ensure all transactions have user_id and cash_flow_id
     finalTransactions = finalTransactions.map(transaction => ({
       ...transaction,
-      user_id: session.userId,
-      cash_flow_id: session.cashFlowId,
+      user_id: session ? session.userId : req.user.id,
+      cash_flow_id: session ? session.cashFlowId : (cashFlowId && cashFlowId.trim() ? cashFlowId : null),
       // Ensure payment_identifier is set from session if not already present
-      payment_identifier: transaction.payment_identifier || session.paymentIdentifier || null
+      payment_identifier: transaction.payment_identifier || (session ? session.paymentIdentifier : null) || null
     }));
 
     console.log('🔧 Final transactions before import:', {
@@ -723,7 +845,7 @@ router.post('/finalize', authenticateToken, async (req, res) => {
     
     const importPromise = ExcelService.importTransactions(
       finalTransactions, 
-      session.forceImport,
+      session ? session.forceImport : false, // Default to false for bank scraper
       duplicateActions // Pass duplicate actions for handling replace vs create new
     );
     
@@ -733,27 +855,29 @@ router.post('/finalize', authenticateToken, async (req, res) => {
     
     const importResult = await Promise.race([importPromise, timeoutPromise]);
 
-    // Clean up file
-    try {
-      if (fs.existsSync(session.filePath)) {
-        fs.unlinkSync(session.filePath);
+    // Clean up file (only for regular uploads, not bank scraper)
+    if (session) {
+      try {
+        if (session.filePath && fs.existsSync(session.filePath)) {
+          fs.unlinkSync(session.filePath);
+        }
+      } catch (cleanupError) {
+        console.warn('Failed to cleanup uploaded file:', cleanupError.message);
       }
-    } catch (cleanupError) {
-      console.warn('Failed to cleanup uploaded file:', cleanupError.message);
-    }
 
-    // Mark session as completed but don't delete it immediately
-    // It will be cleaned up by the periodic cleanup process
-    session.status = 'finalized';
-    session.isFinalizingImport = false; // Mark finalization as complete
-    session.completedAt = new Date();
+      // Mark session as completed but don't delete it immediately
+      // It will be cleaned up by the periodic cleanup process
+      session.status = 'finalized';
+      session.isFinalizingImport = false; // Mark finalization as complete
+      session.completedAt = new Date();
+    }
 
     res.json({
       success: true,
       message: 'Import completed successfully',
-      fileFormat: processedData.fileFormat,
+      fileFormat: processedData ? processedData.fileFormat : 'bank_scraper',
       stats: {
-        totalRows: processedData.totalRows,
+        totalRows: processedData ? processedData.totalRows : finalTransactions.length,
         processedTransactions: transactions.length,
         imported: importResult.success,
         duplicates: importResult.duplicates,
