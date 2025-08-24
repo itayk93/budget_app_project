@@ -1,0 +1,20 @@
+=== תיעוד עדכונים אחרונים ===
+
+📅 תאריך: 2025-08-24
+🔗 Hash: 8aee52c4
+📝 הודעה: Fix Bank Scraper duplicate detection system
+
+🔧 תיאור מפורט:
+תיקון מערכת זיהוי הכפילויות של Bank Scraper
+
+שינויים שבוצעו:
+• יצירת endpoint מיוחד /api/upload/check-duplicates לעסקאות Bank Scraper
+• תיקון סדר הפרמטרים בקריאה לפונקציית getTransactionsByHash
+• עדכון הקליינט להשתמש ב-JSON payload במקום FormData מזויף
+• הוספת לוגים מפורטים לדיבוג זיהוי כפילויות
+• הסתרת לוגים של CategoryDropdown להפחתת רעש בקונסול
+
+✅ תוצאות:
+• זיהוי כפילויות עובד כעת עבור עסקאות Bank Scraper
+• עסקאות קיימות מוצגות בצהוב במודל הסקירה
+• שמירה על לוגיקת OR query עבור עסקאות ישנות (cash_flow_id: null)
