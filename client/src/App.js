@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
+import { DemoProvider } from './contexts/DemoContext';
 import Layout from './components/Layout/Layout';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
@@ -25,6 +26,7 @@ import CashFlowDashboard from './pages/CashFlow/CashFlowDashboard';
 import CashFlowManagement from './pages/CashFlow/CashFlowManagement';
 import BudgetLensComparison from './pages/BudgetLensComparison/BudgetLensComparison';
 import BankScraperPage from './components/BankScraper/BankScraperPage';
+import DemoDashboard from './components/Demo/DemoDashboard';
 import './styles/stocks.css';
 import LoadingSpinner from './components/Common/LoadingSpinner';
 
@@ -40,46 +42,54 @@ function App() {
   }
 
   return (
-    <Routes>
-      <Route path="/login" element={
-        user ? <Navigate to="/dashboard" replace /> : <Login />
-      } />
-      <Route path="/register" element={
-        user ? <Navigate to="/dashboard" replace /> : <Register />
-      } />
-      <Route path="/forgot-password" element={
-        user ? <Navigate to="/dashboard" replace /> : <ForgotPassword />
-      } />
-      <Route path="/reset-password" element={
-        user ? <Navigate to="/dashboard" replace /> : <ResetPassword />
-      } />
-      <Route path="/verify-email" element={<VerifyEmail />} />
-      <Route path="/verify-email-change" element={<VerifyEmail />} />
-      <Route path="/" element={
-        user ? <Layout /> : <Navigate to="/login" replace />
-      }>
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="cash-flow" element={<CashFlowDashboard />} />
-        <Route path="cash-flow/manage" element={<CashFlowManagement />} />
-        <Route path="transactions" element={<Transactions />} />
-        <Route path="transaction/:id" element={<TransactionDetails />} />
-        <Route path="upload" element={<Upload />} />
-        <Route path="upload/file-merger" element={<FileMerger />} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="profile" element={<Profile />} />
-        <Route path="stocks" element={<StocksDashboard />} />
-        <Route path="stocks/chart/:symbol" element={<StockChart />} />
-        <Route path="stocks/transactions" element={<StockTransactions />} />
-        <Route path="stocks/alerts" element={<Alerts />} />
-        <Route path="category-order" element={<CategoryOrder />} />
-        <Route path="category-mappings" element={<CategoryMappings />} />
-        <Route path="business-category-intelligence" element={<BusinessCategoryIntelligence />} />
-        <Route path="budgetlens-comparison" element={<BudgetLensComparison />} />
-        <Route path="bank-scraper" element={<BankScraperPage />} />
-      </Route>
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
-    </Routes>
+    <DemoProvider>
+      <Routes>
+        {/* Demo routes - accessible without authentication */}
+        <Route path="/demo/dashboard" element={<DemoDashboard />} />
+        
+        {/* Auth routes */}
+        <Route path="/login" element={
+          user ? <Navigate to="/dashboard" replace /> : <Login />
+        } />
+        <Route path="/register" element={
+          user ? <Navigate to="/dashboard" replace /> : <Register />
+        } />
+        <Route path="/forgot-password" element={
+          user ? <Navigate to="/dashboard" replace /> : <ForgotPassword />
+        } />
+        <Route path="/reset-password" element={
+          user ? <Navigate to="/dashboard" replace /> : <ResetPassword />
+        } />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/verify-email-change" element={<VerifyEmail />} />
+        
+        {/* Protected routes */}
+        <Route path="/" element={
+          user ? <Layout /> : <Navigate to="/login" replace />
+        }>
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="cash-flow" element={<CashFlowDashboard />} />
+          <Route path="cash-flow/manage" element={<CashFlowManagement />} />
+          <Route path="transactions" element={<Transactions />} />
+          <Route path="transaction/:id" element={<TransactionDetails />} />
+          <Route path="upload" element={<Upload />} />
+          <Route path="upload/file-merger" element={<FileMerger />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="stocks" element={<StocksDashboard />} />
+          <Route path="stocks/chart/:symbol" element={<StockChart />} />
+          <Route path="stocks/transactions" element={<StockTransactions />} />
+          <Route path="stocks/alerts" element={<Alerts />} />
+          <Route path="category-order" element={<CategoryOrder />} />
+          <Route path="category-mappings" element={<CategoryMappings />} />
+          <Route path="business-category-intelligence" element={<BusinessCategoryIntelligence />} />
+          <Route path="budgetlens-comparison" element={<BudgetLensComparison />} />
+          <Route path="bank-scraper" element={<BankScraperPage />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </DemoProvider>
   );
 }
 

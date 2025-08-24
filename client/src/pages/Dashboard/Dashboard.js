@@ -1426,6 +1426,25 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
+            
+            <div className="card quick-access-card demo-card">
+              <div className="card-body">
+                <div className="quick-access-content">
+                  <div className="quick-access-icon demo-icon">
+                    <span>👁️</span>
+                  </div>
+                  <div className="quick-access-info">
+                    <h4>צפה בדוגמה</h4>
+                    <p>גלה את כל הפיצ'רים של BudgetLens עם נתונים לדוגמה</p>
+                  </div>
+                  <div className="quick-access-actions">
+                    <a href="/demo/dashboard" className="btn btn-demo">
+                      כנס למצב דוגמה
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

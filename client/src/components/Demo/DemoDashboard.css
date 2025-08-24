@@ -1,0 +1,134 @@
+/* Demo Dashboard specific styles */
+.demo-dashboard {
+  position: relative;
+  min-height: 100vh;
+}
+
+.demo-dashboard::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.02), rgba(255, 142, 53, 0.02));
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Demo Notice */
+.demo-notice {
+  margin: 30px 0;
+  padding: 0 20px;
+}
+
+.demo-notice-content {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border: 2px solid #ff6b35;
+  border-radius: 12px;
+  padding: 25px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.1);
+}
+
+.demo-notice-content h3 {
+  color: #ff6b35;
+  margin-bottom: 15px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.demo-notice-content p {
+  color: #495057;
+  margin-bottom: 12px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.demo-notice-content p:last-child {
+  margin-bottom: 0;
+  font-weight: 600;
+  color: #dc3545;
+}
+
+/* Balance card modifications for demo */
+.demo-dashboard .balance-question {
+  background: linear-gradient(135deg, #ff6b35, #ff8e35);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+.demo-dashboard .monthly-balance-card {
+  border: 2px solid rgba(255, 107, 53, 0.2);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 250, 0.95));
+  backdrop-filter: blur(10px);
+}
+
+/* Category cards in demo mode */
+.demo-dashboard .category-card,
+.demo-dashboard .category-group-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.demo-dashboard .category-card::after,
+.demo-dashboard .category-group-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(to bottom, #ff6b35, #ff8e35);
+  opacity: 0.7;
+}
+
+/* Disabled interactions in demo mode */
+.demo-dashboard .form-select:disabled,
+.demo-dashboard .mobile-flow-select:disabled {
+  background-color: #f8f9fa;
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.demo-dashboard .form-select:disabled::after {
+  content: ' (דמה)';
+  color: #ff6b35;
+  font-weight: 600;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .demo-notice {
+    margin: 20px 0;
+    padding: 0 15px;
+  }
+  
+  .demo-notice-content {
+    padding: 20px;
+  }
+  
+  .demo-notice-content h3 {
+    font-size: 20px;
+  }
+  
+  .demo-notice-content p {
+    font-size: 14px;
+  }
+}
+
+/* Animation for demo elements */
+@keyframes demoGlow {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.1);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(255, 107, 53, 0.2);
+  }
+}
+
+.demo-dashboard .monthly-balance-card {
+  animation: demoGlow 4s ease-in-out infinite;
+}

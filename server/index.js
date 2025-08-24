@@ -120,6 +120,7 @@ const transactionsBusinessRoutes = require('./routes/transactionsBusiness');
 const migrationRoutes = require('./routes/migration');
 const israeliBankScraperRoutes = require('./routes/israeliBankScraper');
 const userEmptyCategoriesDisplayRoutes = require('./routes/userEmptyCategoriesDisplay');
+const demoRoutes = require('./routes/demo');
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -147,6 +148,7 @@ app.use('/api/transactions-business', transactionsBusinessRoutes);
 app.use('/api/migration', migrationRoutes);
 app.use('/api/bank-scraper', israeliBankScraperRoutes);
 app.use('/api/user-empty-categories-display', authenticateToken, userEmptyCategoriesDisplayRoutes);
+app.use('/api/demo', demoRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
