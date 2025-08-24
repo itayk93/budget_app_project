@@ -405,6 +405,12 @@ const Upload = () => {
         setIsFinalizingImport(false); // Reset finalization state
         isFinalizingImportRef.current = false; // Reset ref as well
         setUploadId(null); // Clear upload ID after successful completion
+        
+        // Clear transaction review state to prevent modal from reopening
+        setShowTransactionReview(false);
+        setReviewTransactions([]);
+        setReviewFileSource('');
+        
         setCurrentStep(4); // Move to completion step
       },
       onError: (error) => {
@@ -414,6 +420,11 @@ const Upload = () => {
         });
         setIsFinalizingImport(false); // Reset finalization state even on error
         isFinalizingImportRef.current = false; // Reset ref as well
+        
+        // Clear transaction review state on error as well
+        setShowTransactionReview(false);
+        setReviewTransactions([]);
+        setReviewFileSource('');
       }
     }
   );
@@ -688,6 +699,8 @@ const Upload = () => {
   const handleTransactionReviewConfirm = async (reviewData) => {
     try {
       setShowTransactionReview(false);
+      setReviewTransactions([]); // Clear review transactions
+      setReviewFileSource(''); // Clear file source
       
       // Debug: Check uploadId before sending
       console.log(`🔍 [FRONTEND DEBUG] uploadId before finalize:`, uploadId);
