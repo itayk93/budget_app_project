@@ -9,7 +9,7 @@ export const handler = async (event, context) => {
       'Access-Control-Allow-Origin': '*'
     },
     body: JSON.stringify({
-      message: 'Test function works!',
+      message: 'Test function works! Production test v2',
       timestamp: new Date().toISOString(),
       method: event.httpMethod,
       environment: {
