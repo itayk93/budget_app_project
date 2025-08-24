@@ -7,7 +7,7 @@
 2. **Update documentation**: Update README, API docs, or project notes if needed
 3. **Free ports**: `lsof -i :5001; lsof -i :4000` then `kill -9 <PID>` for each process
 4. **Auto-commit changes**: Commit all work with meaningful commit messages
-5. **Update git log**: Update "git_commits_log.xlsx" if the file exists
+5. **📋 MANDATORY: Update feature documentation** (see AUTOMATIC DOCUMENTATION section below)
 
 
 ### Server and Development Process Management
@@ -35,6 +35,162 @@ KillBash bash_1
 ```
 
 **WHY**: Leaving processes running can cause port conflicts, memory leaks, and system instability.
+
+# ⚠️⚠️⚠️ AUTOMATIC DOCUMENTATION - CRITICAL REQUIREMENT ⚠️⚠️⚠️
+
+## 📋 MANDATORY: Feature Completion Documentation
+
+**🚨 EVERY TIME A FEATURE IS COMPLETED OR MAJOR BUG IS FIXED, YOU MUST AUTOMATICALLY UPDATE THE DOCUMENTATION FILES 🚨**
+
+### When to Update Documentation
+- ✅ **After completing any new feature**
+- ✅ **After fixing major bugs or critical issues**  
+- ✅ **After making significant code changes**
+- ✅ **After refactoring important components**
+- ✅ **At the end of any development session**
+
+### Required Documentation Update Process
+
+#### Step 1: Create Python Script (if not exists)
+```python
+# Create update_git_log.py with the following content:
+#!/usr/bin/env python3
+import csv, os, subprocess
+from datetime import datetime
+
+def get_latest_commit_info():
+    result = subprocess.run([
+        'git', 'log', '-1', '--pretty=format:%H|%ad|%s', '--date=short'
+    ], capture_output=True, text=True, cwd=os.path.dirname(__file__))
+    
+    if result.returncode == 0:
+        commit_info = result.stdout.strip().split('|', 2)
+        if len(commit_info) >= 3:
+            return {
+                'hash': commit_info[0][:8],
+                'date': commit_info[1], 
+                'message': commit_info[2]
+            }
+    return None
+
+def update_documentation():
+    commit_info = get_latest_commit_info()
+    if not commit_info:
+        return False
+        
+    # Update CSV log
+    csv_path = "docs/git-logs/git_commits_log.csv"
+    
+    # Read existing data
+    rows = []
+    existing_commits = set()
+    if os.path.exists(csv_path):
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                rows.append(row)
+                if 'Commit Hash' in row:
+                    existing_commits.add(row['Commit Hash'])
+    
+    # Add new commit if not exists
+    if commit_info['hash'] not in existing_commits:
+        new_row = {
+            'Date': commit_info['date'],
+            'Commit Hash': commit_info['hash'],
+            'Message': commit_info['message'],
+            'Description': input("📝 Enter Hebrew description of changes: ")
+        }
+        rows.append(new_row)
+        
+        # Write back to CSV
+        fieldnames = ['Date', 'Commit Hash', 'Message', 'Description']
+        with open(csv_path, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
+    
+    return True
+```
+
+#### Step 2: Automatic Execution Commands
+```bash
+# MUST RUN THESE COMMANDS AFTER EVERY FEATURE COMPLETION:
+
+# 1. Create/update the documentation
+cd /Users/itaykarkason/Python\ Projects/budget_app_project
+python3 -c "
+import csv, os, subprocess
+from datetime import datetime
+
+def get_latest_commit_info():
+    result = subprocess.run(['git', 'log', '-1', '--pretty=format:%H|%ad|%s', '--date=short'], capture_output=True, text=True)
+    if result.returncode == 0:
+        commit_info = result.stdout.strip().split('|', 2)
+        if len(commit_info) >= 3:
+            return {'hash': commit_info[0][:8], 'date': commit_info[1], 'message': commit_info[2]}
+    return None
+
+# Add your documentation logic here
+print('Documentation updated!')
+"
+
+# 2. Convert CSV to Excel (if needed)
+python3 -c "
+import pandas as pd
+try:
+    df = pd.read_csv('docs/git-logs/git_commits_log.csv')
+    df.to_excel('docs/git-logs/git_commits_log.xlsx', index=False, engine='xlsxwriter')
+    print('✅ Excel file updated!')
+except: pass
+"
+```
+
+#### Step 3: Required Documentation Content
+For each feature completion, document:
+
+1. **📅 Date** - When the feature was completed
+2. **🔗 Commit Hash** - Git commit reference
+3. **📝 Message** - Brief commit message
+4. **📋 Description (Hebrew)** - Detailed explanation including:
+   - מה השתנה (What changed)
+   - למה השתנה (Why it changed) 
+   - איך זה עובד עכשיו (How it works now)
+   - בעיות שנפתרו (Issues resolved)
+   - שיפורים שנעשו (Improvements made)
+
+### File Locations
+- **CSV Log**: `docs/git-logs/git_commits_log.csv`
+- **Excel Log**: `docs/git-logs/git_commits_log.xlsx`  
+- **Summary**: `docs/git-logs/git_log_summary.txt`
+
+### 🚨 CRITICAL REMINDERS
+- **NEVER SKIP** documentation updates
+- **ALWAYS** write descriptions in Hebrew
+- **ALWAYS** include technical details
+- **ALWAYS** explain user impact
+- Files are in `docs/` folder (excluded from git)
+- Keep local documentation comprehensive
+
+### Example Documentation Entry
+```csv
+Date,Commit Hash,Message,Description
+2025-08-24,8aee52c,Fix Bank Scraper duplicate detection system,"תיקון מערכת זיהוי הכפילויות של Bank Scraper:
+
+🔧 שינויים טכניים:
+• יצירת endpoint מיוחד /api/upload/check-duplicates לעסקאות Bank Scraper
+• תיקון סדר הפרמטרים בקריאה לפונקציית getTransactionsByHash  
+• עדכון הקליינט להשתמש ב-JSON payload במקום FormData מזויף
+• הוספת לוגים מפורטים לדיבוג זיהוי כפילויות
+• הסתרת לוגים של CategoryDropdown להפחתת רעש בקונסול
+
+✅ תוצאות:
+• זיהוי כפילויות עובד כעת עבור עסקאות Bank Scraper
+• עסקאות קיימות מוצגות בצהוב במודל הסקירה  
+• שמירה על לוגיקת OR query עבור עסקאות ישנות (cash_flow_id: null)
+• ביצועים משופרים וקוד נקי יותר"
+```
+
+---
 
 ## Code Refactoring Best Practices
 
@@ -140,3 +296,27 @@ Remember: **The goal is to improve code while maintaining functionality**. If re
 > "Make it work, make it right, make it fast" - Kent Beck
 
 In this project, "make it work" is the highest priority. Only pursue "make it right" if it doesn't compromise "make it work".
+
+# 🚨🚨🚨 FINAL REMINDER: DOCUMENTATION IS MANDATORY 🚨🚨🚨
+
+**EVERY DEVELOPMENT SESSION MUST END WITH:**
+
+1. ✅ **Git commits** with clear messages
+2. ✅ **Documentation update** in `docs/git-logs/` files  
+3. ✅ **Hebrew descriptions** of all changes made
+4. ✅ **Process cleanup** (kill servers, free ports)
+
+**NO EXCEPTIONS - THIS IS REQUIRED FOR PROJECT CONTINUITY!**
+
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+
+⚠️⚠️⚠️ **CRITICAL ADDITION**: ⚠️⚠️⚠️
+**ALWAYS UPDATE FEATURE DOCUMENTATION** after completing any feature or bug fix:
+- Update docs/git-logs/git_commits_log.csv with Hebrew descriptions
+- Convert to Excel if possible (docs/git-logs/git_commits_log.xlsx)
+- Create summary file (docs/git-logs/git_log_summary.txt)
+- This is MANDATORY and must not be skipped!
