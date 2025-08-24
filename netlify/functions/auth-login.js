@@ -8,8 +8,15 @@ const supabase = createClient(
 );
 
 export const handler = async (event, context) => {
-  console.log('Login endpoint called with method:', event.httpMethod);
-  console.log('Request body:', event.body);
+  console.log('🚀 [AUTH-LOGIN] Function started');
+  console.log('🚀 [AUTH-LOGIN] Method:', event.httpMethod);
+  console.log('🚀 [AUTH-LOGIN] Headers:', JSON.stringify(event.headers));
+  console.log('🚀 [AUTH-LOGIN] Body:', event.body);
+  console.log('🚀 [AUTH-LOGIN] Environment check:', {
+    hasSupabaseUrl: !!process.env.SUPABASE_URL,
+    hasSupabaseSecret: !!process.env.SUPABASE_SECRET,
+    hasJwtSecret: !!process.env.JWT_SECRET
+  });
 
   // Handle CORS
   const headers = {
