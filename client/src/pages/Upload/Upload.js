@@ -483,6 +483,13 @@ const Upload = () => {
       return;
     }
 
+    // Clear any previous upload state before starting new upload
+    setShowTransactionReview(false);
+    setReviewTransactions([]);
+    setReviewFileSource('');
+    setUploadResult(null);
+    setCurrentStep(1); // Set to progress tracking step
+
     const formData = new FormData();
     formData.append('file', selectedFile);
     formData.append('cash_flow_id', selectedCashFlow);
@@ -503,10 +510,11 @@ const Upload = () => {
     console.log('🔍 Result fileSource:', result.fileSource);
     console.log('🔍 Result needs_transaction_review:', result.needs_transaction_review);
     console.log('🔍 Result transactions:', result.transactions?.length || 0);
+    console.log('🔍 Current step:', currentStep);
     
-    // Prevent duplicate calls using both state and ref
-    if (isFinalizingImport || isFinalizingImportRef.current || showTransactionReview) {
-      console.log('⏭️ Already finalizing import or transaction review modal is open, skipping duplicate call');
+    // Prevent processing if we're already in completion step or finalizing
+    if (currentStep === 4 || isFinalizingImport || isFinalizingImportRef.current || showTransactionReview) {
+      console.log('⏭️ Already completed upload (step 4) or finalizing import or transaction review modal is open, skipping duplicate call');
       return;
     }
     
@@ -650,6 +658,11 @@ const Upload = () => {
     setDateFilterEnabled(false);
     setStartDate('');
     setEndDate('');
+    
+    // Clear transaction review state
+    setShowTransactionReview(false);
+    setReviewTransactions([]);
+    setReviewFileSource('');
     setLatestTransactionInfo(null);
   };
   
