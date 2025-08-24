@@ -590,7 +590,9 @@ const Dashboard = () => {
         );
 
         if (!clearResponse.ok) {
-          throw new Error('Failed to clear existing categories');
+          const clearErrorText = await clearResponse.text();
+          console.error('🚨 [SAVE EMPTY] Clear failed. Status:', clearResponse.status, 'Response:', clearErrorText.substring(0, 200));
+          throw new Error(`Failed to clear existing categories: ${clearResponse.status} ${clearResponse.statusText}`);
         }
 
         // Then add the new categories if there are any
@@ -610,7 +612,9 @@ const Dashboard = () => {
           });
 
           if (!addResponse.ok) {
-            throw new Error('Failed to save categories');
+            const addErrorText = await addResponse.text();
+            console.error('🚨 [SAVE EMPTY] Add failed. Status:', addResponse.status, 'Response:', addErrorText.substring(0, 200));
+            throw new Error(`Failed to save categories: ${addResponse.status} ${addResponse.statusText}`);
           }
         }
 
@@ -646,26 +650,38 @@ const Dashboard = () => {
         );
 
         if (response.ok) {
-          const data = await response.json();
-          console.log('🔍 [EMPTY CATEGORIES RESTORE] Database response:', data);
+          const responseText = await response.text();
+          console.log('🔍 [EMPTY CATEGORIES RESTORE] Raw response:', responseText.substring(0, 200));
           
-          if (data.success && data.categories && data.categories.length > 0) {
-            console.log('🔍 [EMPTY CATEGORIES RESTORE] Restoring', data.categories.length, 'categories');
-            setSelectedEmptyCategories(data.categories);
-            setShowEmptyCategories(true);
+          try {
+            const data = JSON.parse(responseText);
+            console.log('🔍 [EMPTY CATEGORIES RESTORE] Database response:', data);
             
-            // Trigger dashboard refresh to show restored empty categories
-            setTimeout(() => {
-              console.log('🔍 [EMPTY CATEGORIES RESTORE] Triggering dashboard refresh');
-              refetchDashboard();
-            }, 100);
-          } else {
-            console.log('🔍 [EMPTY CATEGORIES RESTORE] No saved categories found in database');
+            if (data.success && data.categories && data.categories.length > 0) {
+              console.log('🔍 [EMPTY CATEGORIES RESTORE] Restoring', data.categories.length, 'categories');
+              setSelectedEmptyCategories(data.categories);
+              setShowEmptyCategories(true);
+              
+              // Trigger dashboard refresh to show restored empty categories
+              setTimeout(() => {
+                console.log('🔍 [EMPTY CATEGORIES RESTORE] Triggering dashboard refresh');
+                refetchDashboard();
+              }, 100);
+            } else {
+              console.log('🔍 [EMPTY CATEGORIES RESTORE] No saved categories found in database');
+              setSelectedEmptyCategories([]);
+              setShowEmptyCategories(false);
+            }
+          } catch (parseError) {
+            console.error('🚨 [EMPTY CATEGORIES RESTORE] Server returned HTML instead of JSON:', parseError);
+            console.error('🚨 [EMPTY CATEGORIES RESTORE] Response content:', responseText);
             setSelectedEmptyCategories([]);
             setShowEmptyCategories(false);
           }
         } else {
-          console.warn('🔍 [EMPTY CATEGORIES RESTORE] Failed to load from database:', response.statusText);
+          console.warn('🔍 [EMPTY CATEGORIES RESTORE] Failed to load from database:', response.status, response.statusText);
+          const errorText = await response.text();
+          console.warn('🔍 [EMPTY CATEGORIES RESTORE] Error response:', errorText.substring(0, 200));
           setSelectedEmptyCategories([]);
           setShowEmptyCategories(false);
         }
