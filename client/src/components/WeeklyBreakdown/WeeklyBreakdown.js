@@ -27,7 +27,10 @@ const WeeklyBreakdown = ({
     }
   }, [transactions, year, month]);
 
-  const toggleWeekExpanded = (weekNumber) => {
+  const toggleWeekExpanded = (weekNumber, event) => {
+    if (event) {
+      event.stopPropagation();
+    }
     setExpandedWeeks(prev => ({
       ...prev,
       [weekNumber]: !prev[weekNumber]
@@ -58,7 +61,7 @@ const WeeklyBreakdown = ({
             <span className="update-indicator">●</span>
           </div>
           <div className="header-controls">
-            <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'} expand-arrow`}></i>
+            <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'} weekly-header-arrow`}></i>
           </div>
         </div>
         
@@ -85,7 +88,7 @@ const WeeklyBreakdown = ({
                 <div className="week-summary">
                   <div 
                     className="week-summary-header"
-                    onClick={() => toggleWeekExpanded(weekNumber)}
+                    onClick={(event) => toggleWeekExpanded(weekNumber, event)}
                     role="button"
                     tabIndex={0}
                   >
@@ -101,18 +104,16 @@ const WeeklyBreakdown = ({
                         <div className="amount-display">
                           {formatHebrewAmount(week.totalAmount)}
                         </div>
+                        <div className="transaction-count">
+                          {week.transactions.length} עסקאות
+                        </div>
                       </div>
                       
                       <div className="week-recommended">
-                        <span className="recommended-amount">
-                          {formatHebrewAmount(week.totalAmount)}
-                        </span>
+                        <div className="week-expand-control">
+                          <i className={`fas fa-chevron-${isWeekExpanded ? 'up' : 'down'} week-toggle-arrow`}></i>
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="week-controls">
-                      <i className={`fas fa-chevron-${isWeekExpanded ? 'up' : 'down'} expand-arrow`}></i>
-                      <span className="update-indicator">●</span>
                     </div>
                   </div>
 

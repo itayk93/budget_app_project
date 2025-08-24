@@ -93,7 +93,7 @@ const TransactionReviewModal = ({
     }
   );
 
-  // Debug cash flows data when received
+  // Debug cash flows data when received and set default cash flow
   useEffect(() => {
     if (cashFlows && cashFlows.length > 0) {
       console.log('🔍 [CASH FLOWS DEBUG] Received cash flows:', cashFlows);
@@ -106,8 +106,17 @@ const TransactionReviewModal = ({
           currency: flow.currency
         });
       });
+
+      // Set default cash flow when no cashFlowId is provided (e.g., from bank scraper)
+      if (!cashFlowId && !selectedSourceCashFlowId) {
+        const defaultCashFlow = cashFlows.find(cf => cf.is_default) || cashFlows[0];
+        if (defaultCashFlow) {
+          console.log('🔍 [CASH FLOWS DEBUG] Setting default cash flow:', defaultCashFlow.name, defaultCashFlow.id);
+          setSelectedSourceCashFlowId(defaultCashFlow.id);
+        }
+      }
     }
-  }, [cashFlows]);
+  }, [cashFlows, cashFlowId, selectedSourceCashFlowId]);
 
   // Build category hierarchy from database categories
   const buildCategoryHierarchy = (categories) => {

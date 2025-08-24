@@ -126,7 +126,7 @@ class UserService {
     try {
       SharedUtilities.validateUserId(userId);
 
-      const { error } = await supabase
+      const { error } = await adminClient
         .from('users')
         .update({ 
           last_login: new Date().toISOString(),
@@ -258,7 +258,7 @@ class UserService {
 
   static async isEmailTaken(email, excludeUserId = null) {
     try {
-      let query = supabase
+      let query = adminClient
         .from('users')
         .select('id')
         .eq('email', email);
@@ -279,7 +279,7 @@ class UserService {
 
   static async isUsernameTaken(username, excludeUserId = null) {
     try {
-      let query = supabase
+      let query = adminClient
         .from('users')
         .select('id')
         .eq('username', username);

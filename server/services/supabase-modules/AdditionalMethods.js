@@ -3,7 +3,7 @@
  * Critical methods for dashboard, preferences, and advanced category features
  */
 
-const { supabase } = require('../../config/supabase');
+const { supabase, adminClient } = require('../../config/supabase');
 const SharedUtilities = require('./SharedUtilities');
 
 class AdditionalMethods {
@@ -347,6 +347,20 @@ class AdditionalMethods {
 
       if (!preferenceKey) {
         return SharedUtilities.createErrorResponse('Preference key is required');
+      }
+
+      // First verify the user exists in the users table
+      const { data: userExists, error: userCheckError } = await adminClient
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (userCheckError) throw userCheckError;
+      
+      if (!userExists) {
+        console.error(`User ${userId} not found in users table when setting preference`);
+        return SharedUtilities.createErrorResponse('User not found');
       }
 
       const value = JSON.stringify(preferenceValue);

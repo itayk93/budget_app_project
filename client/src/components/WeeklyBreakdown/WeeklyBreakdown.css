@@ -125,6 +125,8 @@
 .week-label-wrapper {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  position: relative;
 }
 
 .week-label {
@@ -143,10 +145,34 @@
   margin-top: 2px;
 }
 
+.transaction-count {
+  font-size: 12px;
+  color: #666;
+  font-weight: normal;
+}
+
+.week-expand-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.week-expand-control .week-toggle-arrow {
+  font-size: 12px;
+  color: #666;
+  transition: transform 0.2s ease;
+  cursor: pointer;
+  margin-left: 40px;
+}
+
 .week-actuals {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   font-weight: 600;
   color: #333;
+  flex: 1;
 }
 
 .amount-display {
@@ -154,8 +180,11 @@
 }
 
 .week-recommended {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #666;
+  flex: 0 0 40px;
 }
 
 .recommended-amount {

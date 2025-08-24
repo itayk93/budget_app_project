@@ -287,6 +287,8 @@ class IsraeliBankScraperService {
                             status: txn.status || 'completed',
                             installment_number: txn.installments?.number || null,
                             total_installments: txn.installments?.total || null
+                        }, {
+                            onConflict: 'config_id,transaction_identifier,account_number,transaction_date'
                         })
                         .select();
                     
