@@ -76,7 +76,10 @@ export const handler = async (event, context) => {
   try {
     // Authenticate user
     const user = await authenticateToken(event);
-    const userId = user.id;
+    const userId = user.userId || user.id;
+    
+    console.log('🔍 [DASHBOARD] User object:', user);
+    console.log('🔍 [DASHBOARD] Final userId:', userId);
 
     let { flow_month, cash_flow, all_time, year, month, format } = event.queryStringParameters || {};
     
@@ -141,7 +144,7 @@ export const handler = async (event, context) => {
       .from('categories')
       .select('*')
       .eq('user_id', userId)
-      .order('display_order', { ascending: true });
+      .order('name', { ascending: true });
 
     console.log('🔍 DEBUG - Categories result:', { count: categories?.length, error: categoriesError });
 

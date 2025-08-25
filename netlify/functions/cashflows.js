@@ -57,7 +57,7 @@ export const handler = async (event, context) => {
   try {
     // Authenticate user
     const user = await authenticateToken(event);
-    const userId = user.userId;
+    const userId = user.userId || user.id;
 
     // Fetch cash flows from Supabase for this user
     const { data: cashFlows, error } = await supabase

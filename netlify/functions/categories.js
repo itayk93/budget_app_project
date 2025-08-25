@@ -52,14 +52,14 @@ export const handler = async (event, context) => {
   try {
     // Authenticate user
     const user = await authenticateToken(event);
-    const userId = user.userId;
+    const userId = user.userId || user.id;
 
     // Fetch categories from Supabase for this user
     const { data: categories, error } = await supabase
       .from('categories')
       .select('*')
       .eq('user_id', userId)
-      .order('display_order', { ascending: true });
+      .order('name', { ascending: true });
 
     if (error) {
       console.error('Supabase error:', error);
