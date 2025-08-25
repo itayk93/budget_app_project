@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import jwt from 'jsonwebtoken';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -15,7 +16,6 @@ async function authenticateToken(event) {
   }
 
   try {
-    const jwt = await import('jsonwebtoken');
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     return decoded;
   } catch (error) {
