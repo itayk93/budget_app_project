@@ -5,19 +5,12 @@ const supabase = createClient(
   process.env.SUPABASE_SECRET
 );
 
-// Authentication middleware
+// Authentication middleware with fallback for missing environment variables
 async function authenticateToken(event) {
   // Check all possible header variations for authorization
   const authHeader = event.headers.authorization || event.headers.Authorization;
   const token = authHeader && authHeader.split(' ')[1];
 
-  console.log('🔍 [USER-CATEGORIES AUTH] Full event:', JSON.stringify({
-    headers: event.headers,
-    httpMethod: event.httpMethod,
-    path: event.path,
-    queryStringParameters: event.queryStringParameters
-  }, null, 2));
-  
   console.log('🔍 [USER-CATEGORIES AUTH] Environment check:', {
     JWT_SECRET_exists: !!process.env.JWT_SECRET,
     SUPABASE_URL_exists: !!process.env.SUPABASE_URL,
@@ -25,15 +18,22 @@ async function authenticateToken(event) {
     NODE_ENV: process.env.NODE_ENV || 'undefined'
   });
 
+  // TEMPORARY FIX: If environment variables are missing, return mock user for debugging
+  if (!process.env.JWT_SECRET || !process.env.SUPABASE_URL || !process.env.SUPABASE_SECRET) {
+    console.error('🚨 [USER-CATEGORIES AUTH] Critical environment variables missing!');
+    console.error('🚨 [USER-CATEGORIES AUTH] Please configure in Netlify Dashboard:');
+    console.error('🚨 [USER-CATEGORIES AUTH] - JWT_SECRET');
+    console.error('🚨 [USER-CATEGORIES AUTH] - SUPABASE_URL'); 
+    console.error('🚨 [USER-CATEGORIES AUTH] - SUPABASE_SECRET');
+    
+    // Return error response instead of throwing
+    throw new Error('Server configuration incomplete - please configure environment variables in Netlify Dashboard');
+  }
+
   if (!token) {
     console.error('🚨 [USER-CATEGORIES AUTH] No token provided');
     console.error('🚨 [USER-CATEGORIES AUTH] Available headers:', Object.keys(event.headers));
     throw new Error('Access token is required');
-  }
-
-  if (!process.env.JWT_SECRET) {
-    console.error('🚨 [USER-CATEGORIES AUTH] JWT_SECRET not configured in environment');
-    throw new Error('Server configuration error');
   }
 
   try {
@@ -295,6 +295,19 @@ export const handler = async (event, context) => {
         statusCode: 401,
         headers,
         body: JSON.stringify({ success: false, message: 'Unauthorized' })
+      };
+    }
+    
+    if (error.message.includes('Server configuration incomplete')) {
+      console.error('🚨 [USER EMPTY CATEGORIES] Environment configuration error');
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ 
+          success: false, 
+          message: 'Server configuration error - environment variables not set',
+          error: 'Please configure JWT_SECRET, SUPABASE_URL, and SUPABASE_SECRET in Netlify Dashboard'
+        })
       };
     }
     
