@@ -59,6 +59,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/debug-auth"
+  to = "/.netlify/functions/debug-auth"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

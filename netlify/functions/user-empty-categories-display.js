@@ -7,26 +7,53 @@ const supabase = createClient(
 
 // Authentication middleware
 async function authenticateToken(event) {
-  const authHeader = event.headers.authorization;
+  // Check all possible header variations for authorization
+  const authHeader = event.headers.authorization || event.headers.Authorization;
   const token = authHeader && authHeader.split(' ')[1];
 
-  console.log('🔍 [USER-CATEGORIES AUTH] Headers:', JSON.stringify(event.headers));
-  console.log('🔍 [USER-CATEGORIES AUTH] Auth Header:', authHeader);
-  console.log('🔍 [USER-CATEGORIES AUTH] Token:', token ? `${token.substring(0, 20)}...` : 'Missing');
-  console.log('🔍 [USER-CATEGORIES AUTH] JWT Secret exists:', !!process.env.JWT_SECRET);
+  console.log('🔍 [USER-CATEGORIES AUTH] Full event:', JSON.stringify({
+    headers: event.headers,
+    httpMethod: event.httpMethod,
+    path: event.path,
+    queryStringParameters: event.queryStringParameters
+  }, null, 2));
+  
+  console.log('🔍 [USER-CATEGORIES AUTH] Environment check:', {
+    JWT_SECRET_exists: !!process.env.JWT_SECRET,
+    SUPABASE_URL_exists: !!process.env.SUPABASE_URL,
+    SUPABASE_SECRET_exists: !!process.env.SUPABASE_SECRET,
+    NODE_ENV: process.env.NODE_ENV || 'undefined'
+  });
 
   if (!token) {
     console.error('🚨 [USER-CATEGORIES AUTH] No token provided');
+    console.error('🚨 [USER-CATEGORIES AUTH] Available headers:', Object.keys(event.headers));
     throw new Error('Access token is required');
+  }
+
+  if (!process.env.JWT_SECRET) {
+    console.error('🚨 [USER-CATEGORIES AUTH] JWT_SECRET not configured in environment');
+    throw new Error('Server configuration error');
   }
 
   try {
     const jwt = await import('jsonwebtoken');
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('✅ [USER-CATEGORIES AUTH] Token verified:', { userId: decoded.userId, email: decoded.email });
+    console.log('✅ [USER-CATEGORIES AUTH] Token verified:', { 
+      userId: decoded.userId, 
+      email: decoded.email,
+      id: decoded.id,
+      exp: decoded.exp,
+      iat: decoded.iat 
+    });
     return decoded;
   } catch (error) {
-    console.error('🚨 [USER-CATEGORIES AUTH] JWT verification failed:', error.message);
+    console.error('🚨 [USER-CATEGORIES AUTH] JWT verification failed:', {
+      error: error.message,
+      name: error.name,
+      token_length: token?.length,
+      token_start: token?.substring(0, 10)
+    });
     throw new Error('Invalid token');
   }
 }
