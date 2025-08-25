@@ -31,6 +31,16 @@
   status = 200
 
 [[redirects]]
+  from = "/api/categories"
+  to = "/.netlify/functions/categories"
+  status = 200
+
+[[redirects]]
+  from = "/api/cashflows"
+  to = "/.netlify/functions/cashflows"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
