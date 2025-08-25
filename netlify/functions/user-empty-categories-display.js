@@ -10,15 +10,23 @@ async function authenticateToken(event) {
   const authHeader = event.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1];
 
+  console.log('🔍 [USER-CATEGORIES AUTH] Headers:', JSON.stringify(event.headers));
+  console.log('🔍 [USER-CATEGORIES AUTH] Auth Header:', authHeader);
+  console.log('🔍 [USER-CATEGORIES AUTH] Token:', token ? `${token.substring(0, 20)}...` : 'Missing');
+  console.log('🔍 [USER-CATEGORIES AUTH] JWT Secret exists:', !!process.env.JWT_SECRET);
+
   if (!token) {
+    console.error('🚨 [USER-CATEGORIES AUTH] No token provided');
     throw new Error('Access token is required');
   }
 
   try {
     const jwt = await import('jsonwebtoken');
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('✅ [USER-CATEGORIES AUTH] Token verified:', { userId: decoded.userId, email: decoded.email });
     return decoded;
   } catch (error) {
+    console.error('🚨 [USER-CATEGORIES AUTH] JWT verification failed:', error.message);
     throw new Error('Invalid token');
   }
 }
