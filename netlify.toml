@@ -41,6 +41,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/user-empty-categories-display"
+  to = "/.netlify/functions/user-empty-categories-display"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
