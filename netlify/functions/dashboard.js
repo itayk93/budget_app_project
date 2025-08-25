@@ -30,14 +30,19 @@ async function authenticateToken(event) {
   const authHeader = event.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1];
 
+  console.log('🔍 [DASHBOARD AUTH] Headers:', JSON.stringify(event.headers));
+  console.log('🔍 [DASHBOARD AUTH] Token:', token ? 'Present' : 'Missing');
+
   if (!token) {
     throw new Error('Access token is required');
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('🔍 [DASHBOARD AUTH] Decoded:', { userId: decoded.userId, email: decoded.email });
     return decoded;
   } catch (error) {
+    console.error('🚨 [DASHBOARD AUTH] JWT Error:', error);
     throw new Error('Invalid token');
   }
 }
