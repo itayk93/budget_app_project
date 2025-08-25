@@ -5,6 +5,24 @@ const supabase = createClient(
   process.env.SUPABASE_SECRET
 );
 
+// Authentication middleware
+async function authenticateToken(event) {
+  const authHeader = event.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    throw new Error('Access token is required');
+  }
+
+  try {
+    const jwt = await import('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return decoded;
+  } catch (error) {
+    throw new Error('Invalid token');
+  }
+}
+
 export const handler = async (event, context) => {
   // Handle CORS
   const headers = {
@@ -32,11 +50,30 @@ export const handler = async (event, context) => {
   }
 
   try {
-    // Mock categories for now
+    // Authenticate user
+    const user = await authenticateToken(event);
+    const userId = user.userId;
+
+    // Fetch categories from Supabase for this user
+    const { data: categories, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('user_id', userId)
+      .order('display_order', { ascending: true });
+
+    if (error) {
+      console.error('Supabase error:', error);
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: 'Database error' })
+      };
+    }
+
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify([])
+      body: JSON.stringify(categories || [])
     };
   } catch (error) {
     console.error('Categories error:', error);
