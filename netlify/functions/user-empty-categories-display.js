@@ -52,7 +52,10 @@ export const handler = async (event, context) => {
   try {
     // Authenticate user
     const user = await authenticateToken(event);
-    const userId = user.userId;
+    const userId = user.userId || user.id;
+    
+    console.log('🔍 [USER-CATEGORIES] User object:', user);
+    console.log('🔍 [USER-CATEGORIES] Final userId:', userId);
 
     if (event.httpMethod === 'GET') {
       const { year, month, cash_flow_id } = event.queryStringParameters || {};
