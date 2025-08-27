@@ -16,7 +16,7 @@ router.get('/', authenticateToken, async (req, res) => {
       month, 
       flow_month,
       cash_flow_id, 
-      category_id, 
+      category_name, 
       page = 1, 
       per_page = 50,
       q,
@@ -37,7 +37,7 @@ router.get('/', authenticateToken, async (req, res) => {
     
     // Other filters
     if (cash_flow_id) filters.cash_flow_id = cash_flow_id;
-    if (category_id) filters.category_id = category_id;
+    if (category_name) filters.category_name = category_name;
     if (q) filters.q = q;
     if (notes) filters.notes = notes;
     if (no_category === 'true') filters.no_category = true;

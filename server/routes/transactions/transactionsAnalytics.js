@@ -288,7 +288,7 @@ function getMatchedFields(t1, t2) {
   if (t1.payment_date === t2.payment_date) matched.push('payment_date');
   if (t1.payment_method === t2.payment_method) matched.push('payment_method');
   if (t1.currency === t2.currency) matched.push('currency');
-  if (t1.category_id === t2.category_id) matched.push('category');
+  if (t1.category_name === t2.category_name) matched.push('category');
   
   return matched;
 }

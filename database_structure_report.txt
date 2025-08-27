@@ -1,0 +1,129 @@
+DATABASE ANALYSIS REPORT
+========================
+
+📊 TABLE: TRANSACTIONS
+   Records: 2,982
+   Columns: 38
+   ─────────────────────────────────
+    1. id                        | text         | 480552b6-4ed2-4d83-8192-352ea4ae399e
+    2. user_id                   | text         | e3f6919b-d83b-4456-8325-676550a4382d
+    3. business_name             | text         | GDBURGER
+    4. payment_date              | timestamp    | 2025-06-02
+    5. amount                    | integer      | -228
+    6. currency                  | text         | ILS
+    7. payment_method            | text         | 8429
+    8. payment_identifier        | nullable     | null
+    9. category_id               | nullable     | null
+   10. payment_month             | integer      | 6
+   11. payment_year              | integer      | 2025
+   12. flow_month                | text         | 2025-06
+   13. charge_date               | timestamp    | 2025-07-02
+   14. notes                     | text         | 
+   15. excluded_from_flow        | boolean      | false
+   16. source_type               | text         | creditCard
+   17. original_amount           | integer      | 0
+   18. transaction_hash          | text         | 8cdd2e61684c80ce7d74813fdc0f24e6
+   19. created_at                | timestamp    | 2025-07-18T05:08:05.213+00:00
+   20. updated_at                | timestamp    | 2025-07-18T05:08:05.213+00:00
+   21. cash_flow_id              | text         | c30c2672-2c39-4599-9e4e-0a536591a438
+   22. is_transfer               | boolean      | false
+   23. linked_transaction_id     | nullable     | null
+   24. category_name             | text         | הוצאות לא תזרימיות
+   25. payment_number            | integer      | 1
+   26. total_payments            | integer      | 1
+   27. original_currency         | nullable     | null
+   28. exchange_rate             | nullable     | null
+   29. exchange_date             | nullable     | null
+   30. business_country          | nullable     | null
+   31. quantity                  | nullable     | null
+   32. source_category           | nullable     | null
+   33. transaction_type          | nullable     | null
+   34. execution_method          | nullable     | null
+   35. file_source               | text         | legacy
+   36. recipient_name            | nullable     | null
+   37. duplicate_parent_id       | nullable     | null
+   38. bank_scraper_source_id    | nullable     | null
+
+📊 TABLE: CATEGORIES
+   Records: 55
+   Columns: 9
+   ─────────────────────────────────
+    1. id                        | text         | 69867f76-8632-418c-873f-48e9bcc55321
+    2. name                      | text         | הוצאות משתנות
+    3. category_type             | text         | variable_expense
+    4. color                     | text         | #5D7AFD
+    5. icon                      | nullable     | null
+    6. is_default                | boolean      | true
+    7. created_at                | timestamp    | 2025-06-07T06:54:01.532825+00:00
+    8. updated_at                | timestamp    | 2025-06-07T06:54:01.532825+00:00
+    9. user_id                   | nullable     | null
+
+📊 TABLE: USERS
+   Records: 3
+   Columns: 12
+   ─────────────────────────────────
+    1. id                        | text         | 83bd1f46-6e5b-4397-a18e-3e5142e74286
+    2. username                  | text         | testuser
+    3. email                     | text         | test@example.com
+    4. password_hash             | text         | $2a$10$ce3/eE9DGBi4bUQrYn4evevduNfDkI0Fl0m2Q1FI...
+    5. first_name                | nullable     | null
+    6. last_name                 | nullable     | null
+    7. created_at                | timestamp    | 2025-07-13T14:42:16.174+00:00
+    8. updated_at                | timestamp    | 2025-07-13T14:42:16.174+00:00
+    9. last_login                | nullable     | null
+   10. email_verified            | boolean      | false
+   11. email_verified_at         | nullable     | null
+   12. monthly_targets_last_update | nullable     | null
+
+📊 TABLE: BUDGETS
+   Records: 0
+   Columns: 0
+   ─────────────────────────────────
+
+📊 TABLE: CASH_FLOWS
+   Records: 6
+   Columns: 10
+   ─────────────────────────────────
+    1. id                        | text         | a93872d2-b157-4c8b-8fc5-42b07fd4e2d9
+    2. user_id                   | text         | e3f6919b-d83b-4456-8325-676550a4382d
+    3. name                      | text         | חשבון דולר
+    4. description               | text         | חשבון דולר שיש לי בבנק
+    5. is_default                | boolean      | false
+    6. created_at                | timestamp    | 2025-05-03T16:27:03.054981+00:00
+    7. updated_at                | timestamp    | 2025-05-03T16:27:03.054996+00:00
+    8. currency                  | text         | USD
+    9. is_monthly                | boolean      | true
+   10. is_investment_account     | boolean      | false
+
+📊 TABLE: STOCK_PRICES
+   Records: 5,684
+   Columns: 10
+   ─────────────────────────────────
+    1. stock_symbol              | text         | BIT
+    2. price_date                | timestamp    | 2025-06-30
+    3. open_price                | numeric      | 14.6
+    4. high_price                | numeric      | 14.64
+    5. low_price                 | numeric      | 14.53
+    6. close_price               | numeric      | 14.6
+    7. volume                    | integer      | 196406
+    8. source                    | text         | alphavantage
+    9. created_at                | timestamp    | 2025-07-01T13:03:15.656943
+   10. updated_at                | timestamp    | 2025-07-01T13:03:15.656943
+
+📊 TABLE: MONTHLY_GOALS
+   Records: 0
+   Columns: 0
+   ─────────────────────────────────
+
+📊 TABLE: USER_EMPTY_CATEGORIES_DISPLAY
+   Records: 1
+   Columns: 8
+   ─────────────────────────────────
+    1. id                        | text         | b82a7026-d47c-4a3b-b3aa-7909a84e6444
+    2. user_id                   | text         | e3f6919b-d83b-4456-8325-676550a4382d
+    3. cash_flow_id              | text         | c30c2672-2c39-4599-9e4e-0a536591a438
+    4. category_name             | text         | קפסולות נספרסו
+    5. year                      | integer      | 2025
+    6. month                     | integer      | 8
+    7. created_at                | timestamp    | 2025-08-24T15:59:01.432267+00:00
+    8. updated_at                | timestamp    | 2025-08-24T15:59:01.432267+00:00

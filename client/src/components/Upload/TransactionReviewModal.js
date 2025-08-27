@@ -325,8 +325,7 @@ const TransactionReviewModal = ({
               console.log(`🔍 [AUTO-CATEGORY] Setting ${tx.business_name} to ${categoryData.most_common_category}`);
               return {
                 ...tx,
-                category_name: categoryData.most_common_category,
-                category_id: null
+                category_name: categoryData.most_common_category
               };
             }
           }
@@ -415,10 +414,9 @@ const TransactionReviewModal = ({
     console.log('🔍 [TransactionReviewModal] Category change:', categoryData);
     
     // Since we're now using unique categories from transactions (just names),
-    // we only store the category name and set category_id to null
+    // we only store the category name
     if (categoryData && typeof categoryData === 'string' && categoryData !== '__new_category__') {
       handleTransactionChange(tempId, 'category_name', categoryData);
-      handleTransactionChange(tempId, 'category_id', null); // No ID needed since we use existing category names
       console.log('✅ [TransactionReviewModal] Set category name:', categoryData);
     } else {
       console.warn('⚠️ Invalid category data:', categoryData);

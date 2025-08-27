@@ -130,10 +130,16 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     const userClient = createUserClient(req.user.token);
     
+    // First get the category to find its name
+    const category = await CategoryService.getCategoryById(id);
+    if (!category) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    
     // Check if category has transactions using TransactionService
     const transactionsResult = await TransactionService.getTransactions(
       req.user.id,
-      { category_id: id },
+      { category_name: category.name },
       1,
       1,
       userClient
@@ -168,10 +174,16 @@ router.get('/:id/transactions', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Year and month are required' });
     }
 
+    // First get the category to find its name
+    const category = await CategoryService.getCategoryById(id);
+    if (!category) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    
     const filters = {
       year: parseInt(year),
       month: parseInt(month),
-      category_id: id
+      category_name: category.name
     };
 
     if (cashFlowId) {

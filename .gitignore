@@ -175,6 +175,11 @@ client/.cache/
 .supabase/
 
 # ===============================================
+# MCP CONFIGURATION (Contains API Tokens)
+# ===============================================
+.mcp.json
+
+# ===============================================
 # CUSTOM EXCLUSIONS
 # ===============================================
 # Add any project-specific files to ignore here

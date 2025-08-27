@@ -1916,7 +1916,7 @@ router.get('/export/transactions', authenticateToken, async (req, res) => {
       year, 
       month, 
       flow_month, 
-      category_id,
+      category_name,
       format = 'xlsx'
     } = req.query;
 
@@ -1929,7 +1929,7 @@ router.get('/export/transactions', authenticateToken, async (req, res) => {
     } else if (flow_month) {
       filters.flow_month = flow_month;
     }
-    if (category_id) filters.category_id = category_id;
+    if (category_name) filters.category_name = category_name;
     
     // Always export all transactions (no pagination)
     filters.show_all = true;

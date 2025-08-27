@@ -154,7 +154,7 @@ const Transactions = () => {
     business_name: '',
     amount: '',
     payment_date: '',
-    category_id: '',
+    category_name: '',
     description: '',
     payment_method: 'credit_card',
     currency: 'ILS'
@@ -176,7 +176,7 @@ const Transactions = () => {
     () => transactionsAPI.getAll({
       flow_month: showAll ? undefined : `${year}-${String(month).padStart(2, '0')}`,
       cash_flow_id: selectedCashFlow?.id,
-      category_id: selectedCategory || undefined,
+      category_name: selectedCategory || undefined,
       q: searchQuery || undefined,
       notes: notesQuery || undefined,
       page: page,
@@ -272,7 +272,7 @@ const Transactions = () => {
       business_name: '',
       amount: '',
       payment_date: '',
-      category_id: '',
+      category_name: '',
       description: '',
       payment_method: 'credit_card',
       currency: 'ILS'
@@ -300,7 +300,7 @@ const Transactions = () => {
       business_name: transaction.business_name || '',
       amount: Math.abs(transaction.amount).toString(),
       payment_date: transaction.payment_date?.split('T')[0] || '',
-      category_id: transaction.category_id || '',
+      category_name: transaction.category_name || '',
       description: transaction.description || '',
       payment_method: transaction.payment_method || 'credit_card',
       currency: transaction.currency || 'ILS'
@@ -327,7 +327,7 @@ const Transactions = () => {
     
     batchUpdateMutation.mutate({
       transaction_ids: selectedTransactions,
-      updates: { category_id: categoryId }
+      updates: { category_name: categoryId }
     });
   };
 
@@ -778,7 +778,7 @@ const Transactions = () => {
             >
               <option value="">הגדרת קטגוריה</option>
               {categories?.map(category => (
-                <option key={category.id} value={category.id}>
+                <option key={category.id} value={category.name}>
                   {category.name}
                 </option>
               ))}
@@ -953,12 +953,12 @@ const Transactions = () => {
             <label className="form-label">קטגוריה</label>
             <select
               className="form-select"
-              value={formData.category_id}
-              onChange={(e) => setFormData({...formData, category_id: e.target.value})}
+              value={formData.category_name}
+              onChange={(e) => setFormData({...formData, category_name: e.target.value})}
             >
               <option value="">בחר קטגוריה</option>
               {categories?.map(category => (
-                <option key={category.id} value={category.id}>
+                <option key={category.id} value={category.name}>
                   {category.name}
                 </option>
               ))}
@@ -1054,12 +1054,12 @@ const Transactions = () => {
             <label className="form-label">קטגוריה</label>
             <select
               className="form-select"
-              value={formData.category_id}
-              onChange={(e) => setFormData({...formData, category_id: e.target.value})}
+              value={formData.category_name}
+              onChange={(e) => setFormData({...formData, category_name: e.target.value})}
             >
               <option value="">בחר קטגוריה</option>
               {categories?.map(category => (
-                <option key={category.id} value={category.id}>
+                <option key={category.id} value={category.name}>
                   {category.name}
                 </option>
               ))}

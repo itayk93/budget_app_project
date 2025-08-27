@@ -19,13 +19,7 @@ class BudgetService {
       const { data, error } = await client
         .from('budgets')
         .select(`
-          *,
-          category:category_id (
-            id,
-            name,
-            category_type,
-            color
-          )
+          *
         `)
         .eq('user_id', userId)
         .eq('year', year)
@@ -41,7 +35,7 @@ class BudgetService {
 
   static async createMonthlyBudget(budgetData, userClient = null) {
     try {
-      const { user_id, category_id, year, month, budget_amount } = budgetData;
+      const { user_id, category_name, year, month, budget_amount } = budgetData;
 
       if (!user_id || !year || !month || budget_amount === undefined) {
         return SharedUtilities.createErrorResponse('User ID, year, month, and budget amount are required');
@@ -480,7 +474,7 @@ class BudgetService {
       // Get actual spending for the month
       const { data: transactions, error: transactionError } = await client
         .from('transactions')
-        .select('amount, category_name, category_id')
+        .select('amount, category_name')
         .eq('user_id', userId)
         .eq('cash_flow_id', cashFlowId)
         .eq('flow_month', `${year}-${month.toString().padStart(2, '0')}`)
@@ -491,7 +485,7 @@ class BudgetService {
       // Calculate spending by category
       const spendingByCategory = {};
       (transactions || []).forEach(transaction => {
-        const categoryKey = transaction.category_id || transaction.category_name || 'Uncategorized';
+        const categoryKey = transaction.category_name || 'Uncategorized';
         const amount = Math.abs(parseFloat(transaction.amount) || 0);
         
         if (!spendingByCategory[categoryKey]) {
@@ -502,7 +496,7 @@ class BudgetService {
 
       // Compare budgets with actual spending
       const analysis = budgetsResult.data.map(budget => {
-        const categoryKey = budget.category_id || budget.category?.name || 'Uncategorized';
+        const categoryKey = budget.category_name || 'Uncategorized';
         const actualSpending = spendingByCategory[categoryKey] || 0;
         const budgetAmount = parseFloat(budget.budget_amount) || 0;
         

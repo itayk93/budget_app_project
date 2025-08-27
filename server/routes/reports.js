@@ -161,13 +161,19 @@ router.get('/category-trends/:categoryId', authenticateToken, async (req, res) =
     const { categoryId } = req.params;
     const { months = 6, cashFlowId } = req.query;
 
+    // First get the category to find its name
+    const category = await CategoryService.getCategoryById(categoryId);
+    if (!category) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
     const endDate = new Date();
     const startDate = new Date();
     startDate.setMonth(endDate.getMonth() - parseInt(months));
 
     const whereClause = {
       user_id: req.user.id,
-      category_id: categoryId,
+      category_name: category.name,
       is_excluded: false,
       date: {
         [Op.between]: [startDate, endDate]

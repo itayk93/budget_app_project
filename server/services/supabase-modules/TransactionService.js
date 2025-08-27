@@ -197,12 +197,6 @@ class TransactionService {
         .from('transactions')
         .select(`
           *,
-          category:category_id (
-            id,
-            name,
-            category_type,
-            color
-          ),
           cash_flow:cash_flow_id (
             id,
             name,
@@ -223,17 +217,9 @@ class TransactionService {
         query = query.eq('cash_flow_id', filters.cash_flow_id);
       }
       
-      if (filters.category_id) {
-        query = query.eq('category_id', filters.category_id);
-      }
-      
-      // Filter by category name - handle both category_id lookup and direct category_name field
+      // Filter by category name using direct category_name field
       if (filters.category_name) {
         try {
-          // Try both approaches: 
-          // 1. Look for transactions with matching category_name field directly
-          // 2. Look for transactions linked via categories table
-          
           // Use direct category_name field filter for Hebrew support
           query = query.eq('category_name', filters.category_name);
           
@@ -245,7 +231,7 @@ class TransactionService {
       }
       
       if (filters.no_category) {
-        query = query.is('category_id', null).is('category_name', null);
+        query = query.is('category_name', null);
       }
       
       if (filters.q) {
@@ -319,9 +305,6 @@ class TransactionService {
           cash_flows:cash_flow_id (
             name,
             currency
-          ),
-          categories:category_id (
-            name
           )
         `)
         .eq('id', transactionId)

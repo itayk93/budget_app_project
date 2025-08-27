@@ -153,7 +153,7 @@ class MissingMethods {
       const processedData = {};
 
       for (const transaction of transactions) {
-        const categoryKey = transaction.category_name || transaction.category_id || 'Uncategorized';
+        const categoryKey = transaction.category_name || 'Uncategorized';
         const amount = parseFloat(transaction.amount) || 0;
 
         if (!processedData[categoryKey]) {

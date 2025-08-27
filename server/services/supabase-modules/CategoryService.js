@@ -455,10 +455,10 @@ class CategoryService {
 
       let query = client
         .from('transactions')
-        .select('category_name, category_id')
+        .select('category_name')
         .eq('business_name', businessName)
         .not('category_name', 'is', null);
-        // Removed category_id NOT NULL check to handle legacy data where category_id might be NULL
+        // Using category_name directly - no need for category_id
 
       // Add user filter if provided
       if (userId) {
@@ -482,7 +482,7 @@ class CategoryService {
       // Count frequency of each category
       const categoryFrequency = {};
       data.forEach(transaction => {
-        const category = transaction.category_name || transaction.category_id;
+        const category = transaction.category_name;
         if (category) {
           categoryFrequency[category] = (categoryFrequency[category] || 0) + 1;
         }

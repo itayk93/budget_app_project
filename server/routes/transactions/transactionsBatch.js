@@ -132,20 +132,14 @@ router.delete('/batch', authenticateToken, async (req, res) => {
 // Batch categorize transactions
 router.post('/api/transactions/batch_categorize', authenticateToken, async (req, res) => {
   try {
-    const { transaction_ids, category_id } = req.body;
+    const { transaction_ids, category_name } = req.body;
 
     if (!transaction_ids || !Array.isArray(transaction_ids) || transaction_ids.length === 0) {
       return res.status(400).json({ error: 'transaction_ids array is required' });
     }
 
-    if (!category_id) {
-      return res.status(400).json({ error: 'category_id is required' });
-    }
-
-    // Verify category belongs to user
-    const category = await SupabaseService.getCategoryById(category_id);
-    if (!category || category.user_id !== req.user.id) {
-      return res.status(400).json({ error: 'Invalid category' });
+    if (!category_name) {
+      return res.status(400).json({ error: 'category_name is required' });
     }
 
     const results = {
@@ -168,7 +162,7 @@ router.post('/api/transactions/batch_categorize', authenticateToken, async (req,
           continue;
         }
 
-        const success = await SupabaseService.updateTransaction(transactionId, { category_id });
+        const success = await SupabaseService.updateTransaction(transactionId, { category_name });
         
         if (success) {
           results.success++;
