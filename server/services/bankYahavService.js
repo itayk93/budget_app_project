@@ -209,7 +209,7 @@ class BankYahavService {
           currency: 'ILS', // Default for Bank Yahav
           payment_method: null,
           payment_identifier: null,
-          category_id: null,
+          category_name: 'לא מקוטגר',
           payment_month: paymentMonth,
           payment_year: paymentYear,
           flow_month: flowMonth,

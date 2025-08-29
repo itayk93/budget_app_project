@@ -2189,7 +2189,7 @@ class WorkingExcelService {
         // Filter: Only send valid DB columns
         const validColumns = new Set([
           'id', 'user_id', 'business_name', 'payment_date', 'amount', 'currency',
-          'payment_method', 'payment_identifier', 'category_id', 'payment_month',
+          'payment_method', 'payment_identifier', 'category_name', 'payment_month',
           'payment_year', 'flow_month', 'charge_date', 'notes', 'excluded_from_flow',
           'source_type', 'original_amount', 'transaction_hash', 'created_at',
           'updated_at', 'cash_flow_id', 'is_transfer', 'linked_transaction_id',
@@ -4018,7 +4018,7 @@ class WorkingExcelService {
         // Filter: Only keep valid DB columns
         const validColumns = new Set([
           'id', 'user_id', 'business_name', 'payment_date', 'amount', 'currency',
-          'payment_method', 'payment_identifier', 'category_id', 'payment_month',
+          'payment_method', 'payment_identifier', 'category_name', 'payment_month',
           'payment_year', 'flow_month', 'charge_date', 'notes', 'excluded_from_flow',
           'source_type', 'original_amount', 'transaction_hash', 'created_at',
           'updated_at', 'cash_flow_id', 'is_transfer', 'linked_transaction_id',

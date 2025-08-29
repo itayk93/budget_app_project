@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const SupabaseService = require('../services/supabaseService');
 const { supabase } = require('../config/supabase');
+const HiddenBusinessService = require('../services/hiddenBusinessService');
 const ExcelService = require('../services/excelService');
 const ComprehensiveExcelService = require('../services/comprehensiveExcelService');
 const WorkingExcelService = require('../services/workingExcelService');
@@ -331,6 +332,11 @@ router.get('/progress/:uploadId', authenticateToken, (req, res) => {
 // Bank Scraper duplicate checking endpoint
 router.post('/check-duplicates', authenticateToken, async (req, res) => {
   const requestId = logger.setRequestContext(req);
+  console.log('🚨 [BANK SCRAPER ENDPOINT] Bank scraper duplicate check endpoint hit!');
+  console.log('🔍 [BANK SCRAPER ENDPOINT] Request body keys:', Object.keys(req.body));
+  console.log('🔍 [BANK SCRAPER ENDPOINT] Has transactions?', !!req.body.transactions);
+  console.log('🔍 [BANK SCRAPER ENDPOINT] Has cash_flow_id?', !!req.body.cash_flow_id);
+  console.log('🔍 [BANK SCRAPER ENDPOINT] Has uploadId?', !!req.body.uploadId);
   logger.info('UPLOAD', 'Bank scraper duplicate check endpoint hit', { requestId });
   
   try {
@@ -358,13 +364,37 @@ router.post('/check-duplicates', authenticateToken, async (req, res) => {
       transactionCount: transactions.length
     });
 
+    // Hidden business checking will be done with fuzzy matching per transaction
+
     // Check for duplicates using the existing MissingMethods service
     const MissingMethods = require('../services/supabase-modules/MissingMethods');
     const duplicateData = { has_duplicates: false, transactions: [] };
     const transactionsWithDuplicates = [];
 
     for (const transaction of transactions) {
-      if (transaction.transaction_hash) {
+      let isDuplicate = false;
+      let duplicateReason = null;
+
+      console.log(`🔵 [UPLOAD CHECK] Processing transaction: "${transaction.business_name}"`);
+
+      // First check if this business is hidden using the fuzzy matching service
+      if (transaction.business_name) {
+        console.log(`🔍 [UPLOAD CHECK] About to check hidden business for: "${transaction.business_name}"`);
+        const isHidden = await HiddenBusinessService.isBusinessHidden(transaction.business_name, userId);
+        if (isHidden) {
+          isDuplicate = true;
+          duplicateReason = 'hidden_business';
+          console.log(`✅ [UPLOAD MATCH] Hidden business detected: "${transaction.business_name}"`);
+          logger.info('UPLOAD', 'Found hidden business transaction', {
+            requestId,
+            businessName: transaction.business_name,
+            hash: transaction.transaction_hash
+          });
+        }
+      }
+      
+      if (!isDuplicate && transaction.transaction_hash) {
+        // Check for hash duplicates
         logger.info('UPLOAD', 'Checking transaction hash for duplicates', {
           requestId,
           hash: transaction.transaction_hash,
@@ -380,19 +410,22 @@ router.post('/check-duplicates', authenticateToken, async (req, res) => {
         const existingTransactions = existingTransactionsResult.success ? existingTransactionsResult.data : [];
 
         if (existingTransactions && existingTransactions.length > 0) {
+          isDuplicate = true;
+          duplicateReason = 'duplicate_hash';
           logger.info('UPLOAD', 'Found duplicate transaction', {
             requestId,
             hash: transaction.transaction_hash,
             duplicateCount: existingTransactions.length
           });
-
-          transaction.isDuplicate = true;
-          duplicateData.has_duplicates = true;
-        } else {
-          transaction.isDuplicate = false;
         }
-      } else {
-        transaction.isDuplicate = false;
+      }
+
+      transaction.isDuplicate = isDuplicate;
+      transaction.duplicateReason = duplicateReason;
+      transaction.hiddenBusinessName = duplicateReason === 'hidden_business' ? transaction.business_name : null;
+
+      if (isDuplicate) {
+        duplicateData.has_duplicates = true;
       }
       
       transactionsWithDuplicates.push(transaction);
@@ -649,6 +682,10 @@ router.post('/handle-duplicates', authenticateToken, async (req, res) => {
 
 // Multi-step upload: Step 3 - Check duplicates for selected currency
 router.post('/check-duplicates', authenticateToken, async (req, res) => {
+  console.log('🚨 [EXCEL ENDPOINT] Excel duplicate check endpoint hit!');
+  console.log('🔍 [EXCEL ENDPOINT] Request body keys:', Object.keys(req.body));
+  console.log('🔍 [EXCEL ENDPOINT] Has uploadId?', !!req.body.uploadId);
+  console.log('🔍 [EXCEL ENDPOINT] Has selectedCurrency?', !!req.body.selectedCurrency);
   try {
     const { uploadId, selectedCurrency, cashFlowId, fileSource } = req.body;
     const session = uploadSessions.get(uploadId);
@@ -689,6 +726,21 @@ router.post('/check-duplicates', authenticateToken, async (req, res) => {
 
     console.log(`📊 Checking ${transactions.length} transactions for duplicates`);
 
+    // First check for hidden businesses and mark them
+    const userId = req.user.id;
+    for (const transaction of transactions) {
+      if (transaction.business_name) {
+        console.log(`🔍 [EXCEL CHECK] About to check hidden business for: "${transaction.business_name}"`);
+        const isHidden = await HiddenBusinessService.isBusinessHidden(transaction.business_name, userId);
+        if (isHidden) {
+          transaction.isDuplicate = true;
+          transaction.duplicateReason = 'hidden_business';
+          transaction.hiddenBusinessName = transaction.business_name;
+          console.log(`✅ [EXCEL UPLOAD MATCH] Hidden business detected: "${transaction.business_name}"`);
+        }
+      }
+    }
+
     // Check for duplicates
     const duplicates = await ExcelService.checkDuplicates(transactions, req.user.id, cashFlowId);
 
@@ -699,10 +751,17 @@ router.post('/check-duplicates', authenticateToken, async (req, res) => {
       console.log('💫 No duplicates found, can proceed to finalize import');
     }
 
+    // Check if any transactions are marked as hidden business
+    const hiddenBusinessCount = transactions.filter(t => t.duplicateReason === 'hidden_business').length;
+    const hasHiddenBusinesses = hiddenBusinessCount > 0;
+    
     res.json({
       duplicates: duplicates || {},
+      transactions: transactions, // Include updated transactions with hidden business marks
+      has_duplicates: (duplicates && Object.keys(duplicates).length > 0) || hasHiddenBusinesses,
       canProceedToFinalize: !duplicates || Object.keys(duplicates).length === 0,
-      transactionCount: transactions.length
+      transactionCount: transactions.length,
+      hiddenBusinessCount: hiddenBusinessCount
     });
 
   } catch (error) {
@@ -3457,6 +3516,63 @@ router.post('/bank-yahav/import', authenticateToken, async (req, res) => {
     console.error('❌ Error importing Bank Yahav transactions:', error);
     return res.status(500).json({
       error: 'Failed to import Bank Yahav transactions',
+      details: error.message
+    });
+  }
+});
+
+// Get hidden business names for the current user
+router.get('/hidden-businesses', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    console.log(`🔍 Fetching hidden business names for user: ${userId}`);
+    
+    const hiddenBusinessesData = await HiddenBusinessService.getHiddenBusinessNames(userId);
+    const hiddenBusinesses = hiddenBusinessesData.map(item => item.business_name);
+    
+    console.log(`✅ Found ${hiddenBusinesses.length} hidden business names for user`);
+    
+    res.json({
+      success: true,
+      hiddenBusinesses
+    });
+    
+  } catch (error) {
+    console.error('❌ Error fetching hidden business names:', error);
+    res.status(500).json({
+      error: 'Failed to fetch hidden business names',
+      details: error.message
+    });
+  }
+});
+
+// Add a business to hidden list
+router.post('/hidden-businesses', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { business_name, reason } = req.body;
+    
+    if (!business_name) {
+      return res.status(400).json({ error: 'Business name is required' });
+    }
+    
+    console.log(`🔍 Adding hidden business: "${business_name}" for user: ${userId}`);
+    console.log(`🔍 Reason: "${reason}"`);
+    
+    const result = await HiddenBusinessService.addHiddenBusiness(userId, business_name, reason || 'לא צוינה סיבה');
+    
+    console.log(`✅ Successfully added/updated hidden business: "${business_name}"`);
+    
+    res.json({
+      success: true,
+      hiddenBusiness: result
+    });
+    
+  } catch (error) {
+    console.error('❌ Error adding hidden business:', error);
+    res.status(500).json({
+      error: 'Failed to add hidden business',
       details: error.message
     });
   }

@@ -769,7 +769,7 @@ class IsraeliBankScraperService {
                 currency: txn.original_currency,
                 payment_method: accountNumber, // Use account number as payment method
                 payment_identifier: txn.transaction_identifier,
-                category_id: null, // Will be set during approval
+                category_name: 'לא מקוטגר', // Default category name
                 payment_month: new Date(txn.transaction_date).getMonth() + 1,
                 payment_year: new Date(txn.transaction_date).getFullYear(),
                 flow_month: `${new Date(txn.transaction_date).getFullYear()}-${String(new Date(txn.transaction_date).getMonth() + 1).padStart(2, '0')}`,
