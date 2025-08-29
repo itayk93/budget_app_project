@@ -151,7 +151,7 @@ class AmericanExpressService {
           currency: currency || 'ILS',
           payment_method: 'americanexpress',
           payment_identifier: paymentIdentifier,
-          category_name: 'לא מקוטגר',
+          category_name: parseFloat(amount) <= 0 ? 'הוצאות משתנות' : 'הכנסות משתנות',
           payment_month: paymentDate.getMonth() + 1,
           payment_year: paymentDate.getFullYear(),
           flow_month: `${paymentDate.getFullYear()}-${String(paymentDate.getMonth() + 1).padStart(2, '0')}`,

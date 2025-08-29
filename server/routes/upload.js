@@ -891,6 +891,16 @@ router.post('/finalize', authenticateToken, async (req, res) => {
       payment_identifier: transaction.payment_identifier || (session ? session.paymentIdentifier : null) || null
     }));
 
+    // Filter out hidden business transactions - they should not be imported
+    const originalCount = finalTransactions.length;
+    finalTransactions = finalTransactions.filter(transaction => 
+      transaction.duplicateReason !== 'hidden_business'
+    );
+    const hiddenBusinessFilteredCount = originalCount - finalTransactions.length;
+    if (hiddenBusinessFilteredCount > 0) {
+      console.log(`🚫 Hidden business filter: ${originalCount} -> ${finalTransactions.length} transactions (filtered out ${hiddenBusinessFilteredCount} hidden business transactions)`);
+    }
+
     console.log('🔧 Final transactions before import:', {
       count: finalTransactions.length,
       sample_user_id: finalTransactions[0]?.user_id,

@@ -577,9 +577,14 @@ class TransactionService {
         try {
           console.log(`🔄 [DB INSERT] Attempt ${retryCount + 1}/${maxRetries + 1} for ${processedData.business_name}`);
           
+          // Remove fields that don't exist in the database schema
+          const cleanedData = { ...processedData };
+          delete cleanedData.duplicateReason;
+          delete cleanedData.hiddenBusinessName;
+          
           const insertPromise = client
             .from('transactions')
-            .insert([processedData])
+            .insert([cleanedData])
             .select()
             .single();
           
