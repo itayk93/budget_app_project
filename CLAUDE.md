@@ -7,7 +7,8 @@
 2. **Update documentation**: Update README, API docs, or project notes if needed
 3. **Free ports**: `lsof -i :5001; lsof -i :4000` then `kill -9 <PID>` for each process
 4. **Auto-commit changes**: Commit all work with meaningful commit messages
-5. **📋 MANDATORY: Update feature documentation** (see AUTOMATIC DOCUMENTATION section below)
+5. **ALWAYS push to Git**: After every commit, immediately run `git push` to upload changes to remote repository
+6. **📋 MANDATORY: Update feature documentation** (see AUTOMATIC DOCUMENTATION section below)
 
 
 ### Server and Development Process Management
