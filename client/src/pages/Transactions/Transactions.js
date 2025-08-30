@@ -3,7 +3,139 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { transactionsAPI, categoriesAPI, cashFlowsAPI } from '../../services/api';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import Modal from '../../components/Common/Modal';
-import './Transactions.css';
+
+// Editable Category Badge Component
+const EditableCategoryBadge = ({ value, onSave, categories }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [inputValue, setInputValue] = useState(value || 'לא מסווג');
+  const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+
+  const allCategories = [
+    "דיגיטל", "חטיפים ואבקות חלבון", "עמלות", "גז", "ארנונה", "קפסולות נספרסו", "תזה 🤓",
+    "סופר", "הוצאות לא תזרימיות", "פארמה", "יין", "אוכל בחוץ", "תקשורת", "מים", "טיסות לחו״ל",
+    "פנאי ובילויים", "טיסה לגרמניה 🇩🇪", "שיעורי איטלקית", "רכב ותחבורה ציבורית", "הכנסות קבועות",
+    "דיור", "ביטוח רכב", "כושר", "כללי", "חסכון חד פעמי", "חסכון קבוע", "אחר", "ירח דבש",
+    "חשמל", "חדר כושר", "הכנסות", "הוצאות משתנות", "RiseUp", "חופשה בסיציליה", "ביטוח",
+    "ענייני חתונה", "הוצאות תזרימיות", "שכר דירה סאבלט", "בתי קפה", "ביגוד והנעלה",
+    "תשלומים", "הכנסות לא תזרימיות", "מכונות אוטומטיות במשרד", "הכנסות משתנות"
+  ];
+
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setInputValue(value);
+    setSelectedSuggestionIndex(-1);
+    
+    if (value.trim()) {
+      const filtered = allCategories.filter(cat => 
+        cat.toLowerCase().includes(value.toLowerCase())
+      ).slice(0, 8);
+      setFilteredSuggestions(filtered);
+      setShowSuggestions(filtered.length > 0);
+    } else {
+      setShowSuggestions(false);
+      setFilteredSuggestions([]);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (selectedSuggestionIndex >= 0 && filteredSuggestions[selectedSuggestionIndex]) {
+        handleSave(filteredSuggestions[selectedSuggestionIndex]);
+      } else {
+        handleSave(inputValue);
+      }
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+      setInputValue(value || 'לא מסווג');
+      setShowSuggestions(false);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedSuggestionIndex(prev => 
+        prev < filteredSuggestions.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
+    }
+  };
+
+  const handleSave = (newValue) => {
+    const finalValue = newValue.trim() || 'לא מסווג';
+    setInputValue(finalValue);
+    setIsEditing(false);
+    setShowSuggestions(false);
+    if (finalValue !== (value || 'לא מסווג')) {
+      onSave(finalValue);
+    }
+  };
+
+  const handleSuggestionClick = (suggestion) => {
+    handleSave(suggestion);
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setInputValue(value || '');
+    setTimeout(() => {
+      const input = document.getElementById(`category-input-${value}`);
+      if (input) input.focus();
+    }, 0);
+  };
+
+  const handleBlur = () => {
+    // Delay to allow suggestion clicks
+    setTimeout(() => {
+      setIsEditing(false);
+      setShowSuggestions(false);
+      setInputValue(value || 'לא מסווג');
+    }, 150);
+  };
+
+  if (isEditing) {
+    return (
+      <div className="relative">
+        <input
+          id={`category-input-${value}`}
+          type="text"
+          value={inputValue}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
+          className="inline-block px-2 py-1 bg-white border border-blue-500 text-gray-900 rounded text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 min-w-[80px]"
+          style={{ minWidth: Math.max(80, inputValue.length * 8 + 16) }}
+        />
+        {showSuggestions && filteredSuggestions.length > 0 && (
+          <div className="absolute top-full left-0 z-50 bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-40 overflow-y-auto">
+            {filteredSuggestions.map((suggestion, index) => (
+              <div
+                key={suggestion}
+                className={`px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 ${
+                  index === selectedSuggestionIndex ? 'bg-blue-100' : ''
+                }`}
+                onMouseDown={() => handleSuggestionClick(suggestion)}
+              >
+                {suggestion}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <span
+      className="inline-block px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-medium whitespace-nowrap cursor-pointer hover:bg-gray-300 transition-colors"
+      onClick={handleEdit}
+      title="לחץ לעריכה"
+    >
+      {value || 'לא מסווג'}
+    </span>
+  );
+};
 
 // Currency Conversion Component
 const CurrencyConversionPopup = ({ transaction, sourceCurrency, targetCurrency, onSubmit, onSkip }) => {
@@ -90,18 +222,16 @@ const CurrencyConversionPopup = ({ transaction, sourceCurrency, targetCurrency, 
       <div style={{display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '30px', paddingTop: '20px', borderTop: '1px solid #e9ecef'}}>
         <button
           type="button"
-          className="btn btn-secondary"
+          className="px-5 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium min-h-[40px]"
           onClick={onSkip}
-          style={{padding: '10px 20px', minHeight: '40px'}}
         >
           דלג (השתמש בסכום המקורי)
         </button>
         <button
           type="button"
-          className="btn btn-primary"
+          className="px-5 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium min-h-[40px] disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleSubmit}
           disabled={!targetAmount || isNaN(targetAmount) || parseFloat(targetAmount) <= 0}
-          style={{padding: '10px 20px', minHeight: '40px'}}
         >
           המשך
         </button>
@@ -339,6 +469,13 @@ const Transactions = () => {
     if (window.confirm('האם אתה בטוח שברצונך למחוק את התנועה?')) {
       deleteTransactionMutation.mutate(id);
     }
+  };
+
+  const handleCategoryUpdate = (transactionId, newCategory) => {
+    updateTransactionMutation.mutate({
+      id: transactionId,
+      data: { category_name: newCategory }
+    });
   };
 
   const handleSelectTransaction = (id) => {
@@ -682,29 +819,29 @@ const Transactions = () => {
   }
 
   return (
-    <div className="transactions-page">
-      <div className="page-header">
-        <div className="page-title">
-          <h1>תנועות</h1>
-          <p className="text-muted">ניהול כל התנועות הכספיות שלכם</p>
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="flex justify-between items-start mb-4 gap-6">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">תנועות</h1>
+          <p className="text-gray-600">ניהול כל התנועות הכספיות שלכם</p>
         </div>
 
-        <div className="page-controls">
+        <div className="flex gap-4 flex-shrink-0">
           <button
-            className="btn btn-primary"
+            className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
             onClick={() => setIsAddModalOpen(true)}
           >
             הוספת תנועה
           </button>
           <button
-            className="btn btn-info"
+            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
             onClick={() => setShowAll(!showAll)}
           >
             {showAll ? 'הצג לפי חודש' : 'הצג הכל'}
           </button>
           {transactions?.transactions?.length > 0 && (
             <button
-              className="btn btn-success"
+              className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-black transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={handleBulkCopy}
               disabled={isProcessingBulkCopy}
             >
@@ -713,7 +850,7 @@ const Transactions = () => {
           )}
           {selectedCashFlow && (
             <button
-              className="btn btn-danger"
+              className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors font-medium"
               onClick={() => handleDeleteAllTransactions()}
             >
               מחק את כל התנועות בתזרים
@@ -722,29 +859,29 @@ const Transactions = () => {
         </div>
       </div>
 
-      <div className="transactions-filters">
-        <div className="month-navigation">
+      <div className="bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-col gap-3">
+        <div className="flex items-center gap-3 bg-gray-50 p-2 rounded-md border border-gray-300 w-fit">
           <button
-            className="btn btn-secondary btn-sm"
+            className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm font-medium"
             onClick={() => navigateMonth(-1)}
           >
             ←
           </button>
-          <span className="current-month">
+          <span className="font-semibold text-gray-900 min-w-[120px] text-center text-sm">
             {getMonthName(currentDate)}
           </span>
           <button
-            className="btn btn-secondary btn-sm"
+            className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm font-medium"
             onClick={() => navigateMonth(1)}
           >
             →
           </button>
         </div>
 
-        <div className="filters-row">
+        <div className="flex gap-4 items-center flex-wrap">
           {cashFlows && cashFlows.length > 1 && (
             <select
-              className="form-select"
+              className="min-w-[150px] flex-1 max-w-[250px] px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               value={selectedCashFlow?.id || ''}
               onChange={(e) => {
                 const cashFlow = cashFlows.find(cf => cf.id === e.target.value);
@@ -760,7 +897,7 @@ const Transactions = () => {
           )}
 
           <select
-            className="form-select"
+            className="min-w-[150px] flex-1 max-w-[250px] px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
           >
@@ -774,7 +911,7 @@ const Transactions = () => {
 
           <input
             type="text"
-            className="form-input"
+            className="min-w-[150px] flex-1 max-w-[250px] px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="חיפוש..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -782,7 +919,7 @@ const Transactions = () => {
 
           <input
             type="text"
-            className="form-input"
+            className="min-w-[150px] flex-1 max-w-[250px] px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="חיפוש בהערות..."
             value={notesQuery}
             onChange={(e) => setNotesQuery(e.target.value)}
@@ -790,12 +927,12 @@ const Transactions = () => {
         </div>
 
         {selectedTransactions.length > 0 && (
-          <div className="batch-actions">
-            <span className="selected-count">
+          <div className="flex items-center gap-4 p-4 bg-blue-600 text-white rounded-md">
+            <span className="font-semibold">
               {selectedTransactions.length} תנועות נבחרו
             </span>
             <select
-              className="form-select"
+              className="bg-white text-gray-900 border-0 min-w-[200px] px-3 py-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
               onChange={(e) => {
                 if (e.target.value) {
                   handleBatchCategorize(e.target.value);
@@ -814,13 +951,13 @@ const Transactions = () => {
         )}
       </div>
 
-      <div className="transactions-content">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         {transactions?.transactions?.length > 0 ? (
-          <div className="table-container">
-            <table className="table">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
               <thead>
                 <tr>
-                  <th>
+                  <th className="bg-gray-50 font-semibold text-gray-700 p-4 text-right border-b-2 border-gray-200 whitespace-nowrap">
                     <input
                       type="checkbox"
                       onChange={(e) => {
@@ -832,57 +969,58 @@ const Transactions = () => {
                       }}
                     />
                   </th>
-                  <th>תאריך</th>
-                  <th>עסק</th>
-                  <th>סכום</th>
-                  <th>קטגוריה</th>
-                  <th>הערות</th>
-                  <th>פעולות</th>
+                  <th className="bg-gray-50 font-semibold text-gray-700 p-4 text-right border-b-2 border-gray-200 whitespace-nowrap">תאריך</th>
+                  <th className="bg-gray-50 font-semibold text-gray-700 p-4 text-right border-b-2 border-gray-200 whitespace-nowrap">עסק</th>
+                  <th className="bg-gray-50 font-semibold text-gray-700 p-4 text-right border-b-2 border-gray-200 whitespace-nowrap">סכום</th>
+                  <th className="bg-gray-50 font-semibold text-gray-700 p-4 text-right border-b-2 border-gray-200 whitespace-nowrap">קטגוריה</th>
+                  <th className="bg-gray-50 font-semibold text-gray-700 p-4 text-right border-b-2 border-gray-200 whitespace-nowrap">הערות</th>
+                  <th className="bg-gray-50 font-semibold text-gray-700 p-4 text-right border-b-2 border-gray-200 whitespace-nowrap">פעולות</th>
                 </tr>
               </thead>
               <tbody>
                 {transactions.transactions.map(transaction => (
-                  <tr key={transaction.id}>
-                    <td>
+                  <tr key={transaction.id} className="hover:bg-gray-50">
+                    <td className="p-4 text-right border-b border-gray-200 align-middle">
                       <input
                         type="checkbox"
                         checked={selectedTransactions.includes(transaction.id)}
                         onChange={() => handleSelectTransaction(transaction.id)}
                       />
                     </td>
-                    <td>{formatDate(transaction.payment_date)}</td>
-                    <td>{transaction.business_name}</td>
-                    <td className={`currency ${parseFloat(transaction.amount) >= 0 ? 'positive' : 'negative'}`}>
+                    <td className="p-4 text-right border-b border-gray-200 align-middle">{formatDate(transaction.payment_date)}</td>
+                    <td className="p-4 text-right border-b border-gray-200 align-middle">{transaction.business_name}</td>
+                    <td className={`p-4 text-right border-b border-gray-200 align-middle font-semibold font-mono ${parseFloat(transaction.amount) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {formatCurrency(Math.abs(parseFloat(transaction.amount)), transaction.currency)}
                     </td>
-                    <td>
-                      <span className="category-badge">
-                        {transaction.category_name || 'לא מסווג'}
-                      </span>
+                    <td className="p-4 text-right border-b border-gray-200 align-middle">
+                      <EditableCategoryBadge
+                        value={transaction.category_name}
+                        onSave={(newCategory) => handleCategoryUpdate(transaction.id, newCategory)}
+                      />
                     </td>
-                    <td>{transaction.description || '-'}</td>
-                    <td>
-                      <div className="actions">
+                    <td className="p-4 text-right border-b border-gray-200 align-middle">{transaction.description || '-'}</td>
+                    <td className="p-4 text-right border-b border-gray-200 align-middle">
+                      <div className="flex gap-2 justify-end">
                         <button
-                          className="btn btn-sm btn-primary"
+                          className="px-3 py-1 bg-black text-white rounded hover:bg-gray-800 transition-colors text-sm font-medium"
                           onClick={() => window.location.href = `/transaction/${transaction.id}`}
                         >
                           פרטים
                         </button>
                         <button
-                          className="btn btn-sm btn-secondary"
+                          className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm font-medium"
                           onClick={() => handleEdit(transaction)}
                         >
                           עריכה
                         </button>
                         <button
-                          className="btn btn-sm btn-info"
+                          className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-800 transition-colors text-sm font-medium"
                           onClick={() => handleCopy(transaction)}
                         >
                           העתקה
                         </button>
                         <button
-                          className="btn btn-sm btn-danger"
+                          className="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors text-sm font-medium"
                           onClick={() => handleDelete(transaction.id)}
                         >
                           מחיקה
@@ -893,7 +1031,7 @@ const Transactions = () => {
                          parseFloat(transaction.amount) < 0 &&
                          transaction.business_name === 'הפקדה לחשבון השקעות' && (
                           <button
-                            className="btn btn-sm btn-success"
+                            className="px-3 py-1 bg-gray-800 text-white rounded hover:bg-black transition-colors text-sm font-medium"
                             onClick={() => handleLinkDeposit(transaction)}
                           >
                             קישור הוצאה
@@ -907,25 +1045,25 @@ const Transactions = () => {
             </table>
           </div>
         ) : (
-          <div className="empty-state">
-            <p>לא נמצאו תנועות לחודש זה</p>
+          <div className="text-center py-16 text-gray-500">
+            <p className="text-base">לא נמצאו תנועות לחודש זה</p>
           </div>
         )}
 
         {transactions?.pagination && (
-          <div className="pagination">
+          <div className="flex justify-center items-center gap-4 p-6 border-t border-gray-200">
             <button
-              className="btn btn-secondary"
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={page === 1}
               onClick={() => setPage(page - 1)}
             >
               הקודם
             </button>
-            <span className="page-info">
+            <span className="text-sm text-gray-600 font-medium">
               עמוד {page} מתוך {transactions.pagination.total_pages}
             </span>
             <button
-              className="btn btn-secondary"
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={page >= transactions.pagination.total_pages}
               onClick={() => setPage(page + 1)}
             >
@@ -1020,14 +1158,14 @@ const Transactions = () => {
           <div className="modal-footer">
             <button
               type="button"
-              className="btn btn-secondary"
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
               onClick={() => setIsAddModalOpen(false)}
             >
               ביטול
             </button>
             <button
               type="submit"
-              className="btn btn-primary"
+              className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={createTransactionMutation.isLoading}
             >
               {createTransactionMutation.isLoading ? 'שומר...' : 'שמירה'}
@@ -1121,14 +1259,14 @@ const Transactions = () => {
           <div className="modal-footer">
             <button
               type="button"
-              className="btn btn-secondary"
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
               onClick={() => setIsEditModalOpen(false)}
             >
               ביטול
             </button>
             <button
               type="submit"
-              className="btn btn-primary"
+              className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={updateTransactionMutation.isLoading}
             >
               {updateTransactionMutation.isLoading ? 'שומר...' : 'שמירה'}
@@ -1268,7 +1406,7 @@ const Transactions = () => {
             <div className="modal-footer" style={{display: 'flex', justifyContent: 'flex-end', gap: '8px', paddingTop: '1rem', borderTop: '1px solid #e9ecef'}}>
               <button
                 type="button"
-                className="btn btn-secondary"
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
                 onClick={() => {
                   setIsCopyModalOpen(false);
                   setTransactionToCopy(null);
@@ -1277,23 +1415,14 @@ const Transactions = () => {
                   setForeignAmount('');
                   setExchangeRate('');
                 }}
-                style={{padding: '8px 16px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px'}}
               >
                 ביטול
               </button>
               <button
                 type="button"
-                className="btn btn-primary"
+                className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleCopySubmit}
                 disabled={!targetCashFlowId || copyTransactionMutation.isLoading || (isForeignCurrency && (!foreignAmount || !exchangeRate))}
-                style={{
-                  padding: '8px 16px', 
-                  backgroundColor: targetCashFlowId && (!isForeignCurrency || (foreignAmount && exchangeRate)) ? '#007bff' : '#ccc', 
-                  color: 'white', 
-                  border: 'none', 
-                  borderRadius: '4px',
-                  cursor: targetCashFlowId && (!isForeignCurrency || (foreignAmount && exchangeRate)) ? 'pointer' : 'not-allowed'
-                }}
               >
                 {copyTransactionMutation.isLoading ? 'מעתיק...' : 'העתק'}
               </button>
@@ -1360,14 +1489,14 @@ const Transactions = () => {
             <div className="modal-footer" style={{display: 'flex', justifyContent: 'flex-end', gap: '8px', paddingTop: '1rem', borderTop: '1px solid #e9ecef'}}>
               <button
                 type="button"
-                className="btn btn-secondary"
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
                 onClick={() => setIsBulkCopyModalOpen(false)}
               >
                 ביטול
               </button>
               <button
                 type="button"
-                className="btn btn-primary"
+                className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={startBulkCopyProcess}
                 disabled={!bulkTargetCashFlowId || isProcessingBulkCopy}
               >
@@ -1516,7 +1645,7 @@ const Transactions = () => {
             <div className="modal-footer" style={{display: 'flex', justifyContent: 'flex-end', gap: '8px', paddingTop: '1rem', borderTop: '1px solid #e9ecef', marginTop: '1.5rem'}}>
               <button
                 type="button"
-                className="btn btn-secondary"
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
                 onClick={() => {
                   setIsLinkDepositModalOpen(false);
                   setDepositToLink(null);
@@ -1529,7 +1658,7 @@ const Transactions = () => {
               </button>
               <button
                 type="button"
-                className="btn btn-primary"
+                className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleConfirmLink}
                 disabled={!selectedExpense || linkDepositMutation.isLoading}
               >

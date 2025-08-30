@@ -247,8 +247,8 @@ class TransactionService {
       }
 
       // Apply sorting
-      query = query.order('payment_date', { ascending: false })
-                   .order('created_at', { ascending: false });
+      query = query.order('payment_date', { ascending: true })
+                   .order('created_at', { ascending: true });
 
       // Apply pagination
       const start = (page - 1) * perPage;
@@ -264,6 +264,19 @@ class TransactionService {
 
       if (error) throw error;
 
+      // Load category order information for sorting
+      const categoryOrderQuery = await client
+        .from('category_order')
+        .select('category_name, display_order')
+        .eq('user_id', userId);
+
+      const categoryOrders = {};
+      if (categoryOrderQuery.data) {
+        categoryOrderQuery.data.forEach(cat => {
+          categoryOrders[cat.category_name] = cat.display_order;
+        });
+      }
+
       // Process transactions with currency formatting
       const processedTransactions = (data || []).map(transaction => {
         const currency = transaction.cash_flow?.currency || transaction.currency || 'ILS';
@@ -275,8 +288,25 @@ class TransactionService {
           currency,
           currency_symbol: currencySymbol,
           formatted_amount: SharedUtilities.formatCurrency(amount, currency),
-          category_name: transaction.category?.name || transaction.category_name
+          category_name: transaction.category?.name || transaction.category_name,
+          category_display_order: categoryOrders[transaction.category_name] !== undefined ? categoryOrders[transaction.category_name] : 999
         };
+      });
+
+      // Sort by category display_order first, then by payment_date
+      processedTransactions.sort((a, b) => {
+        // First by category display order
+        if (a.category_display_order !== b.category_display_order) {
+          return a.category_display_order - b.category_display_order;
+        }
+        // Then by payment date
+        const dateA = new Date(a.payment_date);
+        const dateB = new Date(b.payment_date);
+        if (dateA !== dateB) {
+          return dateA - dateB;
+        }
+        // Finally by created_at
+        return new Date(a.created_at) - new Date(b.created_at);
       });
 
       return SharedUtilities.createSuccessResponse({
