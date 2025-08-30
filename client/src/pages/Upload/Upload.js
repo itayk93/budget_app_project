@@ -873,12 +873,12 @@ const Upload = () => {
                 </div>
 
                 {/* Modern Cash Flow Selection */}
-                <div className="space-y-3">
-                  <label className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                <div className="space-y-2 mb-8">
+                  <label className="text-base font-semibold text-gray-800 flex items-center gap-2">
                     💰 תזרים מזומנים
                   </label>
                   <select
-                    className="w-full p-4 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all duration-200 bg-white shadow-sm"
+                    className="w-full p-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all duration-200 bg-white shadow-sm"
                     value={selectedCashFlow}
                     onChange={(e) => setSelectedCashFlow(e.target.value)}
                   >
@@ -959,13 +959,13 @@ const Upload = () => {
                 )}
 
                 {/* Modern Upload Settings Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                       🏢 מקור הקבצים
                     </label>
                     <select
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                      className="w-full p-2.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                       value={fileSource}
                       onChange={(e) => setFileSource(e.target.value)}
                     >
@@ -981,16 +981,16 @@ const Upload = () => {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                       💳 אמצעי תשלום (אופציונלי)
                     </label>
                     {loadingDropdowns ? (
-                      <div className="w-full p-3 border border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                      <div className="w-full p-2.5 text-sm border border-gray-300 rounded-md flex items-center justify-center bg-gray-50">
                         <LoadingSpinner size="small" />
                       </div>
                     ) : (
                       <select
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                        className="w-full p-2.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                         value={paymentMethod}
                         onChange={(e) => setPaymentMethod(e.target.value)}
                       >
@@ -1004,7 +1004,7 @@ const Upload = () => {
                     {paymentMethod === 'other' && (
                       <input
                         type="text"
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white mt-2"
+                        className="w-full p-2.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white mt-2"
                         placeholder="הכנס אמצעי תשלום אחר..."
                         onChange={(e) => setPaymentMethod(e.target.value)}
                       />
@@ -1012,16 +1012,16 @@ const Upload = () => {
                   </div>
                   {fileSource !== 'max' && (
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                         🔢 זיהוי תשלום (אופציונלי)
                       </label>
                     {loadingDropdowns ? (
-                      <div className="w-full p-3 border border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                      <div className="w-full p-2.5 text-sm border border-gray-300 rounded-md flex items-center justify-center bg-gray-50">
                         <LoadingSpinner size="small" />
                       </div>
                     ) : (
                       <select
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                        className="w-full p-2.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                         value={paymentIdentifier}
                         onChange={(e) => setPaymentIdentifier(e.target.value)}
                       >
@@ -1035,7 +1035,7 @@ const Upload = () => {
                     {paymentIdentifier === 'other' && (
                       <input
                         type="text"
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white mt-2"
+                        className="w-full p-2.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white mt-2"
                         placeholder="הכנס זיהוי תשלום אחר..."
                         onChange={(e) => setPaymentIdentifier(e.target.value)}
                       />
@@ -1096,7 +1096,7 @@ const Upload = () => {
                         <label className="text-sm font-semibold text-gray-700">תאריך התחלה</label>
                         <input
                           type="date"
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all duration-200 bg-white"
+                          className="w-full p-2.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all duration-200 bg-white"
                           value={startDate}
                           onChange={(e) => setStartDate(e.target.value)}
                           placeholder="dd/mm/yyyy"
@@ -1106,7 +1106,7 @@ const Upload = () => {
                         <label className="text-sm font-semibold text-gray-700">תאריך סיום (אופציונלי)</label>
                         <input
                           type="date"
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all duration-200 bg-white"
+                          className="w-full p-2.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all duration-200 bg-white"
                           value={endDate}
                           onChange={(e) => setEndDate(e.target.value)}
                           placeholder="dd/mm/yyyy"
