@@ -8,7 +8,6 @@ import CurrencyGroupsReview from '../../components/Upload/CurrencyGroupsReview';
 import DuplicateReview from '../../components/Upload/DuplicateReview';
 import ProgressTracking from '../../components/Upload/ProgressTracking';
 import TransactionReviewModal from '../../components/Upload/TransactionReviewModal';
-import './Upload.css';
 
 const Upload = () => {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -781,63 +780,85 @@ const Upload = () => {
   }
 
   return (
-    <div className="upload-page">
-      <div className="page-header">
-        <div className="page-title">
-          <h1>העלאת קבצי בנק</h1>
-          <p className="text-muted">העלה קבצי Excel או CSV מהבנק לייבוא אוטומטי של תנועות</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 md:p-8">
+      <div className="max-w-5xl mx-auto">
+        {/* Modern Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+          <div className="mb-6 md:mb-0">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-3">
+              העלאת קבצי בנק
+            </h1>
+            <p className="text-gray-600 text-lg">העלה קבצי Excel או CSV מהבנק לייבוא אוטומטי של תנועות</p>
+          </div>
+          <div className="flex-shrink-0">
+            <button
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-gray-700 font-medium rounded-xl border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md"
+              onClick={() => window.location.href = '/upload/file-merger'}
+            >
+              🔗 מיזוג קבצים
+            </button>
+          </div>
         </div>
-        <div className="page-actions">
-          <button
-            className="btn btn-secondary"
-            onClick={() => window.location.href = '/upload/file-merger'}
-          >
-            🔗 מיזוג קבצים
-          </button>
-        </div>
-      </div>
 
-      {/* Upload Stepper */}
-      {currentStep > 0 && (
-        <UploadStepper currentStep={currentStep} steps={steps} />
-      )}
-
-      <div className="upload-content">
+        {/* Upload Stepper */}
+        {currentStep > 0 && (
+          <div className="mb-8">
+            <UploadStepper currentStep={currentStep} steps={steps} />
+          </div>
+        )}
         {/* Step 0: Initial Upload */}
         {currentStep === 0 && (
-          <div className="upload-section">
-            <div className="card">
-              <div className="card-header">
-                <h3>העלאת קובץ</h3>
+          <div className="space-y-8">
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-8 py-6">
+                <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+                  📂 העלאת קובץ
+                </h3>
               </div>
-              <div className="card-body">
-                {/* File Drop Zone */}
+              <div className="p-8">
+                {/* Modern File Drop Zone */}
                 <div
-                  className={`file-drop-zone ${isDragOver ? 'drag-over' : ''} ${selectedFile ? 'has-file' : ''}`}
+                  className={`relative border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 cursor-pointer group ${
+                    isDragOver 
+                      ? 'border-blue-400 bg-blue-50 scale-105 shadow-lg' 
+                      : selectedFile 
+                      ? 'border-green-300 bg-green-50' 
+                      : 'border-gray-300 bg-gray-50 hover:border-blue-300 hover:bg-blue-50'
+                  }`}
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                 >
                   {selectedFile ? (
-                    <div className="selected-file">
-                      <div className="file-icon">📄</div>
-                      <div className="file-info">
-                        <div className="file-name">{selectedFile.name}</div>
-                        <div className="file-size">{formatFileSize(selectedFile.size)}</div>
+                    <div className="flex items-center justify-between p-6 bg-white rounded-xl border border-green-200 shadow-sm">
+                      <div className="flex items-center gap-4">
+                        <div className="text-5xl">📄</div>
+                        <div className="text-right">
+                          <div className="font-semibold text-gray-900 text-lg">{selectedFile.name}</div>
+                          <div className="text-green-600 font-medium">{formatFileSize(selectedFile.size)}</div>
+                        </div>
                       </div>
                       <button
-                        className="btn btn-sm btn-secondary"
+                        className="px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg font-medium transition-colors duration-200 border border-red-200 hover:border-red-300"
                         onClick={() => setSelectedFile(null)}
                       >
                         הסר
                       </button>
                     </div>
                   ) : (
-                    <div className="drop-zone-content">
-                      <div className="drop-zone-icon">📁</div>
-                      <div className="drop-zone-text">
-                        <p>גרור קובץ לכאן או <button className="link-button" onClick={() => document.getElementById('file-input').click()}>בחר קובץ</button></p>
-                        <p className="text-muted">קבצי Excel (.xlsx, .xls) או CSV</p>
+                    <div className="space-y-4">
+                      <div className="text-6xl opacity-60 group-hover:opacity-80 transition-opacity duration-300">📁</div>
+                      <div className="space-y-2">
+                        <p className="text-lg font-medium text-gray-700">
+                          גרור קובץ לכאן או{' '}
+                          <button 
+                            className="text-gray-700 underline hover:text-gray-900 font-semibold" 
+                            onClick={() => document.getElementById('file-input').click()}
+                          >
+                            בחר קובץ
+                          </button>
+                        </p>
+                        <p className="text-gray-500">קבצי Excel (.xlsx, .xls) או CSV</p>
                       </div>
                     </div>
                   )}
@@ -851,11 +872,13 @@ const Upload = () => {
                   />
                 </div>
 
-                {/* Cash Flow Selection */}
-                <div className="form-group">
-                  <label className="form-label">תזרים מזומנים</label>
+                {/* Modern Cash Flow Selection */}
+                <div className="space-y-3">
+                  <label className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    💰 תזרים מזומנים
+                  </label>
                   <select
-                    className="form-select"
+                    className="w-full p-4 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all duration-200 bg-white shadow-sm"
                     value={selectedCashFlow}
                     onChange={(e) => setSelectedCashFlow(e.target.value)}
                   >
@@ -868,58 +891,27 @@ const Upload = () => {
                   </select>
                 </div>
 
-                {/* Date suggestion message - shows immediately after selecting cash flow */}
+                {/* Modern Date suggestion message */}
                 {selectedCashFlow && latestTransactionInfo?.latestTransactionDate && (
-                  <div style={{
-                    background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                    borderRadius: '16px',
-                    padding: '24px',
-                    marginBottom: '24px',
-                    color: 'white',
-                    textAlign: 'center',
-                    boxShadow: '0 8px 32px rgba(240, 147, 251, 0.3)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)'
-                  }}>
-                    <div style={{fontSize: '18px', marginBottom: '8px'}}>
+                  <div className="bg-gradient-to-br from-pink-400 via-purple-500 to-red-500 rounded-2xl p-8 text-white text-center shadow-2xl border border-white/20">
+                    <div className="text-2xl mb-3">
                       📅 ✨
                     </div>
-                    <div style={{fontSize: '16px', fontWeight: '500', marginBottom: '12px'}}>
+                    <div className="text-lg font-medium mb-4">
                       התאריך האחרון של התזרים "{latestTransactionInfo.cashFlowName}" הוא{' '}
-                      <strong>{formatDateForDisplay(latestTransactionInfo.latestTransactionDate)}</strong>
+                      <strong className="font-bold">{formatDateForDisplay(latestTransactionInfo.latestTransactionDate)}</strong>
                     </div>
-                    <div style={{fontSize: '14px', marginBottom: '16px', opacity: '0.9'}}>
+                    <div className="text-sm mb-6 opacity-90">
                       אז מאיזה תאריך אתה רוצה להעלות את הנתונים? 🤔
                     </div>
-                    <div style={{display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap'}}>
+                    <div className="flex gap-3 justify-center flex-wrap">
                       <button
                         type="button"
                         onClick={() => {
                           setDateFilterEnabled(true);
                           handleUseSameDate();
                         }}
-                        style={{
-                          background: 'rgba(255, 255, 255, 0.25)',
-                          border: '2px solid rgba(255, 255, 255, 0.4)',
-                          borderRadius: '12px',
-                          padding: '12px 20px',
-                          color: 'white',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease',
-                          backdropFilter: 'blur(20px)',
-                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)'
-                        }}
-                        onMouseOver={(e) => {
-                          e.target.style.background = 'rgba(255, 255, 255, 0.35)';
-                          e.target.style.transform = 'translateY(-2px)';
-                          e.target.style.boxShadow = '0 6px 24px rgba(0, 0, 0, 0.15)';
-                        }}
-                        onMouseOut={(e) => {
-                          e.target.style.background = 'rgba(255, 255, 255, 0.25)';
-                          e.target.style.transform = 'translateY(0)';
-                          e.target.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.1)';
-                        }}
+                        className="px-6 py-3 bg-white/25 border-2 border-white/40 rounded-xl text-white font-semibold text-sm backdrop-blur-md shadow-lg hover:bg-white/35 hover:scale-105 transition-all duration-300"
                       >
                         📅 מאותו יום ({formatDateForDisplay(latestTransactionInfo.latestTransactionDate)})
                       </button>
@@ -929,58 +921,14 @@ const Upload = () => {
                           setDateFilterEnabled(true);
                           handleUseNextDay();
                         }}
-                        style={{
-                          background: 'rgba(255, 255, 255, 0.25)',
-                          border: '2px solid rgba(255, 255, 255, 0.4)',
-                          borderRadius: '12px',
-                          padding: '12px 20px',
-                          color: 'white',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease',
-                          backdropFilter: 'blur(20px)',
-                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)'
-                        }}
-                        onMouseOver={(e) => {
-                          e.target.style.background = 'rgba(255, 255, 255, 0.35)';
-                          e.target.style.transform = 'translateY(-2px)';
-                          e.target.style.boxShadow = '0 6px 24px rgba(0, 0, 0, 0.15)';
-                        }}
-                        onMouseOut={(e) => {
-                          e.target.style.background = 'rgba(255, 255, 255, 0.25)';
-                          e.target.style.transform = 'translateY(0)';
-                          e.target.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.1)';
-                        }}
+                        className="px-6 py-3 bg-white/25 border-2 border-white/40 rounded-xl text-white font-semibold text-sm backdrop-blur-md shadow-lg hover:bg-white/35 hover:scale-105 transition-all duration-300"
                       >
                         🗓️ מהיום שאחרי ({latestTransactionInfo?.latestTransactionDate ? formatDateForDisplay(addOneDay(latestTransactionInfo.latestTransactionDate)) : ''})
                       </button>
                       <button
                         type="button"
                         onClick={handleUploadAll}
-                        style={{
-                          background: 'rgba(255, 255, 255, 0.25)',
-                          border: '2px solid rgba(255, 255, 255, 0.4)',
-                          borderRadius: '12px',
-                          padding: '12px 20px',
-                          color: 'white',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease',
-                          backdropFilter: 'blur(20px)',
-                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)'
-                        }}
-                        onMouseOver={(e) => {
-                          e.target.style.background = 'rgba(255, 255, 255, 0.35)';
-                          e.target.style.transform = 'translateY(-2px)';
-                          e.target.style.boxShadow = '0 6px 24px rgba(0, 0, 0, 0.15)';
-                        }}
-                        onMouseOut={(e) => {
-                          e.target.style.background = 'rgba(255, 255, 255, 0.25)';
-                          e.target.style.transform = 'translateY(0)';
-                          e.target.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.1)';
-                        }}
+                        className="px-6 py-3 bg-white/25 border-2 border-white/40 rounded-xl text-white font-semibold text-sm backdrop-blur-md shadow-lg hover:bg-white/35 hover:scale-105 transition-all duration-300"
                       >
                         📤 העלה הכל
                       </button>
@@ -988,50 +936,36 @@ const Upload = () => {
                   </div>
                 )}
 
-                {/* Loading message for cash flow selection */}
+                {/* Modern Loading message */}
                 {selectedCashFlow && loadingLatestDate && (
-                  <div style={{
-                    background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                    borderRadius: '16px',
-                    padding: '20px',
-                    marginBottom: '24px',
-                    color: 'white',
-                    textAlign: 'center',
-                    fontSize: '16px',
-                    boxShadow: '0 8px 32px rgba(79, 172, 254, 0.3)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)'
-                  }}>
-                    <LoadingSpinner size="small" /> בודק את התאריך האחרון...
+                  <div className="bg-gradient-to-r from-blue-400 to-cyan-400 rounded-2xl p-6 text-white text-center shadow-xl border border-white/20">
+                    <div className="flex items-center justify-center gap-3">
+                      <LoadingSpinner size="small" />
+                      <span className="text-lg font-medium">בודק את התאריך האחרון...</span>
+                    </div>
                   </div>
                 )}
 
-                {/* No transactions message for cash flow selection */}
+                {/* Modern No transactions message */}
                 {selectedCashFlow && latestTransactionInfo && !latestTransactionInfo.latestTransactionDate && (
-                  <div style={{
-                    background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-                    borderRadius: '16px',
-                    padding: '24px',
-                    marginBottom: '24px',
-                    color: '#8b4513',
-                    textAlign: 'center',
-                    boxShadow: '0 8px 32px rgba(252, 182, 159, 0.3)',
-                    border: '1px solid rgba(139, 69, 19, 0.2)'
-                  }}>
-                    <div style={{fontSize: '24px', marginBottom: '12px'}}>
+                  <div className="bg-gradient-to-br from-yellow-200 via-orange-200 to-red-200 rounded-2xl p-8 text-amber-800 text-center shadow-xl border border-amber-300/50">
+                    <div className="text-3xl mb-4">
                       🎉 ✨
                     </div>
-                    <div style={{fontSize: '18px', fontWeight: '600'}}>
+                    <div className="text-xl font-semibold">
                       זה התזרים הראשון שלך! בחר תאריך התחלה לייבוא 📅
                     </div>
                   </div>
                 )}
 
-                {/* Upload Settings Grid */}
-                <div className="settings-grid">
-                  <div className="form-group">
-                    <label className="form-label">מקור הקבצים</label>
+                {/* Modern Upload Settings Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      🏢 מקור הקבצים
+                    </label>
                     <select
-                      className="form-select"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                       value={fileSource}
                       onChange={(e) => setFileSource(e.target.value)}
                     >
@@ -1046,15 +980,17 @@ const Upload = () => {
                       <option value="bank_scraper">Bank Scraper</option>
                     </select>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">אמצעי תשלום (אופציונלי)</label>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      💳 אמצעי תשלום (אופציונלי)
+                    </label>
                     {loadingDropdowns ? (
-                      <div className="form-select" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '38px'}}>
+                      <div className="w-full p-3 border border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
                         <LoadingSpinner size="small" />
                       </div>
                     ) : (
                       <select
-                        className="form-select"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                         value={paymentMethod}
                         onChange={(e) => setPaymentMethod(e.target.value)}
                       >
@@ -1068,23 +1004,24 @@ const Upload = () => {
                     {paymentMethod === 'other' && (
                       <input
                         type="text"
-                        className="form-input"
-                        style={{marginTop: '8px'}}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white mt-2"
                         placeholder="הכנס אמצעי תשלום אחר..."
                         onChange={(e) => setPaymentMethod(e.target.value)}
                       />
                     )}
                   </div>
                   {fileSource !== 'max' && (
-                    <div className="form-group">
-                      <label className="form-label">זיהוי תשלום (אופציונלי)</label>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                        🔢 זיהוי תשלום (אופציונלי)
+                      </label>
                     {loadingDropdowns ? (
-                      <div className="form-select" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '38px'}}>
+                      <div className="w-full p-3 border border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
                         <LoadingSpinner size="small" />
                       </div>
                     ) : (
                       <select
-                        className="form-select"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                         value={paymentIdentifier}
                         onChange={(e) => setPaymentIdentifier(e.target.value)}
                       >
@@ -1098,8 +1035,7 @@ const Upload = () => {
                     {paymentIdentifier === 'other' && (
                       <input
                         type="text"
-                        className="form-input"
-                        style={{marginTop: '8px'}}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white mt-2"
                         placeholder="הכנס זיהוי תשלום אחר..."
                         onChange={(e) => setPaymentIdentifier(e.target.value)}
                       />
@@ -1108,88 +1044,46 @@ const Upload = () => {
                   )}
                 </div>
 
-                {/* Date Filter Section */}
-                <div className="form-group">
-                  <label className="form-checkbox">
+                {/* Modern Date Filter Section */}
+                <div className="space-y-4">
+                  <label className="flex items-center gap-3 cursor-pointer p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors duration-200">
                     <input
                       type="checkbox"
+                      className="w-5 h-5 text-gray-600 bg-white border-gray-300 rounded focus:ring-gray-500 focus:ring-2"
                       checked={dateFilterEnabled}
                       onChange={(e) => setDateFilterEnabled(e.target.checked)}
                     />
-                    <span className="checkmark"></span>
-                    סינון לפי תאריך (אופציונלי)
+                    <div>
+                      <div className="font-semibold text-gray-800 flex items-center gap-2">
+                        📅 סינון לפי תאריך (אופציונלי)
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        בחר באפשרות זו כדי לייבא רק נתונים מטווח תאריכים מסוים
+                      </p>
+                    </div>
                   </label>
-                  <p className="form-help">
-                    בחר באפשרות זו כדי לייבא רק נתונים מטווח תאריכים מסוים
-                  </p>
                 </div>
 
                 {dateFilterEnabled && (
-                  <div>
-                    {/* Simplified quick date buttons when filter is enabled */}
+                  <div className="space-y-6">
+                    {/* Modern quick date buttons */}
                     {selectedCashFlow && latestTransactionInfo?.latestTransactionDate && (
-                      <div style={{
-                        background: 'linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%)',
-                        borderRadius: '12px',
-                        padding: '16px',
-                        marginBottom: '20px',
-                        textAlign: 'center',
-                        border: '1px solid rgba(102, 126, 234, 0.2)',
-                        boxShadow: '0 4px 16px rgba(102, 126, 234, 0.1)'
-                      }}>
-                        <div style={{fontSize: '16px', marginBottom: '12px', color: '#667eea', fontWeight: '600'}}>
+                      <div className="bg-gray-100 rounded-lg p-6 text-center border border-gray-200 shadow-sm">
+                        <div className="text-lg mb-4 text-gray-700 font-semibold">
                           🔄 עדכון מהיר:
                         </div>
-                        <div style={{display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap'}}>
+                        <div className="flex gap-3 justify-center flex-wrap">
                           <button
                             type="button"
                             onClick={handleUseSameDate}
-                            style={{
-                              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                              border: 'none',
-                              borderRadius: '10px',
-                              padding: '10px 16px',
-                              color: 'white',
-                              fontSize: '14px',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              transition: 'all 0.3s ease',
-                              boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
-                            }}
-                            onMouseOver={(e) => {
-                              e.target.style.transform = 'translateY(-2px)';
-                              e.target.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.4)';
-                            }}
-                            onMouseOut={(e) => {
-                              e.target.style.transform = 'translateY(0)';
-                              e.target.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
-                            }}
+                            className="px-4 py-2 bg-gray-800 text-white rounded-lg font-semibold text-sm hover:bg-gray-700 hover:scale-105 transition-all duration-300 shadow-md"
                           >
                             📅 מאותו יום
                           </button>
                           <button
                             type="button"
                             onClick={handleUseNextDay}
-                            style={{
-                              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                              border: 'none',
-                              borderRadius: '10px',
-                              padding: '10px 16px',
-                              color: 'white',
-                              fontSize: '14px',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              transition: 'all 0.3s ease',
-                              boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
-                            }}
-                            onMouseOver={(e) => {
-                              e.target.style.transform = 'translateY(-2px)';
-                              e.target.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.4)';
-                            }}
-                            onMouseOut={(e) => {
-                              e.target.style.transform = 'translateY(0)';
-                              e.target.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
-                            }}
+                            className="px-4 py-2 bg-gray-800 text-white rounded-lg font-semibold text-sm hover:bg-gray-700 hover:scale-105 transition-all duration-300 shadow-md"
                           >
                             🗓️ מהיום שאחרי
                           </button>
@@ -1197,27 +1091,27 @@ const Upload = () => {
                       </div>
                     )}
 
-                    <div className="settings-grid">
-                      <div className="form-group">
-                        <label className="form-label">תאריך התחלה</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-gray-700">תאריך התחלה</label>
                         <input
                           type="date"
-                          className="form-input"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all duration-200 bg-white"
                           value={startDate}
                           onChange={(e) => setStartDate(e.target.value)}
                           placeholder="dd/mm/yyyy"
                         />
                       </div>
-                      <div className="form-group">
-                        <label className="form-label">תאריך סיום (אופציונלי)</label>
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-gray-700">תאריך סיום (אופציונלי)</label>
                         <input
                           type="date"
-                          className="form-input"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all duration-200 bg-white"
                           value={endDate}
                           onChange={(e) => setEndDate(e.target.value)}
                           placeholder="dd/mm/yyyy"
                         />
-                        <p className="form-help" style={{fontSize: '12px', marginTop: '4px'}}>
+                        <p className="text-xs text-gray-500 mt-1">
                           אם לא יצוין - יייבא עד סוף הקובץ
                         </p>
                       </div>
@@ -1225,36 +1119,46 @@ const Upload = () => {
                   </div>
                 )}
 
-                {/* Force Import Option */}
-                <div className="form-group">
-                  <label className="form-checkbox">
+                {/* Modern Force Import Option */}
+                <div className="space-y-4">
+                  <label className="flex items-center gap-3 cursor-pointer p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors duration-200">
                     <input
                       type="checkbox"
+                      className="w-5 h-5 text-gray-600 bg-white border-gray-300 rounded focus:ring-gray-500 focus:ring-2"
                       checked={forceImport}
                       onChange={(e) => setForceImport(e.target.checked)}
                     />
-                    <span className="checkmark"></span>
-                    ייבוא כפוי (התעלם מכפילויות)
+                    <div>
+                      <div className="font-semibold text-gray-800 flex items-center gap-2">
+                        ⚡ ייבוא כפוי (התעלם מכפילויות)
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        בחר באפשרות זו כדי לייבא תנועות גם אם הן כבר קיימות במערכת
+                      </p>
+                    </div>
                   </label>
-                  <p className="form-help">
-                    בחר באפשרות זו כדי לייבא תנועות גם אם הן כבר קיימות במערכת
-                  </p>
                 </div>
 
-                {/* Upload Button */}
-                <div className="upload-actions">
+                {/* Modern Upload Button */}
+                <div className="flex justify-center mt-8">
                   <button
-                    className="btn btn-primary btn-lg"
+                    className={`px-12 py-4 text-lg font-bold rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 ${
+                      !selectedFile || !selectedCashFlow || initialUploadMutation.isLoading
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-gray-900 text-white hover:bg-gray-800'
+                    }`}
                     onClick={handleUpload}
                     disabled={!selectedFile || !selectedCashFlow || initialUploadMutation.isLoading}
                   >
                     {initialUploadMutation.isLoading ? (
-                      <>
+                      <div className="flex items-center gap-3">
                         <LoadingSpinner size="small" />
-                        מעלה קובץ...
-                      </>
+                        <span>מעלה קובץ...</span>
+                      </div>
                     ) : (
-                      'העלה קובץ'
+                      <span className="flex items-center gap-2">
+                        🚀 העלה קובץ
+                      </span>
                     )}
                   </button>
                 </div>
