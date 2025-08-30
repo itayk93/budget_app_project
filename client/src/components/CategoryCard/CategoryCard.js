@@ -933,68 +933,69 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                             .map((transaction) => (
                             <div 
                               key={transaction.id}
-                              className="transaction-item"
+                              className="flex items-center gap-2 sm:gap-3 p-3 bg-gradient-to-r from-white to-gray-50/50 rounded-lg hover:from-gray-50 hover:to-gray-100/50 transition-all duration-200 group border border-gray-100 hover:border-gray-200 hover:shadow-sm"
                               data-transaction-id={transaction.id}
                               data-currency={transaction.currency || 'ILS'}
                             >
-                              <div className="transaction-actions">
-                                <button 
-                                  className="transaction-menu-btn" 
-                                  title="פעולות"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    showTransactionActions(transaction);
-                                  }}
-                                >
-                                  <i className="fas fa-ellipsis-v"></i>
-                                </button>
-                              </div>
-                              <div className="transaction-info-section">
-                                <div className="ri-body">
+                              <button 
+                                className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 hover:bg-gray-300 transition-all duration-200 opacity-0 group-hover:opacity-100 sm:opacity-100 flex-shrink-0" 
+                                title="פעולות"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  showTransactionActions(transaction);
+                                }}
+                              >
+                                <i className="fas fa-ellipsis-v text-gray-600 text-xs"></i>
+                              </button>
+                              
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-gray-900 truncate text-sm sm:text-base">
                                   <a 
                                     href={`/transaction/${transaction.id}`}
-                                    style={{ color: 'inherit', textDecoration: 'none' }}
+                                    className="hover:text-blue-600 transition-colors duration-200"
                                   >
                                     {(transaction.business_name || transaction.description || 'תנועה ללא שם')
                                       .replace(/[\u200E\u200F\u202A\u202B\u202C\u202D\u202E\u061C]/g, '')
                                       .replace(/[()[\]{}]/g, '')
                                       .trim()}
                                     {isSplitTransaction(transaction) && (
-                                      <span className="split-indicator">
+                                      <span className="bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full text-xs mr-1">
                                         ✂️ {getSplitInfo(transaction)?.currentPart}/{getSplitInfo(transaction)?.totalParts}
                                       </span>
                                     )}
                                   </a>
                                 </div>
-                                <div className="transaction-date">
-                                  {formatDate(transaction.payment_date)}
+                                
+                                <div className="flex items-center gap-1 sm:gap-2 mt-1 text-xs text-gray-500 flex-wrap">
+                                  <span className="whitespace-nowrap">
+                                    {formatDate(transaction.payment_date)}
+                                  </span>
                                   {transaction.payment_number && transaction.total_payments && (
-                                    <span className="transaction-payment-info">
+                                    <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full whitespace-nowrap">
                                       תשלום {transaction.payment_number}/{transaction.total_payments}
                                     </span>
                                   )}
                                   {transaction.currency && transaction.currency !== 'ILS' && (
-                                    <span className="transaction-currency-info">
+                                    <span className="bg-yellow-100 text-yellow-600 px-2 py-0.5 rounded-full">
                                       {transaction.currency}
                                     </span>
                                   )}
                                   {/* Display exchange rate info if transaction is linked */}
                                   {transaction.exchange_rate && transaction.original_currency && (
-                                    <span className="transaction-currency-info" style={{
-                                      backgroundColor: '#e8f5e8',
-                                      color: '#2e7d32',
-                                      border: '1px solid #c8e6c9'
-                                    }}>
+                                    <span className="bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full border border-emerald-200">
                                       🔗 {transaction.exchange_rate.toFixed(4)} {transaction.original_currency}/USD
                                     </span>
                                   )}
                                 </div>
                               </div>
-                              <div className="transaction-right-side">
-                                <div className={`transaction-amount ${isIncome ? 'income' : 'expense'}`}>
-                                  {formatCurrency(Math.abs(parseFloat(transaction.amount || 0)), transaction.currency)}
-                                </div>
+                              
+                              <div className={`font-bold text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-full whitespace-nowrap flex-shrink-0 ${
+                                isIncome 
+                                  ? 'text-emerald-600 bg-emerald-50 border border-emerald-100' 
+                                  : 'text-red-600 bg-red-50 border border-red-100'
+                              }`}>
+                                {formatCurrency(Math.abs(parseFloat(transaction.amount || 0)), transaction.currency)}
                               </div>
                             </div>
                           ))}
@@ -1030,68 +1031,69 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                     {transactions.map((transaction) => (
                   <div 
                     key={transaction.id}
-                    className="transaction-item"
+                    className="flex items-center gap-2 sm:gap-3 p-3 bg-gradient-to-r from-white to-gray-50/50 rounded-lg hover:from-gray-50 hover:to-gray-100/50 transition-all duration-200 group border border-gray-100 hover:border-gray-200 hover:shadow-sm"
                     data-transaction-id={transaction.id}
                     data-currency={transaction.currency || 'ILS'}
                   >
-                    <div className="transaction-actions">
-                      <button 
-                        className="transaction-menu-btn" 
-                        title="פעולות"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          showTransactionActions(transaction);
-                        }}
-                      >
-                        <i className="fas fa-ellipsis-v"></i>
-                      </button>
-                    </div>
-                    <div className="transaction-info-section">
-                      <div className="ri-body">
+                    <button 
+                      className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 hover:bg-gray-300 transition-all duration-200 opacity-0 group-hover:opacity-100 sm:opacity-100 flex-shrink-0" 
+                      title="פעולות"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        showTransactionActions(transaction);
+                      }}
+                    >
+                      <i className="fas fa-ellipsis-v text-gray-600 text-xs"></i>
+                    </button>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 truncate text-sm sm:text-base">
                         <a 
                           href={`/transaction/${transaction.id}`}
-                          style={{ color: 'inherit', textDecoration: 'none' }}
+                          className="hover:text-blue-600 transition-colors duration-200"
                         >
                           {(transaction.business_name || transaction.description || 'תנועה ללא שם')
                             .replace(/[\u200E\u200F\u202A\u202B\u202C\u202D\u202E\u061C]/g, '')
                             .replace(/[()[\]{}]/g, '')
                             .trim()}
                           {isSplitTransaction(transaction) && (
-                            <span className="split-indicator">
+                            <span className="bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full text-xs mr-1">
                               ✂️ {getSplitInfo(transaction)?.currentPart}/{getSplitInfo(transaction)?.totalParts}
                             </span>
                           )}
                         </a>
                       </div>
-                      <div className="transaction-date">
-                        {formatDate(transaction.payment_date)}
+                      
+                      <div className="flex items-center gap-1 sm:gap-2 mt-1 text-xs text-gray-500 flex-wrap">
+                        <span className="whitespace-nowrap">
+                          {formatDate(transaction.payment_date)}
+                        </span>
                         {transaction.payment_number && transaction.total_payments && (
-                          <span className="transaction-payment-info">
+                          <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full whitespace-nowrap">
                             תשלום {transaction.payment_number}/{transaction.total_payments}
                           </span>
                         )}
                         {transaction.currency && transaction.currency !== 'ILS' && (
-                          <span className="transaction-currency-info">
+                          <span className="bg-yellow-100 text-yellow-600 px-2 py-0.5 rounded-full">
                             {transaction.currency}
                           </span>
                         )}
                         {/* Display exchange rate info if transaction is linked */}
                         {transaction.exchange_rate && transaction.original_currency && (
-                          <span className="transaction-currency-info" style={{
-                            backgroundColor: '#e8f5e8',
-                            color: '#2e7d32',
-                            border: '1px solid #c8e6c9'
-                          }}>
+                          <span className="bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full border border-emerald-200">
                             🔗 {transaction.exchange_rate.toFixed(4)} {transaction.original_currency}/USD
                           </span>
                         )}
                       </div>
                     </div>
-                    <div className="transaction-right-side">
-                      <div className={`transaction-amount ${isIncome ? 'income' : 'expense'}`}>
-                        {formatCurrency(Math.abs(parseFloat(transaction.amount || 0)), transaction.currency)}
-                      </div>
+                    
+                    <div className={`font-bold text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-full whitespace-nowrap flex-shrink-0 ${
+                      isIncome 
+                        ? 'text-emerald-600 bg-emerald-50 border border-emerald-100' 
+                        : 'text-red-600 bg-red-50 border border-red-100'
+                    }`}>
+                      {formatCurrency(Math.abs(parseFloat(transaction.amount || 0)), transaction.currency)}
                     </div>
                   </div>
                   ))}

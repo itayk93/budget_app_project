@@ -256,9 +256,13 @@ const CurrencyGroupsReview = ({ tempId, onComplete, onBack }) => {
                 <div className="transactions-preview">
                   <div className="preview-title">דוגמאות לעסקאות בקבוצה זו:</div>
                   {(data.transactions || []).slice(0, 5).map((transaction, index) => (
-                    <div key={index} className="transaction-item">
-                      <div>{transaction.business_name}</div>
-                      <div>{transaction.amount} {currency}</div>
+                    <div key={index} className="flex items-center justify-between gap-3 p-2 bg-gradient-to-r from-white to-gray-50/50 rounded-lg border border-gray-100 mb-2">
+                      <div className="font-medium text-gray-900 truncate text-sm">
+                        {transaction.business_name}
+                      </div>
+                      <div className="font-bold text-sm px-2 py-1 rounded-full whitespace-nowrap flex-shrink-0 text-blue-600 bg-blue-50 border border-blue-100">
+                        {transaction.amount} {currency}
+                      </div>
                     </div>
                   ))}
                   {transactionCount > 5 && (

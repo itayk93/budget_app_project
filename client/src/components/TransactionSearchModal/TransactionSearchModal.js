@@ -293,47 +293,50 @@ const TransactionSearchModal = ({ isOpen, onClose }) => {
                   const amountText = isPositive ? 'התקבל' : 'שולם';
                   
                   return (
-                    <div key={transaction.id} className="transaction-item">
-                      <div className="transaction-actions">
-                        <button 
-                          className="transaction-menu-btn" 
-                          title="פעולות"
-                          onClick={() => showTransactionActions(transaction)}
-                        >
-                          <i className="fas fa-ellipsis-v"></i>
-                        </button>
-                      </div>
+                    <div key={transaction.id} className="flex items-center gap-2 sm:gap-3 p-3 bg-gradient-to-r from-white to-gray-50/50 rounded-lg hover:from-gray-50 hover:to-gray-100/50 transition-all duration-200 group border border-gray-100 hover:border-gray-200 hover:shadow-sm mb-2">
+                      <button 
+                        className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 hover:bg-gray-300 transition-all duration-200 opacity-0 group-hover:opacity-100 sm:opacity-100 flex-shrink-0" 
+                        title="פעולות"
+                        onClick={() => showTransactionActions(transaction)}
+                      >
+                        <i className="fas fa-ellipsis-v text-gray-600 text-xs"></i>
+                      </button>
                       
-                      <div className="transaction-content">
-                        <div className="transaction-left">
-                          <div className="transaction-business">
-                            {transaction.business_name}
-                          </div>
-                          <div className="transaction-cash-flow">
-                            {cashFlowName}
-                          </div>
-                        </div>
-                        
-                        <div className="transaction-center">
-                          <div className="transaction-category">
-                            {transaction.category_name || 'לא מסווג'}
-                          </div>
-                          {transaction.description && (
-                            <div className="transaction-description">
-                              {transaction.description}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 sm:gap-4">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium text-gray-900 truncate text-sm sm:text-base">
+                              {transaction.business_name}
                             </div>
-                          )}
-                        </div>
-                        
-                        <div className="transaction-right">
-                          <div className="transaction-date">
-                            {formatDate(transaction.payment_date)}
+                            <div className="flex items-center gap-1 sm:gap-2 mt-1 text-xs text-gray-500 flex-wrap">
+                              <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                {cashFlowName}
+                              </span>
+                              <span className="bg-green-100 text-green-600 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                {transaction.category_name || 'לא מסווג'}
+                              </span>
+                              {transaction.description && (
+                                <span className="text-gray-500 truncate">
+                                  {transaction.description}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <div className="transaction-amount-info">
-                            <span className="transaction-amount-label">{amountText}</span>
-                            <span className={`transaction-amount ${isPositive ? 'positive' : 'negative'}`}>
-                              {formatCurrency(Math.abs(parseFloat(transaction.amount)), transaction.currency)}
-                            </span>
+                          
+                          <div className="text-left flex-shrink-0">
+                            <div className="text-xs text-gray-500 whitespace-nowrap">
+                              {formatDate(transaction.payment_date)}
+                            </div>
+                            <div className="flex flex-col items-end mt-1">
+                              <span className="text-xs text-gray-600">{amountText}</span>
+                              <span className={`font-bold text-sm px-2 py-0.5 rounded-full whitespace-nowrap ${
+                                isPositive 
+                                  ? 'text-emerald-600 bg-emerald-50 border border-emerald-100' 
+                                  : 'text-red-600 bg-red-50 border border-red-100'
+                              }`}>
+                                {formatCurrency(Math.abs(parseFloat(transaction.amount)), transaction.currency)}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
