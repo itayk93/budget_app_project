@@ -818,13 +818,13 @@ const Upload = () => {
               <div className="p-8">
                 {/* Modern File Drop Zone */}
                 <div
-                  className={`relative border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 cursor-pointer group ${
+                  className={`relative overflow-hidden rounded-3xl p-16 text-center transition-all duration-500 cursor-pointer group ${
                     isDragOver 
-                      ? 'border-blue-400 bg-blue-50 scale-105 shadow-lg' 
+                      ? 'border-2 border-dashed border-blue-500 bg-gradient-to-br from-blue-50 via-cyan-50 to-purple-50 scale-105 shadow-2xl' 
                       : selectedFile 
-                      ? 'border-green-300 bg-green-50' 
-                      : 'border-gray-300 bg-gray-50 hover:border-blue-300 hover:bg-blue-50'
-                  }`}
+                      ? 'border-2 border-dashed border-emerald-400 bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 shadow-lg' 
+                      : 'border-2 border-dashed border-gray-300 bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 hover:border-blue-400 hover:shadow-xl hover:from-blue-50 hover:via-indigo-50 hover:to-cyan-50'
+                  } hover:scale-[1.02] backdrop-blur-sm`}
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
@@ -846,21 +846,35 @@ const Upload = () => {
                       </button>
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      <div className="text-6xl opacity-60 group-hover:opacity-80 transition-opacity duration-300">📁</div>
-                      <div className="space-y-2">
-                        <p className="text-lg font-medium text-gray-700">
-                          גרור קובץ לכאן או{' '}
-                          <button 
-                            className="text-gray-700 underline hover:text-gray-900 font-semibold" 
-                            onClick={() => document.getElementById('file-input').click()}
-                          >
-                            בחר קובץ
-                          </button>
-                        </p>
-                        <p className="text-gray-500">קבצי Excel (.xlsx, .xls) או CSV</p>
+                    <>
+                      <div className="space-y-6 relative z-10">
+                        <div className="relative">
+                          <div className="text-8xl opacity-60 group-hover:opacity-90 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">📁</div>
+                          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500 transform scale-150"></div>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="relative">
+                            <p className="text-xl font-bold bg-gradient-to-r from-gray-800 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+                              גרור קובץ לכאן או{' '}
+                              <button 
+                                className="inline-block px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold rounded-full hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 hover:shadow-lg" 
+                                onClick={() => document.getElementById('file-input').click()}
+                              >
+                                בחר קובץ
+                              </button>
+                            </p>
+                          </div>
+                          <div className="flex items-center justify-center gap-2">
+                            <span className="px-3 py-1 bg-white/50 rounded-full text-sm font-medium text-gray-600 border border-gray-200/50">Excel</span>
+                            <span className="px-3 py-1 bg-white/50 rounded-full text-sm font-medium text-gray-600 border border-gray-200/50">CSV</span>
+                          </div>
+                          <p className="text-gray-500 text-sm font-medium">.xlsx, .xls, .csv</p>
+                        </div>
                       </div>
-                    </div>
+                      <div className="absolute top-4 left-4 w-16 h-16 bg-gradient-to-br from-blue-200/30 to-purple-200/30 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
+                      <div className="absolute bottom-4 right-4 w-20 h-20 bg-gradient-to-br from-cyan-200/30 to-blue-200/30 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-100/20 via-transparent to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-all duration-1000"></div>
+                    </>
                   )}
                   
                   <input
