@@ -59,22 +59,14 @@ const WeeklyBreakdown = ({
           tabIndex={0}
         >
           <div className="flex items-center gap-3">
-            <div className="w-2 h-2 bg-emerald-600 rounded-full animate-pulse"></div>
-            <h3 className="text-sm font-semibold text-gray-800">פירוט שבועי</h3>
+            <div className="w-2 h-2 bg-emerald-600 rounded-full animate-pulse flex-shrink-0"></div>
+            <h3 className="text-sm font-semibold text-gray-800 leading-none">פירוט שבועי</h3>
           </div>
           <div className="flex items-center">
             <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'} text-gray-600 text-sm transition-transform duration-200`}></i>
           </div>
         </div>
         
-        {isExpanded && (
-          <div className="px-4 pb-4">
-            <div className="grid grid-cols-2 gap-4 text-xs text-gray-600">
-              <div className="text-right font-medium">יצא</div>
-              <div className="text-left font-medium">צפוי לצאת</div>
-            </div>
-          </div>
-        )}
       </div>
 
       {isExpanded && (
@@ -92,18 +84,18 @@ const WeeklyBreakdown = ({
                     role="button"
                     tabIndex={0}
                   >
-                    <div className="flex items-center gap-3 sm:gap-6 flex-1">
-                      <div className="flex flex-col min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-600 text-xs font-bold rounded-full flex-shrink-0">
-                            {weekNumber}
-                          </span>
+                    <div className="flex items-center justify-between flex-1">
+                      <div className="flex items-center gap-3">
+                        <span className="inline-flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-600 text-xs font-bold rounded-full flex-shrink-0">
+                          {weekNumber}
+                        </span>
+                        <div className="flex flex-col min-w-0">
                           <span className="font-medium text-gray-900 truncate">{week.label}</span>
+                          <div className="text-xs text-gray-500 mt-1">{week.startDay}-{week.endDay}</div>
                         </div>
-                        <div className="text-xs text-gray-500 mr-8 mt-1">{week.startDay}-{week.endDay}</div>
                       </div>
                       
-                      <div className="flex flex-col items-center bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl px-3 py-2 sm:px-4 sm:py-2 min-w-0 flex-shrink-0 shadow-sm border border-gray-200">
+                      <div className="flex flex-col items-center bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl px-3 py-2 sm:px-4 sm:py-2 shadow-sm border border-gray-200">
                         <div className="font-bold text-gray-900 text-sm whitespace-nowrap">
                           {formatHebrewAmount(week.totalAmount)}
                         </div>
@@ -111,6 +103,8 @@ const WeeklyBreakdown = ({
                           {week.transactions.length} עסקאות
                         </div>
                       </div>
+                      
+                      <div className="w-8"></div>
                     </div>
                     
                     <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 group-hover:bg-gray-200 transition-colors duration-200">
