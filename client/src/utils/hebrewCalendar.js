@@ -99,9 +99,11 @@ const groupTransactionsByWeeks = (transactions, year, month) => {
   // Group transactions by week
   transactions.forEach(transaction => {
     const transactionDate = new Date(transaction.transaction_date || transaction.payment_date);
+    const transactionYear = transactionDate.getFullYear();
+    const transactionMonth = transactionDate.getMonth() + 1;
     
-    // Only process transactions from the specified month and year
-    if (transactionDate.getFullYear() === year && transactionDate.getMonth() === month - 1) {
+    // Check if transaction is from the specified month and year
+    if (transactionYear === year && transactionMonth === month) {
       const weekNumber = getHebrewWeekNumber(transactionDate, year, month);
       
       if (groupedTransactions[weekNumber]) {
@@ -110,6 +112,15 @@ const groupTransactionsByWeeks = (transactions, year, month) => {
         // Calculate total amount (convert to number if it's a string)
         const amount = parseFloat(transaction.amount) || 0;
         groupedTransactions[weekNumber].totalAmount += Math.abs(amount);
+      }
+    } else {
+      // For transactions outside the current month, add them to week 1
+      if (groupedTransactions[1]) {
+        groupedTransactions[1].transactions.push(transaction);
+        
+        // Calculate total amount (convert to number if it's a string)
+        const amount = parseFloat(transaction.amount) || 0;
+        groupedTransactions[1].totalAmount += Math.abs(amount);
       }
     }
   });

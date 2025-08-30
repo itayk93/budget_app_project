@@ -1,6 +1,8 @@
 const express = require('express');
 const SupabaseService = require('../../services/supabaseService');
+const TransactionService = require('../../services/supabase-modules/TransactionService');
 const { authenticateToken } = require('../../middleware/auth');
+const { createUserClient } = require('../../config/supabase');
 const router = express.Router();
 
 // ===== FLOW MONTH OPERATIONS =====
@@ -10,26 +12,48 @@ router.patch('/:id/flow-month', authenticateToken, async (req, res) => {
   try {
     const { flow_month, cash_flow_id } = req.body;
     const transactionId = req.params.id;
+    console.log(`📅 [FLOW MONTH] Attempting to update transaction ${transactionId} flow month to ${flow_month} for user ${req.user.id}`);
 
     if (!flow_month) {
       return res.status(400).json({ error: 'flow_month is required' });
     }
 
-    // Verify transaction ownership
-    const existingTransaction = await SupabaseService.getTransactionById(transactionId);
-    if (!existingTransaction || existingTransaction.user_id !== req.user.id) {
+    // Verify transaction ownership using admin client (bypass RLS issues)
+    console.log(`📅 [FLOW MONTH] Using admin client to bypass RLS authentication issues`);
+    
+    const existingResult = await TransactionService.getTransactionById(transactionId, null);
+    console.log(`📅 [FLOW MONTH] getTransactionById result:`, {
+      success: existingResult.success,
+      hasData: !!existingResult.data,
+      dataUserId: existingResult.data?.user_id,
+      requestUserId: req.user.id,
+      error: existingResult.error
+    });
+    
+    if (!existingResult.success || !existingResult.data || existingResult.data.user_id !== req.user.id) {
+      console.log(`❌ [FLOW MONTH] Transaction not found or access denied:`, {
+        transactionId,
+        userId: req.user.id,
+        success: existingResult.success,
+        hasData: !!existingResult.data,
+        dataUserId: existingResult.data?.user_id
+      });
       return res.status(404).json({ error: 'Transaction not found' });
     }
+    const existingTransaction = existingResult.data;
 
-    const success = await SupabaseService.updateTransactionFlowMonth(
+    const updateResult = await TransactionService.updateTransactionFlowMonth(
       transactionId, 
       flow_month, 
-      cash_flow_id || existingTransaction.cash_flow_id
+      cash_flow_id || existingTransaction.cash_flow_id,
+      null
     );
 
-    if (success) {
+    if (updateResult.success) {
+      console.log(`✅ [FLOW MONTH] Successfully updated transaction ${transactionId} flow month to ${flow_month}`);
       res.json({ message: 'Flow month updated successfully' });
     } else {
+      console.log(`❌ [FLOW MONTH] Failed to update flow month:`, updateResult.error);
       res.status(400).json({ error: 'Failed to update flow month' });
     }
 

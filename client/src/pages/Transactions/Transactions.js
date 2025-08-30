@@ -213,6 +213,33 @@ const Transactions = () => {
   const deleteTransactionMutation = useMutation(transactionsAPI.delete, {
     onSuccess: () => {
       queryClient.invalidateQueries('transactions');
+    },
+    onError: (error) => {
+      console.error('Error deleting transaction:', error);
+      
+      if (error.response?.status === 404) {
+        console.error('❌ [DATA SYNC ISSUE] Phantom transaction detected during deletion');
+        
+        const shouldRefresh = window.confirm(
+          '🔄 בעיית סינכרון נתונים!\n\n' +
+          'העסקה מוצגת במערכת אבל לא קיימת במסד הנתונים.\n' +
+          'זה יכול לקרות בגלל נתונים cached ישנים.\n\n' +
+          'האם תרצה לרענן את הנתונים כדי לתקן את הבעיה?'
+        );
+        
+        if (shouldRefresh) {
+          console.log('🔄 [DATA REFRESH] User chose to refresh data');
+          queryClient.invalidateQueries('transactions');
+          queryClient.clear(); // Clear all cached queries
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
+        return;
+      }
+      
+      // For other errors, show a generic error message
+      alert('שגיאה במחיקת העסקה: ' + (error.response?.data?.error || error.message));
     }
   });
 

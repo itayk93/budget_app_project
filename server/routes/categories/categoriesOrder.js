@@ -111,10 +111,13 @@ router.post('/update-weekly-display', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'categoryId and showInWeeklyView are required' });
     }
 
+    console.log('🔍 [UPDATE WEEKLY DISPLAY] Updating category:', categoryId, 'to:', showInWeeklyView);
+
+    // Update the category_order table since that's where the data is stored
     const { data: category, error } = await supabase
-      .from('category')
+      .from('category_order')
       .update({ 
-        show_in_weekly_view: showInWeeklyView,
+        weekly_display: showInWeeklyView,
         updated_at: new Date().toISOString()
       })
       .eq('id', categoryId)
@@ -123,11 +126,14 @@ router.post('/update-weekly-display', authenticateToken, async (req, res) => {
       .single();
 
     if (error) {
+      console.error('🔍 [UPDATE WEEKLY DISPLAY] Database error:', error);
       if (error.code === 'PGRST116') {
         return res.status(404).json({ error: 'Category not found' });
       }
       throw error;
     }
+
+    console.log('🔍 [UPDATE WEEKLY DISPLAY] Successfully updated:', category);
 
     res.json({
       message: 'Weekly display setting updated successfully',

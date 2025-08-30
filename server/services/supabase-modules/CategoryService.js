@@ -47,7 +47,10 @@ class CategoryService {
           // Include hierarchy fields for dropdown grouping
           shared_category: order.shared_category,
           use_shared_category: order.use_shared_category,
-          icon: order.icon || '📝'
+          icon: order.icon || '📝',
+          // Include weekly display field
+          weekly_display: order.weekly_display,
+          show_in_weekly_view: order.weekly_display
         })) || [];
         
         console.log('🔍 [CATEGORY SERVICE] Converted categories:', categories.length);

@@ -338,15 +338,36 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
 
 
   const findTransaction = (transactionId) => {
+    console.log(`🔍 [FIND TRANSACTION] Looking for transaction ID: ${transactionId}`);
+    console.log(`🔍 [FIND TRANSACTION] Available transactions:`, transactions?.length || 0);
+    
     // Look in regular transactions first
     let transaction = transactions.find(t => t.id === transactionId);
+    console.log(`🔍 [FIND TRANSACTION] Found in regular transactions:`, !!transaction);
     
     // If not found and this is a shared category, look in sub-categories
     if (!transaction && categoryData.is_shared_category) {
+      console.log(`🔍 [FIND TRANSACTION] Searching in shared category sub-categories`);
       for (const subCategoryData of Object.values(categoryData.sub_categories || {})) {
         transaction = (subCategoryData.transactions || []).find(t => t.id === transactionId);
-        if (transaction) break;
+        if (transaction) {
+          console.log(`🔍 [FIND TRANSACTION] Found in sub-category:`, !!transaction);
+          break;
+        }
       }
+    }
+    
+    if (transaction) {
+      console.log(`✅ [FIND TRANSACTION] Transaction found:`, {
+        id: transaction.id,
+        business_name: transaction.business_name,
+        amount: transaction.amount
+      });
+    } else {
+      console.error(`❌ [FIND TRANSACTION] Transaction not found in frontend data:`, {
+        searchingFor: transactionId,
+        availableIds: transactions?.map(t => t.id).slice(0, 5) // First 5 IDs for debugging
+      });
     }
     
     return transaction;
@@ -403,6 +424,37 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
       }
     } catch (error) {
       console.error('Error transferring transaction:', error);
+      
+      if (error.response?.status === 404) {
+        console.error('❌ [DATA SYNC ISSUE] Phantom transaction detected during category transfer:', {
+          transactionId,
+          newCategory,
+          error: error.response?.data,
+          transactionDetails: {
+            id: transactionId,
+            business_name: transactions?.find(t => t.id === transactionId)?.business_name
+          }
+        });
+        
+        const shouldRefresh = window.confirm(
+          '🔄 בעיית סינכרון נתונים!\n\n' +
+          'העסקה מוצגת במערכת אבל לא קיימת במסד הנתונים.\n' +
+          'זה יכול לקרות בגלל נתונים cached ישנים.\n\n' +
+          'האם תרצה לרענן את הנתונים כדי לתקן את הבעיה?'
+        );
+        
+        if (shouldRefresh) {
+          console.log('🔄 [DATA REFRESH] User chose to refresh data');
+          if (onDataChange) {
+            onDataChange();
+          }
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
+        return;
+      }
+      
       throw error;
     }
   };
@@ -421,12 +473,63 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
 
   const handleChangeMonth = async (transactionId, newFlowMonth) => {
     try {
-      await transactionsAPI.update(transactionId, { flow_month: newFlowMonth });
+      console.log(`📅 [CLIENT] Attempting to change month for transaction ${transactionId} to ${newFlowMonth}`);
+      
+      // Use the correct flow-month endpoint instead of generic update
+      const response = await fetch(`${process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5001/api'}/transactions/${transactionId}/flow-month`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ flow_month: newFlowMonth })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error(`❌ [CLIENT] Flow month update failed:`, errorData);
+        throw new Error(errorData.error || 'Failed to update flow month');
+      }
+
+      console.log(`✅ [CLIENT] Successfully updated flow month for transaction ${transactionId}`);
+      
       if (onDataChange) {
         onDataChange();
       }
     } catch (error) {
       console.error('Error changing transaction month:', error);
+      
+      if (error.message?.includes('not found') || error.message?.includes('404')) {
+        console.error('❌ [DATA SYNC ISSUE] Phantom transaction detected:', {
+          transactionId,
+          newFlowMonth,
+          error: error.message,
+          transactionDetails: {
+            id: transactionId,
+            business_name: transactions?.find(t => t.id === transactionId)?.business_name
+          }
+        });
+        
+        const shouldRefresh = window.confirm(
+          '🔄 בעיית סינכרון נתונים!\n\n' +
+          'העסקה מוצגת במערכת אבל לא קיימת במסד הנתונים.\n' +
+          'זה יכול לקרות בגלל נתונים cached ישנים.\n\n' +
+          'האם תרצה לרענן את הנתונים כדי לתקן את הבעיה?'
+        );
+        
+        if (shouldRefresh) {
+          console.log('🔄 [DATA REFRESH] User chose to refresh data');
+          if (onDataChange) {
+            onDataChange(); // This should trigger a fresh data fetch
+          }
+          // Force reload the page to clear all caches
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
+        return;
+      }
+      
       throw error;
     }
   };
@@ -452,6 +555,36 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
       }
     } catch (error) {
       console.error('Error deleting transaction:', error);
+      
+      if (error.response?.status === 404) {
+        console.error('❌ [DATA SYNC ISSUE] Phantom transaction detected during deletion:', {
+          transactionId,
+          error: error.response?.data,
+          transactionDetails: {
+            id: transactionId,
+            business_name: transactions?.find(t => t.id === transactionId)?.business_name
+          }
+        });
+        
+        const shouldRefresh = window.confirm(
+          '🔄 בעיית סינכרון נתונים!\n\n' +
+          'העסקה מוצגת במערכת אבל לא קיימת במסד הנתונים.\n' +
+          'זה יכול לקרות בגלל נתונים cached ישנים.\n\n' +
+          'האם תרצה לרענן את הנתונים כדי לתקן את הבעיה?'
+        );
+        
+        if (shouldRefresh) {
+          console.log('🔄 [DATA REFRESH] User chose to refresh data');
+          if (onDataChange) {
+            onDataChange();
+          }
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
+        return;
+      }
+      
       throw error;
     }
   };

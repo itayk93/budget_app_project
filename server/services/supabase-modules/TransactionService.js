@@ -297,6 +297,8 @@ class TransactionService {
         return SharedUtilities.createErrorResponse('Transaction ID is required');
       }
       const client = userClient || adminClient;
+      
+      console.log(`🔍 [GET BY ID] Searching for transaction ${transactionId} using ${userClient ? 'userClient' : 'adminClient'}`);
 
       const { data, error } = await client
         .from('transactions')
@@ -309,6 +311,13 @@ class TransactionService {
         `)
         .eq('id', transactionId)
         .single();
+
+      console.log(`🔍 [GET BY ID] Query result for ${transactionId}:`, {
+        hasData: !!data,
+        error: error?.message || null,
+        errorCode: error?.code || null,
+        dataUserId: data?.user_id
+      });
 
       if (error) throw error;
       
