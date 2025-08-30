@@ -810,8 +810,8 @@ const Upload = () => {
         {currentStep === 0 && (
           <div className="space-y-8">
             <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 px-8 py-6">
-                <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 px-6 py-4">
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
                   📂 העלאת קובץ
                 </h3>
               </div>
