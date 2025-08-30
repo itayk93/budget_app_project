@@ -24,8 +24,25 @@ const TransactionReviewModal = ({
   const [skipDuplicates, setSkipDuplicates] = useState(false); // Default to show duplicates in yellow for review
   const [replaceDuplicates, setReplaceDuplicates] = useState(new Map()); // Map of tempId -> boolean (true = replace, false = create new)
   
+  // Hidden business handling state
+  const [hiddenBusinessTransactionIds, setHiddenBusinessTransactionIds] = useState(new Set());
+  
+  // Hidden business modal state
+  const [isAddHiddenBusinessModalOpen, setIsAddHiddenBusinessModalOpen] = useState(false);
+  const [selectedBusinessForHiding, setSelectedBusinessForHiding] = useState(null);
+  const [hiddenBusinessReason, setHiddenBusinessReason] = useState('');
+  
   // Source cash flow selection state
   const [selectedSourceCashFlowId, setSelectedSourceCashFlowId] = useState(cashFlowId || '');
+  
+  // Filtering state
+  const [hideDuplicates, setHideDuplicates] = useState(false);
+  const [dateFilter, setDateFilter] = useState(() => {
+    // Default to first day of current month
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    return firstDayOfMonth.toISOString().split('T')[0];
+  });
   
   // Update selected cash flow when cashFlowId prop changes
   useEffect(() => {
@@ -235,6 +252,26 @@ const TransactionReviewModal = ({
     }
   }, [hierarchicalCategories, showNonCashFlowOnly]);
 
+  // Filter transactions based on filters
+  const filteredTransactions = useMemo(() => {
+    let filtered = editedTransactions;
+    
+    // Hide duplicates filter - hide both regular duplicates and hidden businesses
+    if (hideDuplicates) {
+      filtered = filtered.filter(tx => !tx.isDuplicate);
+    }
+    
+    // Date filter
+    if (dateFilter) {
+      filtered = filtered.filter(tx => {
+        const transactionDate = tx.payment_date?.split('T')[0] || tx.transaction_date?.split('T')[0];
+        return transactionDate >= dateFilter;
+      });
+    }
+    
+    return filtered;
+  }, [editedTransactions, hideDuplicates, dateFilter]);
+
   // Initialize edited transactions when modal opens
   useEffect(() => {
     if (isOpen && transactions.length > 0) {
@@ -254,14 +291,32 @@ const TransactionReviewModal = ({
       setEditedTransactions(transactionsWithRecipients);
       setDeletedTransactionIds(new Set());
       
-      // Identify duplicate transactions
+      // Identify duplicate transactions and hidden business transactions
       const duplicateIds = new Set();
+      const hiddenBusinessIds = new Set();
+      
       transactionsWithRecipients.forEach(tx => {
         if (tx.isDuplicate) {
-          duplicateIds.add(tx.tempId);
+          console.log(`🔍 [INIT DEBUG] Processing duplicate transaction:`, {
+            tempId: tx.tempId,
+            isDuplicate: tx.isDuplicate,
+            duplicateReason: tx.duplicateReason,
+            business_name: tx.business_name
+          });
+          
+          if (tx.duplicateReason === 'hidden_business') {
+            hiddenBusinessIds.add(tx.tempId);
+            console.log(`✅ [INIT DEBUG] Added to hiddenBusinessIds: ${tx.tempId}`);
+          } else {
+            // Handle regular duplicates (duplicateReason can be 'duplicate_hash' or undefined)
+            duplicateIds.add(tx.tempId);
+            console.log(`✅ [INIT DEBUG] Added to duplicateIds: ${tx.tempId} (reason: ${tx.duplicateReason || 'undefined'})`);
+          }
         }
       });
+      
       setDuplicateTransactionIds(duplicateIds);
+      setHiddenBusinessTransactionIds(hiddenBusinessIds);
       
       console.log('🔍 [MODAL DEBUG] Found duplicates:', duplicateIds.size);
       
@@ -428,8 +483,24 @@ const TransactionReviewModal = ({
     
     setIsSubmitting(true);
     try {
-      // Prepare final transactions (excluding deleted ones)
-      const finalTransactions = editedTransactions
+      // Prepare final transactions - use filteredTransactions (respects hide duplicates filter) and exclude deleted ones
+      let transactionsToProcess = editedTransactions;
+      
+      // If hideDuplicates is true, exclude all duplicate transactions unless they're marked for replacement
+      if (hideDuplicates) {
+        transactionsToProcess = editedTransactions.filter(tx => {
+          // Keep non-duplicates
+          if (!tx.isDuplicate) return true;
+          
+          // Keep duplicates that are marked for replacement
+          const shouldReplace = replaceDuplicates.get(tx.tempId) || false;
+          return shouldReplace;
+        });
+        console.log(`📝 [UPLOAD FILTER] Filtering duplicates: ${editedTransactions.length} -> ${transactionsToProcess.length} transactions`);
+      }
+      
+      const finalTransactions = transactionsToProcess
+        .filter(tx => !deletedTransactionIds.has(tx.tempId)) // Exclude deleted transactions
         .map(tx => {
           const { tempId, originalIndex, isDuplicate, duplicateInfo, ...cleanTx } = tx;
           return cleanTx;
@@ -438,15 +509,15 @@ const TransactionReviewModal = ({
       // Prepare duplicate handling data - include ALL duplicates, not just ones with explicit actions
       const duplicateActions = {};
       
-      // Process all duplicate transactions
-      editedTransactions.forEach(transaction => {
-        if (transaction.isDuplicate && transaction.duplicateInfo) {
+      // Process duplicate transactions that are being sent to server
+      transactionsToProcess.forEach(transaction => {
+        if (transaction.isDuplicate) {
           const tempId = transaction.tempId;
           const shouldReplace = replaceDuplicates.get(tempId) || false; // Default to false (create duplicate)
           
           duplicateActions[tempId] = {
             shouldReplace,
-            originalTransactionId: transaction.duplicateInfo.original_id,
+            originalTransactionId: transaction.duplicateInfo?.original_id || null,
             duplicateHash: transaction.transaction_hash
           };
           
@@ -471,6 +542,86 @@ const TransactionReviewModal = ({
 
   // Bulk duplicate handling functions
 
+
+  // Handle adding business to hidden list
+  const handleAddHiddenBusiness = async () => {
+    if (!selectedBusinessForHiding || !hiddenBusinessReason.trim()) {
+      alert('נא למלא את כל השדות');
+      return;
+    }
+
+    console.log('🔍 Adding hidden business:', selectedBusinessForHiding.business_name);
+    console.log('🔍 Reason:', hiddenBusinessReason.trim());
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/upload/hidden-businesses', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          business_name: selectedBusinessForHiding.business_name,
+          reason: hiddenBusinessReason.trim()
+        })
+      });
+
+      console.log('🔍 Response status:', response.status);
+      console.log('🔍 Response ok:', response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Server error response:', errorText);
+        throw new Error(`Failed to add hidden business: ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Success response:', result);
+
+      // Mark this transaction and any similar ones as hidden
+      const updatedTransactions = editedTransactions.map(tx => {
+        if (tx.business_name === selectedBusinessForHiding.business_name) {
+          return {
+            ...tx,
+            isDuplicate: true,
+            duplicateReason: 'hidden_business',
+            hiddenBusinessName: tx.business_name
+          };
+        }
+        return tx;
+      });
+
+      setEditedTransactions(updatedTransactions);
+
+      // Update hidden business IDs
+      const newHiddenIds = new Set(hiddenBusinessTransactionIds);
+      updatedTransactions.forEach(tx => {
+        if (tx.business_name === selectedBusinessForHiding.business_name) {
+          newHiddenIds.add(tx.tempId);
+        }
+      });
+      setHiddenBusinessTransactionIds(newHiddenIds);
+
+      // Close modal and reset
+      setIsAddHiddenBusinessModalOpen(false);
+      setSelectedBusinessForHiding(null);
+      setHiddenBusinessReason('');
+
+      alert('בית העסק נוסף לרשימת העסקים הנסתרים');
+
+    } catch (error) {
+      console.error('Error adding hidden business:', error);
+      alert('שגיאה בהוספת בית העסק לרשימה הנסתרת');
+    }
+  };
+
+  // Open hidden business modal
+  const openAddHiddenBusinessModal = (transaction) => {
+    setSelectedBusinessForHiding(transaction);
+    setIsAddHiddenBusinessModalOpen(true);
+    setHiddenBusinessReason('');
+  };
 
   const formatAmount = (amount, currency = 'ILS') => {
     const currencySymbols = {
@@ -667,6 +818,12 @@ const TransactionReviewModal = ({
                     <span className="value warning">{duplicateTransactionIds.size}</span>
                   </div>
                 )}
+                {hiddenBusinessTransactionIds.size > 0 && (
+                  <div className="summary-item">
+                    <span className="label">עסקים מוסתרים:</span>
+                    <span className="value" style={{ background: '#00bcd4', color: 'white', fontWeight: '600', padding: '4px 8px', borderRadius: '4px', minWidth: '32px' }}>{hiddenBusinessTransactionIds.size}</span>
+                  </div>
+                )}
                 <div className="summary-item">
                   <span className="label">נמחקו:</span>
                   <span className="value deleted">{deletedTransactionIds.size}</span>
@@ -677,30 +834,40 @@ const TransactionReviewModal = ({
                     {editedTransactions.length}
                   </span>
                 </div>
+                {hideDuplicates || dateFilter !== (() => {
+                  const now = new Date();
+                  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                  return firstDayOfMonth.toISOString().split('T')[0];
+                })() ? (
+                  <div className="summary-item">
+                    <span className="label">מוצגות:</span>
+                    <span className="value filtered">{filteredTransactions.length}</span>
+                  </div>
+                ) : null}
                 </div>
 
                 {/* Right Side - Cash Flow Selection */}
                 <div className="cash-flow-selection" style={{
                   display: 'flex',
                   alignItems: 'center',
-                  padding: '8px 12px',
+                  padding: '6px 8px',
                   background: '#f8f9fa',
-                  borderRadius: '6px',
+                  borderRadius: '4px',
                   border: '1px solid #e0e0e0',
                   flexShrink: 0
                 }}>
-                  <label style={{ fontSize: '14px', fontWeight: '500', marginLeft: '8px', whiteSpace: 'nowrap' }}>
+                  <label style={{ fontSize: '12px', fontWeight: '500', marginLeft: '6px', whiteSpace: 'nowrap' }}>
                     תזרים יעד:
                   </label>
                   <select
                     value={selectedSourceCashFlowId}
                     onChange={(e) => setSelectedSourceCashFlowId(e.target.value)}
                     style={{
-                      padding: '4px 8px',
-                      borderRadius: '4px',
+                      padding: '3px 6px',
+                      borderRadius: '3px',
                       border: '1px solid #ccc',
-                      fontSize: '14px',
-                      minWidth: '180px'
+                      fontSize: '12px',
+                      minWidth: '140px'
                     }}
                   >
                     <option value="">בחר תזרים...</option>
@@ -711,6 +878,75 @@ const TransactionReviewModal = ({
                     ))}
                   </select>
                 </div>
+              </div>
+
+              {/* Filters Row */}
+              <div className="filters-row" style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '16px',
+                padding: '8px 12px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '6px',
+                border: '1px solid #e0e0e0',
+                marginBottom: '16px',
+                fontSize: '13px'
+              }}>
+                {/* Hide Duplicates Toggle */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <input
+                    type="checkbox"
+                    id="hideDuplicates"
+                    checked={hideDuplicates}
+                    onChange={(e) => setHideDuplicates(e.target.checked)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  <label htmlFor="hideDuplicates" style={{ cursor: 'pointer', fontWeight: '500' }}>
+                    הסתר כפילויות ועסקים מוסתרים ({duplicateTransactionIds.size + hiddenBusinessTransactionIds.size})
+                  </label>
+                </div>
+                
+                {/* Date Filter */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <label htmlFor="dateFilter" style={{ fontWeight: '500', whiteSpace: 'nowrap' }}>
+                    מתאריך:
+                  </label>
+                  <input
+                    type="date"
+                    id="dateFilter"
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                    style={{
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      border: '1px solid #ccc',
+                      fontSize: '13px'
+                    }}
+                  />
+                </div>
+                
+                {/* Reset Filters */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHideDuplicates(false);
+                    const now = new Date();
+                    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                    setDateFilter(firstDayOfMonth.toISOString().split('T')[0]);
+                  }}
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc',
+                    backgroundColor: 'white',
+                    fontSize: '12px',
+                    cursor: 'pointer'
+                  }}
+                  title="איפוס סינון לברירת המחדל"
+                >
+                  איפוס
+                </button>
               </div>
 
               <div className="transactions-table-container">
@@ -728,10 +964,25 @@ const TransactionReviewModal = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {editedTransactions.map((transaction) => {
-                      const isDuplicate = transaction.isDuplicate;
+                    {filteredTransactions.map((transaction) => {
+                      // Debug logging for duplicate detection
+                      if (transaction.isDuplicate) {
+                        console.log(`🔍 [DUPLICATE DEBUG] Transaction ${transaction.tempId}:`, {
+                          isDuplicate: transaction.isDuplicate,
+                          duplicateReason: transaction.duplicateReason,
+                          business_name: transaction.business_name,
+                          amount: transaction.amount
+                        });
+                      }
+                      
+                      // Handle both cases: when duplicateReason is undefined (default duplicates) or 'duplicate_hash'
+                      const isDuplicate = transaction.isDuplicate && (
+                        transaction.duplicateReason === 'duplicate_hash' || 
+                        (transaction.duplicateReason === undefined && transaction.isDuplicate)
+                      );
+                      const isHiddenBusiness = transaction.isDuplicate && transaction.duplicateReason === 'hidden_business';
                       const isDifferentCashFlow = isFromDifferentCashFlow(transaction);
-                      const rowClass = `transaction-row ${isDuplicate ? 'duplicate-row' : ''} ${isDifferentCashFlow ? 'different-cash-flow' : ''}`;
+                      const rowClass = `transaction-row ${isDuplicate ? 'duplicate-row' : ''} ${isHiddenBusiness ? 'hidden-business-row' : ''} ${isDifferentCashFlow ? 'different-cash-flow' : ''}`;
                       
                       return (
                       <tr key={transaction.tempId} className={rowClass}>
@@ -749,20 +1000,37 @@ const TransactionReviewModal = ({
                         </td>
                         <td>
                           <div className="business-name-container">
-                            <input
-                              type="text"
-                              value={transaction.business_name || ''}
-                              onChange={(e) => handleTransactionChange(
-                                transaction.tempId, 
-                                'business_name', 
-                                e.target.value
+                            <div className="business-input-wrapper">
+                              <input
+                                type="text"
+                                value={transaction.business_name || ''}
+                                onChange={(e) => handleTransactionChange(
+                                  transaction.tempId, 
+                                  'business_name', 
+                                  e.target.value
+                                )}
+                                className="business-input"
+                                placeholder="שם העסק"
+                              />
+                              {!isHiddenBusiness && (
+                                <button
+                                  type="button"
+                                  onClick={() => openAddHiddenBusinessModal(transaction)}
+                                  className="hide-business-btn"
+                                  title="הוסף לרשימת עסקים נסתרים"
+                                >
+                                  🚫
+                                </button>
                               )}
-                              className="business-input"
-                              placeholder="שם העסק"
-                            />
+                            </div>
                             {isDuplicate && (
                               <span className="duplicate-badge">
                                 כפול
+                              </span>
+                            )}
+                            {isHiddenBusiness && (
+                              <span className="hidden-business-badge">
+                                עסק מוסתר
                               </span>
                             )}
                           </div>
@@ -867,6 +1135,8 @@ const TransactionReviewModal = ({
                                 {replaceDuplicates.get(transaction.tempId) ? 'החלף' : 'כפל'}
                               </label>
                             </div>
+                          ) : isHiddenBusiness ? (
+                            <span className="no-action" style={{ color: '#00bcd4', fontWeight: '500' }}>מוסתר</span>
                           ) : (
                             <span className="no-action">-</span>
                           )}
@@ -888,19 +1158,41 @@ const TransactionReviewModal = ({
 
                 {/* Mobile Card View */}
                 <div className="transactions-mobile">
-                  {editedTransactions.map((transaction) => {
-                    const isDuplicate = transaction.isDuplicate;
+                  {filteredTransactions.map((transaction) => {
+                    // Handle both cases: when duplicateReason is undefined (default duplicates) or 'duplicate_hash'  
+                    const isDuplicate = transaction.isDuplicate && (
+                      transaction.duplicateReason === 'duplicate_hash' || 
+                      (transaction.duplicateReason === undefined && transaction.isDuplicate)
+                    );
+                    const isHiddenBusiness = transaction.isDuplicate && transaction.duplicateReason === 'hidden_business';
                     const isDifferentCashFlow = isFromDifferentCashFlow(transaction);
-                    const cardClass = `transaction-card ${isDuplicate ? 'duplicate-card' : ''} ${isDifferentCashFlow ? 'different-cash-flow' : ''}`;
+                    const cardClass = `transaction-card ${isDuplicate ? 'duplicate-card' : ''} ${isHiddenBusiness ? 'hidden-business-card' : ''} ${isDifferentCashFlow ? 'different-cash-flow' : ''}`;
                     
                     return (
                     <div key={transaction.tempId} className={cardClass}>
                       <div className="card-header">
                         <div className="card-title">
-                          {transaction.business_name || 'שם העסק'}
+                          <div className="mobile-business-wrapper">
+                            <span>{transaction.business_name || 'שם העסק'}</span>
+                            {!isHiddenBusiness && (
+                              <button
+                                type="button"
+                                onClick={() => openAddHiddenBusinessModal(transaction)}
+                                className="hide-business-btn mobile"
+                                title="הוסף לרשימת עסקים נסתרים"
+                              >
+                                🚫
+                              </button>
+                            )}
+                          </div>
                           {isDuplicate && (
                             <span className="duplicate-badge mobile">
                               כפול
+                            </span>
+                          )}
+                          {isHiddenBusiness && (
+                            <span className="hidden-business-badge mobile">
+                              עסק מוסתר
                             </span>
                           )}
                           {isDifferentCashFlow && (
@@ -1031,12 +1323,26 @@ const TransactionReviewModal = ({
                           </div>
                         </div>
                       )}
+                      {isHiddenBusiness && (
+                        <div className="card-field">
+                          <label>סטטוס</label>
+                          <div style={{ padding: '8px 12px', backgroundColor: '#e0f7fa', border: '1px solid #00bcd4', borderRadius: '6px', textAlign: 'center', color: '#00838f', fontWeight: '500' }}>
+                            עסק מוסתר - לא יועלה אוטומטית
+                          </div>
+                        </div>
+                      )}
                     </div>
                     );
                   })}
                 </div>
               </div>
 
+              {filteredTransactions.length === 0 && editedTransactions.length > 0 && (
+                <div className="empty-state">
+                  <p>אין עסקאות המתאימות לסינון הנוכחי.</p>
+                </div>
+              )}
+              
               {editedTransactions.length === 0 && (
                 <div className="empty-state">
                   <p>כל העסקאות נמחקו. לא יועלו עסקאות חדשות.</p>
@@ -1071,7 +1377,7 @@ const TransactionReviewModal = ({
           <button 
             className="btn btn-primary" 
             onClick={handleConfirm}
-            disabled={isSubmitting || editedTransactions.length === 0 || !selectedSourceCashFlowId}
+            disabled={isSubmitting || filteredTransactions.length === 0 || !selectedSourceCashFlowId}
             style={{
               fontSize: '13px',
               padding: '6px 12px',
@@ -1084,11 +1390,123 @@ const TransactionReviewModal = ({
                 מעלה...
               </>
             ) : (
-              `אשר והעלה ${editedTransactions.length} עסקאות`
+              `אשר והעלה ${filteredTransactions.length} עסקאות`
             )}
           </button>
         </div>
       </div>
+
+      {/* Add Hidden Business Modal */}
+      <Modal
+        isOpen={isAddHiddenBusinessModalOpen}
+        onClose={() => setIsAddHiddenBusinessModalOpen(false)}
+        title="הוספה לרשימת עסקים נסתרים"
+        className="add-hidden-business-modal"
+      >
+        {selectedBusinessForHiding && (
+          <div className="modal-content">
+            <div className="form-group" style={{marginBottom: '1rem'}}>
+              <label style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                fontWeight: '500',
+                fontSize: '14px',
+                color: '#333'
+              }}>
+                שם העסק:
+              </label>
+              <input
+                type="text"
+                value={selectedBusinessForHiding.business_name || ''}
+                disabled
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  backgroundColor: '#f8f9fa',
+                  color: '#6c757d'
+                }}
+              />
+            </div>
+
+            <div className="form-group" style={{marginBottom: '1.5rem'}}>
+              <label style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                fontWeight: '500',
+                fontSize: '14px',
+                color: '#333'
+              }}>
+                סיבת הסתרה:
+              </label>
+              <textarea
+                value={hiddenBusinessReason}
+                onChange={(e) => setHiddenBusinessReason(e.target.value)}
+                placeholder="הסבר למה ברצונך להסתיר עסקאות מעסק זה..."
+                rows="3"
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  resize: 'vertical',
+                  minHeight: '80px'
+                }}
+              />
+            </div>
+
+            <div className="alert alert-warning" style={{
+              padding: '12px',
+              backgroundColor: '#e3f2fd',
+              border: '1px solid #2196F3',
+              borderRadius: '4px',
+              marginBottom: '1rem',
+              fontSize: '13px',
+              color: '#0d47a1'
+            }}>
+              <strong>⚠️ שימו לב:</strong> כל העסקאות העתידיות מעסק "{selectedBusinessForHiding.business_name}" יסומנו אוטומטית כעסקאות נסתרות ויופיעו בצבע תכלת.
+            </div>
+
+            <div className="modal-footer" style={{
+              display: 'flex', 
+              justifyContent: 'flex-end', 
+              gap: '8px', 
+              paddingTop: '8px', 
+              borderTop: '1px solid #e9ecef'
+            }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setIsAddHiddenBusinessModalOpen(false)}
+                style={{
+                  fontSize: '13px',
+                  padding: '6px 12px',
+                  minHeight: '32px'
+                }}
+              >
+                ביטול
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleAddHiddenBusiness}
+                disabled={!hiddenBusinessReason.trim()}
+                style={{
+                  fontSize: '13px',
+                  padding: '6px 12px',
+                  minHeight: '32px',
+                  opacity: !hiddenBusinessReason.trim() ? 0.6 : 1
+                }}
+              >
+                הוסף לרשימה
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Foreign Currency Copy Modal */}
       <Modal
