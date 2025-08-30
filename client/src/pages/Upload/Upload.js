@@ -780,12 +780,12 @@ const Upload = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8 font-['Heebo']">
       <div className="max-w-5xl mx-auto">
         {/* Modern Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div className="mb-6 md:mb-0">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-3">
+            <h1 className="text-4xl font-bold text-gray-900 mb-3">
               העלאת קבצי בנק
             </h1>
             <p className="text-gray-600 text-lg">העלה קבצי Excel או CSV מהבנק לייבוא אוטומטי של תנועות</p>
@@ -959,7 +959,7 @@ const Upload = () => {
                 )}
 
                 {/* Modern Upload Settings Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                       🏢 מקור הקבצים
