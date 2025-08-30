@@ -873,7 +873,7 @@ const Upload = () => {
                 </div>
 
                 {/* Modern Cash Flow Selection */}
-                <div className="space-y-2 mb-8">
+                <div className="space-y-2 mb-10">
                   <label className="text-base font-semibold text-gray-800 flex items-center gap-2">
                     💰 תזרים מזומנים
                   </label>
@@ -1119,25 +1119,6 @@ const Upload = () => {
                   </div>
                 )}
 
-                {/* Modern Force Import Option */}
-                <div className="space-y-4">
-                  <label className="flex items-center gap-3 cursor-pointer p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors duration-200">
-                    <input
-                      type="checkbox"
-                      className="w-5 h-5 text-gray-600 bg-white border-gray-300 rounded focus:ring-gray-500 focus:ring-2"
-                      checked={forceImport}
-                      onChange={(e) => setForceImport(e.target.checked)}
-                    />
-                    <div>
-                      <div className="font-semibold text-gray-800 flex items-center gap-2">
-                        ⚡ ייבוא כפוי (התעלם מכפילויות)
-                      </div>
-                      <p className="text-sm text-gray-600">
-                        בחר באפשרות זו כדי לייבא תנועות גם אם הן כבר קיימות במערכת
-                      </p>
-                    </div>
-                  </label>
-                </div>
 
                 {/* Modern Upload Button */}
                 <div className="flex justify-center mt-8">
