@@ -63,6 +63,89 @@ router.patch('/:id/flow-month', authenticateToken, async (req, res) => {
   }
 });
 
+// Fix flow_month for all transactions based on payment_date
+router.post('/fix-flow-month', authenticateToken, async (req, res) => {
+  try {
+    const { cash_flow_id } = req.body;
+    console.log(`🔧 [FIX FLOW MONTH] Starting flow_month fix for user ${req.user.id}, cash_flow_id: ${cash_flow_id || 'all'}`);
+
+    // Get all transactions for this user/cash_flow
+    const filters = { show_all: true };
+    if (cash_flow_id) filters.cash_flow_id = cash_flow_id;
+
+    const transactionsResult = await TransactionService.getTransactions(req.user.id, filters);
+    if (!transactionsResult.success) {
+      return res.status(500).json({ error: 'Failed to fetch transactions' });
+    }
+
+    const transactions = transactionsResult.data.transactions || [];
+    console.log(`🔧 [FIX FLOW MONTH] Found ${transactions.length} transactions to check`);
+
+    let fixedCount = 0;
+    let skippedCount = 0;
+    const errors = [];
+
+    for (const transaction of transactions) {
+      try {
+        if (!transaction.payment_date) {
+          skippedCount++;
+          continue;
+        }
+
+        // Calculate correct flow_month from payment_date
+        const paymentDate = new Date(transaction.payment_date);
+        const correctFlowMonth = `${paymentDate.getFullYear()}-${String(paymentDate.getMonth() + 1).padStart(2, '0')}`;
+
+        // Skip if already correct
+        if (transaction.flow_month === correctFlowMonth) {
+          skippedCount++;
+          continue;
+        }
+
+        console.log(`🔧 [FIX FLOW MONTH] Fixing transaction ${transaction.id}: ${transaction.flow_month} → ${correctFlowMonth}`);
+
+        // Update flow_month
+        const updateResult = await TransactionService.updateTransactionFlowMonth(
+          transaction.id,
+          correctFlowMonth,
+          transaction.cash_flow_id
+        );
+
+        if (updateResult.success) {
+          fixedCount++;
+        } else {
+          errors.push({
+            transaction_id: transaction.id,
+            business_name: transaction.business_name,
+            error: updateResult.error
+          });
+        }
+      } catch (error) {
+        errors.push({
+          transaction_id: transaction.id,
+          business_name: transaction.business_name,
+          error: error.message
+        });
+      }
+    }
+
+    console.log(`✅ [FIX FLOW MONTH] Completed: ${fixedCount} fixed, ${skippedCount} skipped, ${errors.length} errors`);
+
+    res.json({
+      message: 'Flow month fix completed',
+      total_transactions: transactions.length,
+      fixed_count: fixedCount,
+      skipped_count: skippedCount,
+      error_count: errors.length,
+      errors: errors
+    });
+
+  } catch (error) {
+    console.error('Error fixing flow months:', error);
+    res.status(500).json({ error: 'Failed to fix flow months' });
+  }
+});
+
 // Delete transactions by cash flow
 router.post('/api/transactions/delete_by_cash_flow', authenticateToken, async (req, res) => {
   try {

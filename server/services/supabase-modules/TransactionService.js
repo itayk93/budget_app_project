@@ -193,6 +193,19 @@ class TransactionService {
       const client = await SharedUtilities.createSecureClient(adminClient, userId);
       console.log('🔍 [TRANSACTION SERVICE] Using admin client for RLS bypass');
 
+      // Load category order information first for sorting
+      const categoryOrderQuery = await client
+        .from('category_order')
+        .select('category_name, display_order')
+        .eq('user_id', userId);
+
+      const categoryOrders = {};
+      if (categoryOrderQuery.data) {
+        categoryOrderQuery.data.forEach(cat => {
+          categoryOrders[cat.category_name] = cat.display_order;
+        });
+      }
+
       let query = client
         .from('transactions')
         .select(`
@@ -246,14 +259,10 @@ class TransactionService {
         query = query.eq('linked_transaction_id', filters.linked_transaction_id);
       }
 
-      // Apply sorting
-      query = query.order('payment_date', { ascending: true })
-                   .order('created_at', { ascending: true });
+      // Apply minimal sorting for consistency (we'll sort properly in code)
+      query = query.order('created_at', { ascending: true });
 
-      // Apply pagination
-      const start = (page - 1) * perPage;
-      const end = start + perPage - 1;
-      query = query.range(start, end);
+      // NO PAGINATION at database level - we need all data to sort by custom category order
 
       const { data, error, count } = await query;
       
@@ -263,19 +272,6 @@ class TransactionService {
       console.log('🔍 [TRANSACTION SERVICE] - Total count:', count);
 
       if (error) throw error;
-
-      // Load category order information for sorting
-      const categoryOrderQuery = await client
-        .from('category_order')
-        .select('category_name, display_order')
-        .eq('user_id', userId);
-
-      const categoryOrders = {};
-      if (categoryOrderQuery.data) {
-        categoryOrderQuery.data.forEach(cat => {
-          categoryOrders[cat.category_name] = cat.display_order;
-        });
-      }
 
       // Process transactions with currency formatting
       const processedTransactions = (data || []).map(transaction => {
@@ -309,11 +305,17 @@ class TransactionService {
         return new Date(a.created_at) - new Date(b.created_at);
       });
 
+      // Apply pagination AFTER sorting
+      const totalCount = processedTransactions.length;
+      const start = (page - 1) * perPage;
+      const end = start + perPage;
+      const paginatedTransactions = processedTransactions.slice(start, end);
+
       return SharedUtilities.createSuccessResponse({
-        data: processedTransactions,
-        total_count: count || 0,
-        transactions: processedTransactions, // For backward compatibility
-        totalCount: count || 0 // For backward compatibility
+        data: paginatedTransactions,
+        total_count: totalCount,
+        transactions: paginatedTransactions, // For backward compatibility
+        totalCount: totalCount // For backward compatibility
       });
     } catch (error) {
       console.error('Error fetching transactions:', error);

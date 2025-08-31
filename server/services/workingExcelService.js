@@ -3723,15 +3723,69 @@ class WorkingExcelService {
   async readExcelFileOptimized(filePath, progressCallback) {
     try {
       const workbook = XLSX.readFile(filePath);
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
       
-      if (progressCallback) {
-        progressCallback('reading', { progress: 15, status: 'מעבד גיליון אלקטרוני...' });
+      // For Max files, read from all worksheets
+      let allData = [];
+      let isMaxFile = false;
+      
+      console.log(`📊 Found ${workbook.SheetNames.length} worksheets: ${workbook.SheetNames.join(', ')}`);
+      
+      // Check first sheet to determine if this is a Max file
+      const firstWorksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const sampleData = XLSX.utils.sheet_to_json(firstWorksheet);
+      
+      if (sampleData.length > 0) {
+        const firstRowKeys = Object.keys(sampleData[0]);
+        isMaxFile = firstRowKeys.some(key => 
+          key.includes('פירוט עסקאות') || 
+          key.includes('גולד') || 
+          key.includes('מסטרקארד') ||
+          key.includes('__EMPTY') ||
+          key.includes('כל המשתמשים') ||
+          key === '' // Empty column names are common in Max files
+        );
       }
       
-      // First try to read with header detection
-      let data = XLSX.utils.sheet_to_json(worksheet);
+      console.log(`🏦 Detected Max file: ${isMaxFile}`);
+      
+      let data;
+      
+      if (isMaxFile) {
+        // For Max files, read from ALL worksheets
+        for (let i = 0; i < workbook.SheetNames.length; i++) {
+          const sheetName = workbook.SheetNames[i];
+          const worksheet = workbook.Sheets[sheetName];
+          
+          console.log(`📋 Processing worksheet ${i + 1}/${workbook.SheetNames.length}: ${sheetName}`);
+          
+          if (progressCallback) {
+            progressCallback('reading', { 
+              progress: 15 + (i * 10), 
+              status: `מעבד גיליון ${i + 1} מתוך ${workbook.SheetNames.length}...` 
+            });
+          }
+          
+          let sheetData = XLSX.utils.sheet_to_json(worksheet);
+          console.log(`📊 Sheet ${sheetName}: ${sheetData.length} rows`);
+          
+          if (sheetData.length > 0) {
+            allData = allData.concat(sheetData);
+          }
+        }
+        
+        console.log(`📊 Total data from all sheets: ${allData.length} rows`);
+        data = allData;
+      } else {
+        // For non-Max files, use only first sheet as before
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        data = XLSX.utils.sheet_to_json(worksheet);
+      }
+      
+      if (progressCallback) {
+        progressCallback('reading', { progress: 25, status: 'מעבד גיליון אלקטרוני...' });
+      }
+      
       console.log(`📊 Excel file read: ${data.length} rows`);
       console.log(`📊 Raw data loaded: { rows: ${data.length}, columns: ${Object.keys(data[0] || {}).length} }`);
       console.log(`🔍 Headers found:`, Object.keys(data[0] || {}));
@@ -3776,26 +3830,35 @@ class WorkingExcelService {
         if (hasIsracardIndicators || hasBankYahavIndicators) {
           console.log('🏦 Detected special file structure (Isracard/Max/Bank Yahav), attempting enhanced parsing...');
           
-          // Try to read the raw data including all rows and find the actual header
-          const rawSheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-          console.log(`📋 Raw sheet data: ${rawSheetData.length} rows`);
+          // For enhanced parsing, we'll process each worksheet separately to find headers
+          let allParsedData = [];
           
-          // Define expected Cal/Isracard/Max/Bank Yahav headers for better detection
-          const expectedHeaders = [
-            // Cal/Isracard headers
-            "תאריך עסקה", "שם בית עסק", "סכום עסקה", "סכום חיוב", "סוג עסקה", "ענף", "הערות",
-            "תאריך רכישה", "תאריך חיוב בבנק", "שם בית העסק", "מטבע מקור", "מטבע", "מס' שובר",
-            // Max bank headers
-            "קטגוריה", "4 ספרות אחרונות של כרטיס האשראי", "מטבע חיוב", "סכום עסקה מקורי", 
-            "תאריך חיוב", "אופן ביצוע ההעסקה",
-            // Bank Yahav headers
-            "תאריך", "אסמכתא", "תיאור פעולה", "שם הפעולה", "חובה(₪)", "זכות(₪)", "תאריך ערך", "יתרה משוערכת(₪)"
-          ];
+          for (let i = 0; i < workbook.SheetNames.length; i++) {
+            const sheetName = workbook.SheetNames[i];
+            const currentWorksheet = workbook.Sheets[sheetName];
+            
+            console.log(`🔍 Processing sheet ${i + 1}/${workbook.SheetNames.length}: ${sheetName}`);
+            
+            // Try to read the raw data including all rows and find the actual header
+            const rawSheetData = XLSX.utils.sheet_to_json(currentWorksheet, { header: 1 });
+            console.log(`📋 Raw sheet data for ${sheetName}: ${rawSheetData.length} rows`);
           
-          // Look for the actual header row with transaction data
-          let headerRowIndex = -1;
-          console.log('🔍 Searching for header row in first 20 rows...');
-          for (let i = 0; i < Math.min(rawSheetData.length, 20); i++) {
+            // Define expected Cal/Isracard/Max/Bank Yahav headers for better detection
+            const expectedHeaders = [
+              // Cal/Isracard headers
+              "תאריך עסקה", "שם בית עסק", "סכום עסקה", "סכום חיוב", "סוג עסקה", "ענף", "הערות",
+              "תאריך רכישה", "תאריך חיוב בבנק", "שם בית העסק", "מטבע מקור", "מטבע", "מס' שובר",
+              // Max bank headers
+              "קטגוריה", "4 ספרות אחרונות של כרטיס האשראי", "מטבע חיוב", "סכום עסקה מקורי", 
+              "תאריך חיוב", "אופן ביצוע ההעסקה",
+              // Bank Yahav headers
+              "תאריך", "אסמכתא", "תיאור פעולה", "שם הפעולה", "חובה(₪)", "זכות(₪)", "תאריך ערך", "יתרה משוערכת(₪)"
+            ];
+          
+            // Look for the actual header row with transaction data
+            let headerRowIndex = -1;
+            console.log(`🔍 Searching for header row in first 20 rows of ${sheetName}...`);
+            for (let i = 0; i < Math.min(rawSheetData.length, 20); i++) {
             const row = rawSheetData[i];
             if (row && Array.isArray(row)) {
               const rowStr = row.join(' ');
@@ -3882,7 +3945,7 @@ class WorkingExcelService {
             const headerRow = rawSheetData[headerRowIndex];
             
             // Convert raw data to JSON format using the correct headers
-            data = [];
+            const sheetParsedData = [];
             for (let i = dataStartRow; i < rawSheetData.length; i++) {
               const row = rawSheetData[i];
               if (row && row.length > 0) {
@@ -3896,15 +3959,22 @@ class WorkingExcelService {
                 }
                 // Only add row if it has meaningful data
                 if (Object.keys(rowObj).length > 0 && Object.values(rowObj).some(val => val && val.toString().trim())) {
-                  data.push(rowObj);
+                  sheetParsedData.push(rowObj);
                 }
               }
             }
             
-            console.log(`✅ Parsed Isracard data starting from row ${headerRowIndex}: ${data.length} transactions`);
-            console.log(`✅ Using correct headers:`, headerRow);
-          } else {
-            console.log('❌ Could not find valid header row in Isracard file');
+            console.log(`✅ Parsed data from ${sheetName} starting from row ${headerRowIndex}: ${sheetParsedData.length} transactions`);
+            console.log(`✅ Using correct headers for ${sheetName}:`, headerRow);
+            allParsedData = allParsedData.concat(sheetParsedData);
+            } else {
+              console.log(`❌ Could not find valid header row in sheet ${sheetName}`);
+            }
+          }
+          
+          if (allParsedData.length > 0) {
+            data = allParsedData;
+            console.log(`✅ Combined parsed data from all sheets: ${data.length} transactions`);
           }
         }
       }

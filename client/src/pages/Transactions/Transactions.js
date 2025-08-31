@@ -304,14 +304,14 @@ const Transactions = () => {
   const { data: transactions, isLoading: transactionsLoading } = useQuery(
     ['transactions', year, month, selectedCashFlow?.id, selectedCategory, searchQuery, notesQuery, page, showAll],
     () => transactionsAPI.getAll({
-      flow_month: showAll ? undefined : `${year}-${String(month).padStart(2, '0')}`,
+      flow_month: (showAll || searchQuery || notesQuery) ? undefined : `${year}-${String(month).padStart(2, '0')}`,
       cash_flow_id: selectedCashFlow?.id,
       category_name: selectedCategory || undefined,
       q: searchQuery || undefined,
       notes: notesQuery || undefined,
       page: page,
       per_page: 50,
-      show_all: showAll
+      show_all: showAll || searchQuery || notesQuery
     }),
     {
       enabled: !!selectedCashFlow,
@@ -610,6 +610,50 @@ const Transactions = () => {
     });
   };
 
+  const handleFixFlowMonth = async () => {
+    if (!selectedCashFlow) return;
+    
+    if (!window.confirm('האם תרצה לתקן את תאריכי התזרים של כל העסקאות? פעולה זו תעדכן את חודש התזרים בהתבסס על תאריך התשלום של כל עסקה.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/transactions/fix-flow-month', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          cash_flow_id: selectedCashFlow.id
+        })
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        let message = `תיקון הושלם בהצלחה!\n\n`;
+        message += `סך הכל עסקאות: ${result.total_transactions}\n`;
+        message += `עסקאות שתוקנו: ${result.fixed_count}\n`;
+        message += `עסקאות שדולגו (כבר נכונות): ${result.skipped_count}\n`;
+        
+        if (result.error_count > 0) {
+          message += `שגיאות: ${result.error_count}\n`;
+        }
+        
+        alert(message);
+        
+        // Refresh transactions
+        queryClient.invalidateQueries('transactions');
+      } else {
+        alert('שגיאה בתיקון תאריכי התזרים: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Error fixing flow months:', error);
+      alert('שגיאה בתיקון תאריכי התזרים: ' + error.message);
+    }
+  };
+
   const handleDeleteAllTransactions = async () => {
     if (!selectedCashFlow) return;
     
@@ -849,12 +893,20 @@ const Transactions = () => {
             </button>
           )}
           {selectedCashFlow && (
-            <button
-              className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors font-medium"
-              onClick={() => handleDeleteAllTransactions()}
-            >
-              מחק את כל התנועות בתזרים
-            </button>
+            <>
+              <button
+                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium"
+                onClick={() => handleFixFlowMonth()}
+              >
+                תקן תאריכי תזרים
+              </button>
+              <button
+                className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors font-medium"
+                onClick={() => handleDeleteAllTransactions()}
+              >
+                מחק את כל התנועות בתזרים
+              </button>
+            </>
           )}
         </div>
       </div>
