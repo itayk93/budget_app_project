@@ -835,6 +835,7 @@ router.post('/finalize', authenticateToken, async (req, res) => {
     // Check if we have reviewed transactions from the modal
     if (reviewedTransactions && Array.isArray(reviewedTransactions)) {
       console.log('🔄 Using reviewed transactions from modal:', reviewedTransactions.length);
+      console.log('🔍 [BACKEND DEBUG] reviewedTransactions received with length:', reviewedTransactions.length);
       // Debug: Check recipient_name data
       reviewedTransactions.forEach((tx, index) => {
         if (tx.business_name && tx.business_name.includes('PAYBOX')) {
@@ -861,8 +862,10 @@ router.post('/finalize', authenticateToken, async (req, res) => {
       }
     } else if (processedData && processedData.data) {
       transactions = processedData.data;
+      console.log('🔍 [BACKEND DEBUG] Using processedData.data with length:', transactions.length);
     } else {
       transactions = processedData ? (processedData.transactions || []) : [];
+      console.log('🔍 [BACKEND DEBUG] Using fallback transactions with length:', transactions.length);
     }
     
     console.log('📊 Final transactions count for import:', transactions ? transactions.length : 0);

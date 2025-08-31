@@ -52,6 +52,7 @@ const Upload = () => {
   const [showTransactionReview, setShowTransactionReview] = useState(false);
   const [reviewTransactions, setReviewTransactions] = useState([]);
   const [reviewFileSource, setReviewFileSource] = useState('');
+  const [transactionReviewCompleted, setTransactionReviewCompleted] = useState(false);
   
   const steps = [
     { title: 'העלאת קובץ', description: 'בחר את הקובץ לייבוא' },
@@ -513,8 +514,8 @@ const Upload = () => {
     console.log('🔍 Current step:', currentStep);
     
     // Prevent processing if we're already in completion step or finalizing
-    if (currentStep === 4 || isFinalizingImport || isFinalizingImportRef.current || showTransactionReview) {
-      console.log('⏭️ Already completed upload (step 4) or finalizing import or transaction review modal is open, skipping duplicate call');
+    if (currentStep === 4 || isFinalizingImport || isFinalizingImportRef.current || showTransactionReview || transactionReviewCompleted) {
+      console.log('⏭️ Already completed upload (step 4) or finalizing import or transaction review modal is open or completed, skipping duplicate call');
       return;
     }
     
@@ -663,6 +664,7 @@ const Upload = () => {
     setShowTransactionReview(false);
     setReviewTransactions([]);
     setReviewFileSource('');
+    setTransactionReviewCompleted(false); // Reset the completed flag
     setLatestTransactionInfo(null);
   };
   
@@ -711,6 +713,7 @@ const Upload = () => {
   // Handle transaction review modal
   const handleTransactionReviewConfirm = async (reviewData) => {
     try {
+      setTransactionReviewCompleted(true); // Set flag to prevent modal reopening
       setShowTransactionReview(false);
       setReviewTransactions([]); // Clear review transactions
       setReviewFileSource(''); // Clear file source
@@ -760,6 +763,7 @@ const Upload = () => {
     setShowTransactionReview(false);
     setReviewTransactions([]);
     setReviewFileSource('');
+    setTransactionReviewCompleted(false); // Reset flag
     setUploadId(null); // Clear upload ID to stop progress tracking
     handleBackToUpload();
   };

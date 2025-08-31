@@ -484,20 +484,20 @@ const TransactionReviewModal = ({
     setIsSubmitting(true);
     try {
       // Prepare final transactions - use filteredTransactions (respects hide duplicates filter) and exclude deleted ones
-      let transactionsToProcess = editedTransactions;
+      console.log(`🔍 [CONFIRM DEBUG] handleConfirm called with:`, {
+        hideDuplicates,
+        editedTransactionsLength: editedTransactions.length,
+        filteredTransactionsLength: filteredTransactions.length,
+        duplicateTransactionIds: duplicateTransactionIds.size,
+        hiddenBusinessTransactionIds: hiddenBusinessTransactionIds.size
+      });
       
-      // If hideDuplicates is true, exclude all duplicate transactions unless they're marked for replacement
-      if (hideDuplicates) {
-        transactionsToProcess = editedTransactions.filter(tx => {
-          // Keep non-duplicates
-          if (!tx.isDuplicate) return true;
-          
-          // Keep duplicates that are marked for replacement
-          const shouldReplace = replaceDuplicates.get(tx.tempId) || false;
-          return shouldReplace;
-        });
-        console.log(`📝 [UPLOAD FILTER] Filtering duplicates: ${editedTransactions.length} -> ${transactionsToProcess.length} transactions`);
-      }
+      // Use filteredTransactions directly instead of applying the filter again
+      // filteredTransactions already respects the hideDuplicates filter and dateFilter
+      let transactionsToProcess = filteredTransactions;
+      
+      console.log(`🔍 [CONFIRM DEBUG] transactionsToProcess length: ${transactionsToProcess.length}`);
+      console.log(`✅ [CONFIRM DEBUG] Using filteredTransactions directly instead of re-filtering`);
       
       const finalTransactions = transactionsToProcess
         .filter(tx => !deletedTransactionIds.has(tx.tempId)) // Exclude deleted transactions
@@ -505,6 +505,8 @@ const TransactionReviewModal = ({
           const { tempId, originalIndex, isDuplicate, duplicateInfo, ...cleanTx } = tx;
           return cleanTx;
         });
+      
+      console.log(`🔍 [CONFIRM DEBUG] finalTransactions length: ${finalTransactions.length}`);
 
       // Prepare duplicate handling data - include ALL duplicates, not just ones with explicit actions
       const duplicateActions = {};
