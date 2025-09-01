@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { transactionsAPI, categoriesAPI, cashFlowsAPI } from '../../services/api';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import Modal from '../../components/Common/Modal';
+import CategoryDropdown from '../../components/Upload/CategoryDropdown';
 
 // Editable Category Badge Component
 const EditableCategoryBadge = ({ value, onSave, categories }) => {
@@ -1269,18 +1270,11 @@ const Transactions = () => {
 
           <div className="form-group">
             <label className="form-label">קטגוריה</label>
-            <select
-              className="form-select"
+            <CategoryDropdown
               value={formData.category_name}
-              onChange={(e) => setFormData({...formData, category_name: e.target.value})}
-            >
-              <option value="">בחר קטגוריה</option>
-              {categories?.map(category => (
-                <option key={category.id} value={category.name}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+              onChange={(categoryName) => setFormData({...formData, category_name: categoryName})}
+              placeholder="בחר קטגוריה..."
+            />
           </div>
 
           <div className="form-group">

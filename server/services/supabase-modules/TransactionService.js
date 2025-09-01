@@ -572,6 +572,9 @@ class TransactionService {
         recipient_name: finalRecipientName,
         notes: finalNotes
       };
+      
+      // Ensure the transaction has no manual ID - let Supabase generate it
+      delete processedData.id;
 
       if (finalRecipientName) {
         console.log(`🎯 [TRANSACTION CREATION] Added recipient_name: "${finalRecipientName}"`);
@@ -622,6 +625,7 @@ class TransactionService {
           const cleanedData = { ...processedData };
           delete cleanedData.duplicateReason;
           delete cleanedData.hiddenBusinessName;
+          delete cleanedData.id; // Ensure no null/undefined id gets through
           
           const insertPromise = client
             .from('transactions')

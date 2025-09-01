@@ -206,6 +206,7 @@ const Dashboard = () => {
   const [showDeveloperFeaturesModal, setShowDeveloperFeaturesModal] = useState(false);
   const [showEmptyCategories, setShowEmptyCategories] = useState(false);
   const [emptyCategoriesModal, setEmptyCategoriesModal] = useState(false);
+  const [viewMode, setViewMode] = useState('monthly'); // 'monthly' or 'weekly'
   
   // Debug state changes
   useEffect(() => {
@@ -829,12 +830,18 @@ const Dashboard = () => {
     const newDate = new Date(currentDate);
     newDate.setMonth(currentDate.getMonth() + direction);
     setCurrentDate(newDate);
+    
+    // Reset to monthly view when navigating to different months
+    setViewMode('monthly');
   };
 
   const selectMonth = (year, month) => {
     const newDate = new Date(year, month - 1, 1);
     setCurrentDate(newDate);
     setShowMonthPicker(false);
+    
+    // Reset to monthly view when selecting different months
+    setViewMode('monthly');
   };
 
   const generateMonthOptions = () => {
@@ -926,18 +933,52 @@ const Dashboard = () => {
     return months[date.getMonth()];
   };
 
+  // Calculate weekly remaining money based on current week progress
+  const calculateWeeklyRemaining = (monthlyNet) => {
+    const today = new Date();
+    const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    
+    // In Israel: Sunday (0) = start of week, Saturday (6) = end of week
+    const daysRemainingInWeek = 6 - currentDay; // Days until Saturday
+    
+    if (daysRemainingInWeek <= 0) {
+      // If today is Saturday, show 0 or next week calculation
+      return 0;
+    }
+    
+    // Get current month info
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    
+    // Calculate how many days are left in the current month
+    const currentDate = today.getDate();
+    const daysLeftInMonth = daysInMonth - currentDate + 1; // +1 to include today
+    
+    // If there are fewer days left in month than in week, use days left in month
+    const effectiveDaysToCalculate = Math.min(daysRemainingInWeek + 1, daysLeftInMonth); // +1 to include today
+    
+    // Calculate proportional amount for remaining days
+    const dailyAverage = monthlyNet / daysInMonth;
+    const weeklyRemaining = dailyAverage * effectiveDaysToCalculate;
+    
+    return weeklyRemaining;
+  };
+
   const calculateSummary = () => {
     if (!dashboardData || !dashboardData.summary) {
-      return { income: 0, expenses: 0, net: 0 };
+      return { income: 0, expenses: 0, net: 0, weeklyNet: 0 };
     }
 
     const { total_income, total_expenses, net_balance } = dashboardData.summary;
+    const monthlyNet = net_balance || 0;
 
     // Backend now excludes non-cash-flow transactions, so use values directly
     return { 
       income: total_income || 0, 
       expenses: Math.abs(total_expenses || 0), 
-      net: net_balance || 0 
+      net: monthlyNet,
+      weeklyNet: calculateWeeklyRemaining(monthlyNet)
     };
   };
 
@@ -1229,67 +1270,65 @@ const Dashboard = () => {
           </button>
         </div>
 
-        {activeTab === 'monthly' && (
-          <div className="month-navigation-container">
-            <div className="riseup-month-navigation">
-              <button
-                className="nav-arrow-button next"
-                onClick={() => navigateMonth(-1)}
-              >
-                <span className="arrow-icon">→</span>
-              </button>
-              <div className="current-month-display">
-                <span className="month-name">
-                  {dashboardData?.hebrew_month_name ? 
-                    dashboardData.hebrew_month_name : 
-                    getMonthName(currentDate).split(' ')[0]
-                  }
-                </span>
-                <span className="year-name">{year}</span>
-              </div>
-              <button
-                className="nav-arrow-button prev"
-                onClick={() => navigateMonth(1)}
-              >
-                <span className="arrow-icon">←</span>
-              </button>
+        <div className="month-navigation-container">
+          <div className="riseup-month-navigation">
+            <button
+              className="nav-arrow-button next"
+              onClick={() => navigateMonth(-1)}
+            >
+              <span className="arrow-icon">→</span>
+            </button>
+            <div className="current-month-display">
+              <span className="month-name">
+                {dashboardData?.hebrew_month_name ? 
+                  dashboardData.hebrew_month_name : 
+                  getMonthName(currentDate).split(' ')[0]
+                }
+              </span>
+              <span className="year-name">{year}</span>
             </div>
-            {showMonthPicker && (
-              <>
-                <div 
-                  className="month-picker-backdrop"
-                  onClick={() => setShowMonthPicker(false)}
-                ></div>
-                <div className="month-picker-dropdown">
-                  <div className="month-picker-header">
-                    <h4>בחר חודש</h4>
-                    <button 
-                      className="close-picker" 
-                      onClick={() => setShowMonthPicker(false)}
-                    >
-                      <i className="fas fa-times"></i>
-                    </button>
-                  </div>
-                  <div className="month-picker-grid">
-                    {generateMonthOptions().map((option) => (
-                      <button
-                        key={option.key}
-                        className={`month-option ${
-                          option.year === year && option.month === month ? 'current' : ''
-                        } ${option.balance > 0 ? 'positive' : option.balance < 0 ? 'negative' : 'neutral'}`}
-                        onClick={() => selectMonth(option.year, option.month)}
-                      >
-                        <div className="month-option-name">{option.name}</div>
-                        <div className="month-option-balance">{formatCurrency(option.balance)}</div>
-                        <div className="month-option-count">{option.transactions_count} עסקאות</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
+            <button
+              className="nav-arrow-button prev"
+              onClick={() => navigateMonth(1)}
+            >
+              <span className="arrow-icon">←</span>
+            </button>
           </div>
-        )}
+          {showMonthPicker && (
+            <>
+              <div 
+                className="month-picker-backdrop"
+                onClick={() => setShowMonthPicker(false)}
+              ></div>
+              <div className="month-picker-dropdown">
+                <div className="month-picker-header">
+                  <h4>בחר חודש</h4>
+                  <button 
+                    className="close-picker" 
+                    onClick={() => setShowMonthPicker(false)}
+                  >
+                    <i className="fas fa-times"></i>
+                  </button>
+                </div>
+                <div className="month-picker-grid">
+                  {generateMonthOptions().map((option) => (
+                    <button
+                      key={option.key}
+                      className={`month-option ${
+                        option.year === year && option.month === month ? 'current' : ''
+                      } ${option.balance > 0 ? 'positive' : option.balance < 0 ? 'negative' : 'neutral'}`}
+                      onClick={() => selectMonth(option.year, option.month)}
+                    >
+                      <div className="month-option-name">{option.name}</div>
+                      <div className="month-option-balance">{formatCurrency(option.balance)}</div>
+                      <div className="month-option-count">{option.transactions_count} עסקאות</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
 
         <button 
           className="monthly-goal-button"
@@ -1316,13 +1355,65 @@ const Dashboard = () => {
               <div className="balance-question">
                 כמה כסף נשאר להוציא החודש?
               </div>
+              {(() => {
+                // Only show weekly/monthly toggle for current month
+                const today = new Date();
+                const isCurrentMonth = currentDate.getFullYear() === today.getFullYear() && 
+                                     currentDate.getMonth() === today.getMonth();
+                
+                return isCurrentMonth && (
+                  <div className="view-mode-toggle">
+                    <button 
+                      className={`toggle-btn ${viewMode === 'monthly' ? 'active' : ''}`}
+                      onClick={() => setViewMode('monthly')}
+                      title="תצוגה חודשית"
+                    >
+                      חודש
+                    </button>
+                    <button 
+                      className={`toggle-btn ${viewMode === 'weekly' ? 'active' : ''}`}
+                      onClick={() => setViewMode('weekly')}
+                      title="תצוגה שבועית"
+                    >
+                      שבוע
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
             <div className="balance-amount">
-              <span className="amount-value">{formatCurrency(summary.net)}</span>
+              <span className="amount-value">
+                {(() => {
+                  const today = new Date();
+                  const isCurrentMonth = currentDate.getFullYear() === today.getFullYear() && 
+                                       currentDate.getMonth() === today.getMonth();
+                  
+                  // For past months, always show monthly. For current month, respect viewMode
+                  if (!isCurrentMonth || viewMode === 'monthly') {
+                    return formatCurrency(summary.net);
+                  } else {
+                    return formatCurrency(summary.weeklyNet);
+                  }
+                })()}
+              </span>
             </div>
             <div className="balance-breakdown">
               <span className="balance-detail">
-                הכנסות: {formatCurrency(summary.income)} | הוצאות: {formatCurrency(summary.expenses)}
+                {(() => {
+                  const today = new Date();
+                  const isCurrentMonth = currentDate.getFullYear() === today.getFullYear() && 
+                                       currentDate.getMonth() === today.getMonth();
+                  
+                  // For past months or monthly view, show income/expenses
+                  if (!isCurrentMonth || viewMode === 'monthly') {
+                    return `הכנסות: ${formatCurrency(summary.income)} | הוצאות: ${formatCurrency(summary.expenses)}`;
+                  } else {
+                    // Weekly view for current month only
+                    const currentDay = today.getDay();
+                    const daysRemainingInWeek = currentDay === 6 ? 0 : 6 - currentDay + 1;
+                    return `מתוך מאזן חודשי: ${formatCurrency(summary.net)} | ${daysRemainingInWeek} ימים נותרו בשבוע`;
+                  }
+                })()}
               </span>
             </div>
           </div>
