@@ -206,6 +206,13 @@ class TransactionService {
         });
       }
 
+      // Build query with conditional count option to avoid 1000 limit issue
+      const selectOptions = (filters.show_all || perPage > 1000) 
+        ? {} // Don't use count: 'exact' for large queries to avoid 1000 limit
+        : { count: 'exact' };
+      
+      console.log(`🔍 [TRANSACTION SERVICE] Query options: ${JSON.stringify(selectOptions)}`);
+      
       let query = client
         .from('transactions')
         .select(`
@@ -215,7 +222,7 @@ class TransactionService {
             name,
             currency
           )
-        `, { count: 'exact' })
+        `, selectOptions)
         .eq('user_id', userId);
 
       // Apply filters - use flow_month instead of payment_month/year for consistency
@@ -262,14 +269,59 @@ class TransactionService {
       // Apply minimal sorting for consistency (we'll sort properly in code)
       query = query.order('created_at', { ascending: true });
 
-      // NO PAGINATION at database level - we need all data to sort by custom category order
-
-      const { data, error, count } = await query;
+      let allData = [];
+      let currentPage = 0;
+      const BATCH_SIZE = 1000; // Supabase limit
+      
+      // For show_all or large perPage, fetch in batches to overcome 1000 limit
+      if (filters.show_all || perPage > 1000) {
+        console.log(`🔍 [TRANSACTION SERVICE] Fetching in batches due to show_all: ${filters.show_all}, perPage: ${perPage}`);
+        
+        let hasMore = true;
+        while (hasMore) {
+          const batchQuery = query
+            .range(currentPage * BATCH_SIZE, (currentPage + 1) * BATCH_SIZE - 1);
+          
+          const { data: batchData, error: batchError } = await batchQuery;
+          
+          if (batchError) {
+            console.error(`🚫 [TRANSACTION SERVICE] Batch ${currentPage + 1} error:`, batchError);
+            throw batchError;
+          }
+          
+          if (batchData && batchData.length > 0) {
+            allData.push(...batchData);
+            console.log(`✅ [TRANSACTION SERVICE] Batch ${currentPage + 1}: ${batchData.length} transactions`);
+            
+            // If we got less than BATCH_SIZE, we're done
+            hasMore = batchData.length === BATCH_SIZE;
+            currentPage++;
+          } else {
+            hasMore = false;
+          }
+          
+          // Safety brake to prevent infinite loops
+          if (currentPage > 100) {
+            console.warn(`🚨 [TRANSACTION SERVICE] Safety brake triggered at ${currentPage} batches`);
+            hasMore = false;
+          }
+        }
+        
+        console.log(`🎯 [TRANSACTION SERVICE] Total batches: ${currentPage}, Total transactions: ${allData.length}`);
+        
+      } else {
+        console.log(`🔍 [TRANSACTION SERVICE] Using single query - show_all: ${filters.show_all}, perPage: ${perPage}`);
+        const { data, error } = await query;
+        if (error) throw error;
+        allData = data || [];
+      }
+      
+      const data = allData;
+      const error = null;
       
       console.log('🔍 [TRANSACTION SERVICE] Query result:');
       console.log('🔍 [TRANSACTION SERVICE] - Error:', error);
       console.log('🔍 [TRANSACTION SERVICE] - Data count:', data ? data.length : 'null');
-      console.log('🔍 [TRANSACTION SERVICE] - Total count:', count);
 
       if (error) throw error;
 

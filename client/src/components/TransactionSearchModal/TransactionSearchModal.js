@@ -40,19 +40,20 @@ const TransactionSearchModal = ({ isOpen, onClose }) => {
         // Fetch transactions from all cash flows
         return transactionsAPI.getAll({
           show_all: true,
-          per_page: 10000 // Get all transactions
+          per_page: 100000 // Get all transactions
         });
       } else {
         return transactionsAPI.getAll({
           cash_flow_id: selectedCashFlow?.id,
           show_all: true,
-          per_page: 10000 // Get all transactions
+          per_page: 100000 // Get all transactions
         });
       }
     },
     {
       enabled: !!selectedCashFlow,
-      staleTime: 30000 // 30 seconds
+      staleTime: 0, // Always fresh data
+      cacheTime: 0  // Don't cache
     }
   );
 
@@ -87,8 +88,8 @@ const TransactionSearchModal = ({ isOpen, onClose }) => {
     // Sort by date (newest first)
     filtered.sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date));
     
-    // Limit to 50 results for performance
-    setFilteredTransactions(filtered.slice(0, 50));
+    // Limit to 1000 results for performance
+    setFilteredTransactions(filtered.slice(0, 1000));
   }, [allTransactions, searchQuery]);
 
   const formatCurrency = (amount, currency = 'ILS') => {
@@ -282,8 +283,8 @@ const TransactionSearchModal = ({ isOpen, onClose }) => {
               <div className="transactions-list">
                 <div className="results-header">
                   <span>נמצאו {filteredTransactions.length} עסקאות</span>
-                  {filteredTransactions.length === 50 && (
-                    <small>(מוצגות 50 התוצאות הראשונות)</small>
+                  {filteredTransactions.length === 1000 && (
+                    <small>(מוצגות 1000 התוצאות הראשונות)</small>
                   )}
                 </div>
                 
