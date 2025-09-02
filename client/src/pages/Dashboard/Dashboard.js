@@ -483,11 +483,31 @@ const Dashboard = () => {
   };
 
   // Toggle empty categories display
-  const toggleEmptyCategories = () => {
+  const toggleEmptyCategories = async () => {
     if (showEmptyCategories) {
-      // Hide empty categories and clear selection
+      // Hide empty categories and clear selection both locally and in database
       setShowEmptyCategories(false);
       setSelectedEmptyCategories([]);
+      
+      // Clear the database records for this user/period
+      try {
+        await fetch(
+          `/api/user-empty-categories-display?year=${year}&month=${month}&cash_flow_id=${selectedCashFlow?.id}`,
+          {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        console.log('✅ [EMPTY CATEGORIES] Cleared database records');
+        
+        // Refresh dashboard to hide the empty categories
+        refetchDashboard();
+      } catch (error) {
+        console.error('❌ [EMPTY CATEGORIES] Error clearing database records:', error);
+      }
     } else {
       // Show empty categories modal to let user select which ones to display
       handleShowEmptyCategories();
