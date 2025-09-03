@@ -5,12 +5,21 @@ const TransactionActionsModal = ({ isOpen, onClose, transaction, categoryName, o
   if (!isOpen || !transaction) return null;
 
   const handleAction = (actionType) => {
+    console.log('🔍 [TransactionActionsModal] Action clicked:', actionType, 'for transaction:', transaction?.id);
     onAction(actionType, transaction);
+    console.log('🔍 [TransactionActionsModal] Closing actions modal after action:', actionType);
     onClose();
   };
 
+  const handleBackdropClick = (e) => {
+    // Only close if clicking on the backdrop itself, not on any child elements
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop" onClick={handleBackdropClick}>
       <div className="transaction-actions-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>פעולות עבור: {transaction.business_name || transaction.description || 'עסקה ללא שם'}</h3>

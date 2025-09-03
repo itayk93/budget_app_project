@@ -179,7 +179,12 @@ const CategoryTransferModal = ({
     }
   };
 
-  if (!isOpen || !transaction) return null;
+  if (!isOpen || !transaction) {
+    console.log('🔍 [CategoryTransferModal] Not rendering:', { isOpen, hasTransaction: !!transaction });
+    return null;
+  }
+  
+  console.log('🔍 [CategoryTransferModal] Rendering modal for transaction:', transaction?.id);
 
   const modalFooter = (
     <div className="modal-footer">

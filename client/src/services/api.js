@@ -176,16 +176,7 @@ export const categoriesAPI = {
 // Transactions API
 export const transactionsAPI = {
   getAll: (params) => {
-    console.log('🔍 [Transactions API] Making getAll request with params:', params);
-    return api.get('/transactions', { params }).then(result => {
-      console.log('🔍 [Transactions API] getAll response:', result);
-      console.log('🔍 [Transactions API] transactions count:', result?.transactions?.length);
-      console.log('🔍 [Transactions API] pagination:', result?.pagination);
-      return result;
-    }).catch(error => {
-      console.error('❌ [Transactions API] getAll error:', error);
-      throw error;
-    });
+    return api.get('/transactions', { params });
   },
   getById: (id) => api.get(`/transactions/${id}`),
   create: (data) => api.post('/transactions', data),

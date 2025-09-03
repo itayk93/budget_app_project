@@ -6,6 +6,11 @@
   border-radius: 20px !important;
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  z-index: 10001 !important; /* Higher than all other modals */
+}
+
+.split-modal .modal-overlay {
+  z-index: 10000 !important; /* Higher than transaction actions modal */
 }
 
 /* Modal Header */

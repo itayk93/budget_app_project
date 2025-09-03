@@ -42,18 +42,19 @@ const SplitTransactionModal = ({
 
   const loadCategories = async () => {
     try {
-      console.log('🔍 Starting to load categories...');
+      console.log('🔍 [SplitTransactionModal] Starting to load categories...');
+      console.log('🔍 [SplitTransactionModal] Transaction:', transaction?.id, transaction?.business_name);
       const response = await transactionsAPI.getUniqueCategories();
-      console.log('🔍 Categories API response:', response);
+      console.log('🔍 [SplitTransactionModal] Categories API response:', response);
       
       if (response && response.categories) {
-        console.log('✅ Categories loaded successfully:', response.categories.length, 'categories');
+        console.log('✅ [SplitTransactionModal] Categories loaded successfully:', response.categories.length, 'categories');
         setCategories(response.categories);
       } else if (response && Array.isArray(response)) {
-        console.log('✅ Categories loaded as array:', response.length, 'categories');
+        console.log('✅ [SplitTransactionModal] Categories loaded as array:', response.length, 'categories');
         setCategories(response);
       } else {
-        console.warn('⚠️ No categories found in response');
+        console.warn('⚠️ [SplitTransactionModal] No categories found in response');
         setCategories([]);
       }
     } catch (error) {
@@ -228,7 +229,7 @@ const SplitTransactionModal = ({
   const difference = totalSplit - originalAmount;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="פיצול עסקה" className="split-modal">
+    <Modal isOpen={isOpen} onClose={handleClose} title="פיצול עסקה" className="split-modal" style={{ zIndex: 10001 }}>
       <div className="split-modal-content">
         <div className="transaction-info">
           <div><strong>עסקה מקורית:</strong> {transaction.business_name}</div>

@@ -27,13 +27,10 @@ const EmptyCategoriesSelector = ({ year, month, cashFlowId, onAddCategories, onC
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
-  console.log('🔍 [SELECTOR] Component render - selectedCategories:', selectedCategories);
-  console.log('🔍 [SELECTOR] Component render - emptyCategories:', emptyCategories.length);
 
   useEffect(() => {
     const fetchEmptyCategories = async () => {
       try {
-        console.log('🔍 [SELECTOR] Fetching with params:', { year, month, cashFlowId });
         const response = await api.get('/categories/empty', {
           params: {
             year: year,
@@ -41,7 +38,6 @@ const EmptyCategoriesSelector = ({ year, month, cashFlowId, onAddCategories, onC
             cash_flow: cashFlowId
           }
         });
-        console.log('🔍 [SELECTOR] Response received:', response);
         setEmptyCategories(response.categories || []);
       } catch (error) {
         console.error('❌ [SELECTOR] Error fetching empty categories:', error);
@@ -52,10 +48,8 @@ const EmptyCategoriesSelector = ({ year, month, cashFlowId, onAddCategories, onC
     };
 
     if (year && month && cashFlowId) {
-      console.log('🚀 [SELECTOR] Starting fetch...');
       fetchEmptyCategories();
     } else {
-      console.log('⚠️ [SELECTOR] Missing params:', { year, month, cashFlowId });
       setLoading(false);
     }
   }, [year, month, cashFlowId]);
@@ -65,12 +59,10 @@ const EmptyCategoriesSelector = ({ year, month, cashFlowId, onAddCategories, onC
   );
 
   const toggleCategory = (categoryName) => {
-    console.log('🔍 [TOGGLE] Toggling category:', categoryName);
     setSelectedCategories(prev => {
       const newSelection = prev.includes(categoryName)
         ? prev.filter(name => name !== categoryName)
         : [...prev, categoryName];
-      console.log('🔍 [TOGGLE] New selection:', newSelection);
       return newSelection;
     });
   };
@@ -84,7 +76,6 @@ const EmptyCategoriesSelector = ({ year, month, cashFlowId, onAddCategories, onC
   };
 
   const handleAddSelected = () => {
-    console.log('🔍 [SELECTOR] Adding selected categories:', selectedCategories);
     if (selectedCategories.length > 0) {
       onAddCategories(selectedCategories);
     }
@@ -210,7 +201,7 @@ const Dashboard = () => {
   
   // Debug state changes
   useEffect(() => {
-    console.log('🔍 [MODAL STATE] emptyCategoriesModal changed to:', emptyCategoriesModal);
+    // Modal state change tracking removed for production
   }, [emptyCategoriesModal]);
   const [selectedEmptyCategories, setSelectedEmptyCategories] = useState([]);
   const [isLoadingEmptyCategories, setIsLoadingEmptyCategories] = useState(false);
@@ -281,7 +272,6 @@ const Dashboard = () => {
 
   // Create a proper data change handler that invalidates cache and refetches
   const handleDataChange = async () => {
-    console.log('🔄 [DASHBOARD] handleDataChange called - invalidating cache and refetching');
     // Invalidate the React Query cache to ensure fresh data
     queryClient.invalidateQueries(['dashboard']);
     // Refetch the dashboard data
@@ -299,42 +289,10 @@ const Dashboard = () => {
   // Debug dashboard data when it changes
   useEffect(() => {
     if (dashboardData?.data) {
-      console.log('🔍 CLIENT DASHBOARD DEBUG:', {
-        transactions_count: 88,
-        flow_month: `${year}-${month.toString().padStart(2, '0')}`,
-        current_cash_flow: selectedCashFlow?.id,
-        cumulative_mode: activeTab === 'cumulative',
-        categories_received: dashboardData.data.orderedCategories?.length || 0,
-        categories_debug: dashboardData.data.orderedCategories?.reduce((acc, category) => {
-          if (category.is_shared_category && category.sub_categories) {
-            acc[category.name] = {
-              total_amount: category.amount || 0,
-              total_count: category.count || 0,
-              type: category.type,
-              is_shared: true,
-              sub_categories: Object.keys(category.sub_categories).reduce((subAcc, subName) => {
-                const subCat = category.sub_categories[subName];
-                subAcc[subName] = {
-                  amount: subCat.amount || 0,
-                  count: subCat.count || 0,
-                  type: subCat.type
-                };
-                return subAcc;
-              }, {})
-            };
-          } else {
-            acc[category.name] = {
-              amount: category.amount || 0,
-              count: category.count || 0,
-              type: category.type,
-              is_shared: false
-            };
-          }
-          return acc;
-        }, {})
-      });
+      // Debug info removed for production
     }
   }, [dashboardData, year, month, selectedCashFlow, activeTab]);
+
 
 
   // Create monthly balance data from current dashboard summary
@@ -407,11 +365,7 @@ const Dashboard = () => {
   // Fetch all categories and find empty ones
   const fetchEmptyCategories = async () => {
     try {
-      console.log('🔍 [FETCH EMPTY] Making API call with params:', {
-        year: year,
-        month: month,
-        cash_flow: selectedCashFlow?.id
-      });
+      // Debug info removed for production
       
       const response = await api.get('/categories/empty', {
         params: {
@@ -421,7 +375,6 @@ const Dashboard = () => {
         }
       });
       
-      console.log('🔍 [FETCH EMPTY] API response:', response);
       return response.categories || [];
     } catch (error) {
       console.error('❌ [FETCH EMPTY] Error fetching empty categories:', error);
@@ -431,9 +384,6 @@ const Dashboard = () => {
 
   // Handle showing empty categories
   const handleShowEmptyCategories = async () => {
-    console.log('🔍 [EMPTY CATEGORIES] handleShowEmptyCategories called');
-    console.log('🔍 [EMPTY CATEGORIES] Current params:', { year, month, cashFlowId: selectedCashFlow?.id });
-    console.log('🔍 [EMPTY CATEGORIES] selectedCashFlow:', selectedCashFlow);
     
     // Validate required parameters
     if (!selectedCashFlow?.id) {
@@ -442,13 +392,11 @@ const Dashboard = () => {
     }
     
     const emptyCategories = await fetchEmptyCategories();
-    console.log('🔍 [EMPTY CATEGORIES] Fetched categories:', emptyCategories);
     
     if (emptyCategories.length === 0) {
       alert('כל הקטגוריות כבר מוצגות או שאין קטגוריות ריקות');
       return;
     }
-    console.log('🔍 [EMPTY CATEGORIES] Setting modal to true');
     setEmptyCategoriesModal(true);
   };
 
@@ -456,12 +404,9 @@ const Dashboard = () => {
   const addEmptyCategoriesToDisplay = async (categoriesToAdd) => {
     if (categoriesToAdd.length === 0) return;
     
-    console.log('🔍 [ADD EMPTY] Adding categories:', categoriesToAdd);
-    console.log('🔍 [ADD EMPTY] Current selectedEmptyCategories before update:', selectedEmptyCategories);
     
     setSelectedEmptyCategories(prev => {
       const newCategories = [...prev, ...categoriesToAdd];
-      console.log('🔍 [ADD EMPTY] Updated selectedEmptyCategories:', newCategories);
       return newCategories;
     });
     setShowEmptyCategories(true);
@@ -469,7 +414,6 @@ const Dashboard = () => {
     
     // Refresh dashboard to show the added categories
     setTimeout(() => {
-      console.log('🔍 [ADD EMPTY] Refreshing dashboard...');
       refetchDashboard();
     }, 100);
   };
@@ -501,7 +445,6 @@ const Dashboard = () => {
             }
           }
         );
-        console.log('✅ [EMPTY CATEGORIES] Cleared database records');
         
         // Refresh dashboard to hide the empty categories
         refetchDashboard();
@@ -518,11 +461,9 @@ const Dashboard = () => {
   // Force refresh all monthly targets (initial setup)
   const forceRefreshAllTargets = async () => {
     try {
-      console.log('Force refreshing all monthly targets...');
       const refreshResponse = await api.post('/categories/refresh-monthly-targets', { force: true });
       
       if (refreshResponse.updated) {
-        console.log(`Monthly targets updated: ${refreshResponse.updatedCount}/${refreshResponse.totalCategories} categories`);
         
         // Refresh dashboard data to show updated targets
         setTimeout(() => {
@@ -548,15 +489,12 @@ const Dashboard = () => {
   useEffect(() => {
     const checkAndRefreshTargets = async () => {
       try {
-        console.log('Checking if monthly targets should be refreshed...');
         const shouldRefreshResponse = await categoriesAPI.shouldRefreshTargets();
         
         if (shouldRefreshResponse.should_refresh) {
-          console.log('Refreshing monthly targets for new month...');
           const refreshResponse = await categoriesAPI.refreshMonthlyTargets();
           
           if (refreshResponse.updated) {
-            console.log(`Monthly targets updated: ${refreshResponse.updatedCount}/${refreshResponse.totalCategories} categories`);
             
             // Optionally show a subtle notification to the user
             // You could add a toast notification here if you have a toast system
@@ -567,7 +505,6 @@ const Dashboard = () => {
             }, 1000);
           }
         } else {
-          console.log('Monthly targets are up to date');
         }
       } catch (error) {
         console.error('Error checking/refreshing monthly targets:', error);
@@ -585,7 +522,7 @@ const Dashboard = () => {
   useEffect(() => {
     const saveEmptyCategoriesToDB = async () => {
       if (!selectedCashFlow?.id || year === undefined || month === undefined || isLoadingEmptyCategories || !hasLoadedEmptyCategories) {
-        console.log('🔍 [SAVE EMPTY] Missing params, loading, or not yet loaded - not saving:', { 
+        console.log('Skipping empty categories save:', {
           cashFlowId: selectedCashFlow?.id, 
           year, 
           month, 
@@ -596,7 +533,6 @@ const Dashboard = () => {
       }
 
       try {
-        console.log('🔍 [SAVE EMPTY] Saving to database:', selectedEmptyCategories);
         
         // Always clear existing categories first, then add new ones
         const clearResponse = await fetch(
@@ -639,7 +575,6 @@ const Dashboard = () => {
           }
         }
 
-        console.log('🔍 [SAVE EMPTY] Saved successfully to database');
       } catch (error) {
         console.error('🚨 [SAVE EMPTY] Failed to save empty categories to database:', error);
       }
@@ -652,14 +587,12 @@ const Dashboard = () => {
   useEffect(() => {
     const loadEmptyCategories = async () => {
       if (!selectedCashFlow?.id || year === undefined || month === undefined) {
-        console.log('🔍 [EMPTY CATEGORIES RESTORE] Missing params - not loading:', { cashFlowId: selectedCashFlow?.id, year, month });
         return;
       }
 
       setIsLoadingEmptyCategories(true);
       setHasLoadedEmptyCategories(false);
       try {
-        console.log('🔍 [EMPTY CATEGORIES RESTORE] Loading from database...');
         const response = await fetch(
           `/api/user-empty-categories-display?year=${year}&month=${month}&cash_flow_id=${selectedCashFlow.id}`,
           {
@@ -672,24 +605,19 @@ const Dashboard = () => {
 
         if (response.ok) {
           const responseText = await response.text();
-          console.log('🔍 [EMPTY CATEGORIES RESTORE] Raw response:', responseText.substring(0, 200));
           
           try {
             const data = JSON.parse(responseText);
-            console.log('🔍 [EMPTY CATEGORIES RESTORE] Database response:', data);
             
             if (data.success && data.categories && data.categories.length > 0) {
-              console.log('🔍 [EMPTY CATEGORIES RESTORE] Restoring', data.categories.length, 'categories');
               setSelectedEmptyCategories(data.categories);
               setShowEmptyCategories(true);
               
               // Trigger dashboard refresh to show restored empty categories
               setTimeout(() => {
-                console.log('🔍 [EMPTY CATEGORIES RESTORE] Triggering dashboard refresh');
                 refetchDashboard();
               }, 100);
             } else {
-              console.log('🔍 [EMPTY CATEGORIES RESTORE] No saved categories found in database');
               setSelectedEmptyCategories([]);
               setShowEmptyCategories(false);
             }
@@ -871,12 +799,9 @@ const Dashboard = () => {
     ];
     
     if (!monthlyBalanceData || !monthlyBalanceData.months) {
-      console.log('No monthly balance data available');
       return [];
     }
     
-    console.log('Monthly balance data:', monthlyBalanceData);
-    console.log('All months:', monthlyBalanceData.months);
     
     // Filter months with transactions and up to current date
     
@@ -1052,7 +977,6 @@ const Dashboard = () => {
     categories.forEach(categoryData => {
       // NEW SYSTEM: If category has is_shared_category=true, it should be rendered as standalone with dropdown
       if (categoryData.is_shared_category) {
-        console.log(`✅ Adding shared category to standalone: ${categoryData.name}`);
         standalone.push(categoryData);
         return;
       }
@@ -1064,7 +988,6 @@ const Dashboard = () => {
         
         if (parentExists) {
           // Parent exists as shared category - this subcategory will be handled by the parent
-          console.log(`🔗 Sub-category ${categoryData.name} will be handled by shared parent: ${categoryData.shared_category}`);
           return; // Skip - will be rendered as part of the shared category
         } else {
           // Use old system - group under shared_category
@@ -1095,13 +1018,11 @@ const Dashboard = () => {
   };
 
   const handleExportCashFlowData = async () => {
-    console.log('🔄 Starting export process...');
     if (!selectedCashFlow) {
       alert('לא נבחר תזרים מזומנים');
       return;
     }
 
-    console.log('📊 Exporting data for cash flow:', selectedCashFlow);
 
     try {
       // The API interceptor returns response.data directly, so 'response' is actually the blob data
@@ -1112,8 +1033,6 @@ const Dashboard = () => {
         responseType: 'blob'
       });
 
-      console.log('📊 Blob data type:', typeof blobData);
-      console.log('📊 Blob data size:', blobData ? blobData.size : 'undefined');
 
       // Ensure we have valid data
       if (!blobData) {
@@ -1124,7 +1043,6 @@ const Dashboard = () => {
       const blob = blobData instanceof Blob ? blobData : new Blob([blobData], { 
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
       });
-      console.log('📊 Final blob size:', blob.size);
       
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -1144,7 +1062,6 @@ const Dashboard = () => {
       link.remove();
       window.URL.revokeObjectURL(url);
       
-      console.log('Export completed successfully');
     } catch (error) {
       console.error('Error exporting cash flow data:', error);
       alert('שגיאה בייצוא הנתונים. אנא נסה שוב.');
@@ -1449,14 +1366,10 @@ const Dashboard = () => {
               {dashboardData?.orderedCategories && dashboardData.orderedCategories.length > 0 ? (
                 // Use ordered categories array with grouping
                 (() => {
-                  console.log('🔍 DASHBOARD: Raw categories before grouping:', dashboardData.orderedCategories);
                   // Add empty categories if requested
                   const categoriesWithEmpty = addEmptyCategoriesToList(dashboardData.orderedCategories, selectedEmptyCategories);
                   const { grouped, standalone } = groupCategories(categoriesWithEmpty);
                   
-                  console.log('🎯 DASHBOARD: Grouped categories:', Object.keys(grouped));
-                  console.log('🎯 DASHBOARD: Grouped categories details:', grouped);
-                  console.log('🎯 DASHBOARD: Standalone categories:', standalone.map(c => c.name));
                   
                   return (
                     <>
@@ -1467,7 +1380,6 @@ const Dashboard = () => {
                           groupName={groupName}
                           categories={categories}
                           onCategoryClick={(categoryName) => {
-                            console.log(`🖱️ Dashboard: Category clicked: ${categoryName}`);
                             // Navigate to transactions for this category
                             window.location.href = `/transactions?category=${encodeURIComponent(categoryName)}&year=${year}&month=${month}&cash_flow=${selectedCashFlow?.id}`;
                           }}
@@ -1767,7 +1679,6 @@ const Dashboard = () => {
                   <button 
                     className={`developer-action-button ${showEmptyCategories ? 'active' : ''}`}
                     onClick={() => {
-                      console.log('🔍 [BUTTON] Empty categories toggle clicked');
                       toggleEmptyCategories();
                     }}
                     style={{
@@ -1782,7 +1693,6 @@ const Dashboard = () => {
                     className="developer-action-button"
                     onClick={() => {
                       // Test button - force open modal
-                      console.log('📝 [TEST] Force opening modal');
                       setEmptyCategoriesModal(true);
                     }}
                     style={{ backgroundColor: '#ff6b6b' }}

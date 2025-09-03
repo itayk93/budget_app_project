@@ -6,7 +6,11 @@
 
 .category-change-modal .modal-overlay {
   background-color: rgba(0, 0, 0, 0.6);
-  z-index: 1020 !important; /* Higher than actions modal (1010) */
+  z-index: 99999 !important; /* Much higher than actions modal (9999) */
+}
+
+.category-change-modal {
+  z-index: 100000 !important; /* Even higher than overlay */
 }
 
 .category-change-modal .modal-header {

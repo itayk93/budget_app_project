@@ -137,43 +137,89 @@ const TransactionSearchModal = ({ isOpen, onClose }) => {
   };
 
   const showTransactionActions = (transaction) => {
+    console.log('🔍 [TransactionSearchModal] showTransactionActions called for:', transaction?.id);
+    console.log('🔍 [TransactionSearchModal] Current modal states:', {
+      actions: showTransactionActionsModal,
+      category: showCategoryTransferModal,
+      split: showSplitTransactionModal,
+      copy: showCopyTransactionModal,
+      edit: showEditTransactionModal,
+      delete: showDeleteTransactionModal,
+      changeMonth: showChangeMonthModal
+    });
+
+    // Don't open actions modal if any other modal is already open
+    if (showCategoryTransferModal || showSplitTransactionModal || showCopyTransactionModal || 
+        showEditTransactionModal || showDeleteTransactionModal || showChangeMonthModal) {
+      console.log('🔍 [TransactionSearchModal] Another modal is open, not opening actions modal');
+      return;
+    }
+
     setSelectedTransaction(transaction);
-    setShowTransactionActionsModal(true);
+    
+    // Use setTimeout to prevent the click event from immediately closing the modal
+    setTimeout(() => {
+      console.log('🔍 [TransactionSearchModal] Setting actions modal to true...');
+      setShowTransactionActionsModal(true);
+    }, 10);
   };
 
   const showCategoryTransferDialog = (transactionId) => {
+    console.log('🔍 [TransactionSearchModal] showCategoryTransferDialog called for:', transactionId);
     const transaction = filteredTransactions.find(t => t.id === transactionId);
+    console.log('🔍 [TransactionSearchModal] Found transaction:', transaction?.id, transaction?.business_name);
     setSelectedTransaction(transaction);
+    console.log('🔍 [TransactionSearchModal] Closing actions modal...');
+    // Close transaction actions modal first
+    setShowTransactionActionsModal(false);
+    console.log('🔍 [TransactionSearchModal] Opening category transfer modal...');
+    // Then open category transfer modal
     setShowCategoryTransferModal(true);
+    console.log('🔍 [TransactionSearchModal] Category modal state set to true, selectedTransaction:', transaction?.id);
   };
 
   const showCopyTransactionDialog = (transactionId) => {
     const transaction = filteredTransactions.find(t => t.id === transactionId);
     setSelectedTransaction(transaction);
+    // Close transaction actions modal first
+    setShowTransactionActionsModal(false);
+    // Then open copy modal
     setShowCopyTransactionModal(true);
   };
 
   const showChangeMonthDialog = (transactionId) => {
     const transaction = filteredTransactions.find(t => t.id === transactionId);
     setSelectedTransaction(transaction);
+    // Close transaction actions modal first
+    setShowTransactionActionsModal(false);
+    // Then open change month modal
     setShowChangeMonthModal(true);
   };
 
   const showEditTransactionDialog = (transactionId) => {
     const transaction = filteredTransactions.find(t => t.id === transactionId);
     setSelectedTransaction(transaction);
+    // Close transaction actions modal first
+    setShowTransactionActionsModal(false);
+    // Then open edit modal
     setShowEditTransactionModal(true);
   };
 
   const showSplitTransactionDialog = (transactionId) => {
     const transaction = filteredTransactions.find(t => t.id === transactionId);
     setSelectedTransaction(transaction);
+    // Close transaction actions modal first
+    setShowTransactionActionsModal(false);
+    // Then open split modal
     setShowSplitTransactionModal(true);
   };
 
   const confirmDeleteTransaction = (transactionId) => {
     const transaction = filteredTransactions.find(t => t.id === transactionId);
     setSelectedTransaction(transaction);
+    // Close transaction actions modal first
+    setShowTransactionActionsModal(false);
+    // Then open delete modal
     setShowDeleteTransactionModal(true);
   };
 
@@ -182,9 +228,33 @@ const TransactionSearchModal = ({ isOpen, onClose }) => {
     queryClient.invalidateQueries(['allTransactions', selectedCashFlow?.id]);
   };
 
+  const handleSplitTransaction = async (splitData) => {
+    try {
+      await transactionsAPI.split(splitData);
+      refreshData();
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Split transaction error in TransactionSearchModal:', error);
+      throw error;
+    }
+  };
+
+  const handleCategoryTransfer = async (transactionId, newCategory) => {
+    try {
+      console.log('🔍 [TransactionSearchModal] handleCategoryTransfer called:', { transactionId, newCategory });
+      await transactionsAPI.update(transactionId, { category_name: newCategory });
+      refreshData();
+      console.log('✅ [TransactionSearchModal] Category transfer successful');
+    } catch (error) {
+      console.error('❌ Category transfer error in TransactionSearchModal:', error);
+      throw error;
+    }
+  };
+
   const handleCloseActionsModal = () => {
     setShowTransactionActionsModal(false);
-    setSelectedTransaction(null);
+    // DON'T clear selectedTransaction here - other modals might need it
+    // setSelectedTransaction(null);
     refreshData();
   };
 
@@ -198,7 +268,7 @@ const TransactionSearchModal = ({ isOpen, onClose }) => {
 
   return (
     <>
-      <div className="transaction-search-modal-backdrop" onClick={handleClose}></div>
+      <div className="transaction-search-modal-backdrop" onClick={(showTransactionActionsModal || showSplitTransactionModal || showCategoryTransferModal || showCopyTransactionModal || showChangeMonthModal || showEditTransactionModal || showDeleteTransactionModal) ? undefined : handleClose}></div>
       <div className="transaction-search-modal">
         <div className="modal-header">
           <div className="header-content-centered">
@@ -365,8 +435,14 @@ const TransactionSearchModal = ({ isOpen, onClose }) => {
       {showCategoryTransferModal && createPortal(
         <CategoryTransferModal
           isOpen={showCategoryTransferModal}
-          onClose={() => { setShowCategoryTransferModal(false); refreshData(); }}
+          onClose={() => { 
+            console.log('🔍 [TransactionSearchModal] CategoryTransferModal closing...');
+            setShowCategoryTransferModal(false); 
+            setSelectedTransaction(null); // Clear selection when modal closes
+            refreshData(); 
+          }}
           transaction={selectedTransaction}
+          onTransfer={handleCategoryTransfer}
         />,
         document.body
       )}
@@ -374,7 +450,11 @@ const TransactionSearchModal = ({ isOpen, onClose }) => {
       {showCopyTransactionModal && createPortal(
         <CopyTransactionModal
           isOpen={showCopyTransactionModal}
-          onClose={() => { setShowCopyTransactionModal(false); refreshData(); }}
+          onClose={() => { 
+            setShowCopyTransactionModal(false); 
+            setSelectedTransaction(null);
+            refreshData(); 
+          }}
           transaction={selectedTransaction}
         />,
         document.body
@@ -383,7 +463,11 @@ const TransactionSearchModal = ({ isOpen, onClose }) => {
       {showChangeMonthModal && createPortal(
         <ChangeMonthModal
           isOpen={showChangeMonthModal}
-          onClose={() => { setShowChangeMonthModal(false); refreshData(); }}
+          onClose={() => { 
+            setShowChangeMonthModal(false); 
+            setSelectedTransaction(null);
+            refreshData(); 
+          }}
           transaction={selectedTransaction}
         />,
         document.body
@@ -392,7 +476,11 @@ const TransactionSearchModal = ({ isOpen, onClose }) => {
       {showEditTransactionModal && createPortal(
         <EditTransactionModal
           isOpen={showEditTransactionModal}
-          onClose={() => { setShowEditTransactionModal(false); refreshData(); }}
+          onClose={() => { 
+            setShowEditTransactionModal(false); 
+            setSelectedTransaction(null);
+            refreshData(); 
+          }}
           transaction={selectedTransaction}
         />,
         document.body
@@ -401,7 +489,11 @@ const TransactionSearchModal = ({ isOpen, onClose }) => {
       {showDeleteTransactionModal && createPortal(
         <DeleteTransactionModal
           isOpen={showDeleteTransactionModal}
-          onClose={() => { setShowDeleteTransactionModal(false); refreshData(); }}
+          onClose={() => { 
+            setShowDeleteTransactionModal(false); 
+            setSelectedTransaction(null);
+            refreshData(); 
+          }}
           transaction={selectedTransaction}
         />,
         document.body
@@ -410,8 +502,13 @@ const TransactionSearchModal = ({ isOpen, onClose }) => {
       {showSplitTransactionModal && createPortal(
         <SplitTransactionModal
           isOpen={showSplitTransactionModal}
-          onClose={() => { setShowSplitTransactionModal(false); refreshData(); }}
+          onClose={() => { 
+            setShowSplitTransactionModal(false); 
+            setSelectedTransaction(null); // Clear selection when modal closes
+            refreshData(); 
+          }}
           transaction={selectedTransaction}
+          onSplit={handleSplitTransaction}
         />,
         document.body
       )}

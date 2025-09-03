@@ -142,12 +142,6 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
     // This prevents infinite loops and reduces server load
     const spending = Math.abs(categoryData?.spent || 0);
     setCurrentSpending(spending);
-    
-    console.log(`💸 USING CATEGORY DATA SPENDING for "${categoryName}":`, {
-      spent: categoryData?.spent,
-      final_spending: spending,
-      from_api: false
-    });
   }, [categoryName, categoryData?.spent]);
 
   // Separate useEffect for monthly target to avoid overriding local updates
