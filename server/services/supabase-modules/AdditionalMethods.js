@@ -180,8 +180,43 @@ class AdditionalMethods {
         }
       }
 
-      // Process shared categories
-      const processedCategories = AdditionalMethods.processSharedCategories(categoryBreakdown);
+      // Check if user has requested to show empty categories for this period
+      let showEmptyCategories = [];
+      if (!allTime && finalYear && finalMonth && cashFlowId) {
+        console.log('🔍 [EMPTY FILTER] Checking for user empty categories:', { userId, finalYear, finalMonth, cashFlowId });
+        const { data: emptyCategoriesToShow, error: emptyCategoriesError } = await supabase
+          .from('user_empty_categories_display')
+          .select('category_name')
+          .eq('user_id', userId)
+          .eq('cash_flow_id', cashFlowId)
+          .eq('year', finalYear)
+          .eq('month', finalMonth);
+          
+        if (!emptyCategoriesError && emptyCategoriesToShow) {
+          showEmptyCategories = emptyCategoriesToShow.map(row => row.category_name);
+        }
+        console.log('🔍 [EMPTY FILTER] Found empty categories to show:', showEmptyCategories);
+      }
+
+      // Filter out categories with zero transactions unless explicitly requested by user
+      console.log('🔍 [EMPTY FILTER] Starting filter process. Categories before filtering:', Object.keys(categoryBreakdown).length);
+      const filteredCategoryBreakdown = {};
+      Object.entries(categoryBreakdown).forEach(([categoryName, category]) => {
+        const hasTransactions = category.count > 0;
+        const hasMonthlyTarget = category.monthly_target && category.monthly_target > 0;
+        const explicitlyRequested = showEmptyCategories.includes(categoryName);
+        
+        // Include category if it has transactions, monthly target, or is explicitly requested
+        if (hasTransactions || hasMonthlyTarget || explicitlyRequested) {
+          filteredCategoryBreakdown[categoryName] = category;
+        } else {
+          console.log('🚫 [EMPTY FILTER] Filtering out empty category:', categoryName, { hasTransactions, hasMonthlyTarget, explicitlyRequested });
+        }
+      });
+      console.log('🔍 [EMPTY FILTER] Categories after filtering:', Object.keys(filteredCategoryBreakdown).length);
+
+      // Process shared categories with filtered data
+      const processedCategories = AdditionalMethods.processSharedCategories(filteredCategoryBreakdown);
       
       // Sort by display order - ensure we're comparing numbers, not strings
       const sortedCategories = Object.values(processedCategories)

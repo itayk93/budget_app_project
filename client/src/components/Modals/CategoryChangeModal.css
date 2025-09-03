@@ -6,6 +6,7 @@
 
 .category-change-modal .modal-overlay {
   background-color: rgba(0, 0, 0, 0.6);
+  z-index: 1100 !important; /* Higher than search modal's 999 */
 }
 
 .category-change-modal .modal-header {

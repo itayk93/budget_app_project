@@ -166,6 +166,7 @@ router.get('/', authenticateToken, async (req, res) => {
     }
 
     console.log('🔍 DASHBOARD DEBUG INFO:', JSON.stringify(debugInfo, null, 2));
+    console.log('🚨 [DEBUG] About to process categories - actualData exists:', !!actualData, 'has category_breakdown:', !!actualData?.category_breakdown);
 
     // Check result
     if (!actualData) {
@@ -178,6 +179,31 @@ router.get('/', authenticateToken, async (req, res) => {
     // Get cash flows for selector
     const cashFlows = await SupabaseService.getCashFlows(userId);
     
+    // Check if user has requested to show empty categories for this period
+    let showEmptyCategories = [];
+    if (!allTime && finalYear && finalMonth && cash_flow) {
+      console.log('🔍 [EMPTY FILTER DASHBOARD] Checking for user empty categories:', { userId, finalYear, finalMonth, cash_flow });
+      try {
+        const { createClient } = require('@supabase/supabase-js');
+        const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+        
+        const { data: emptyCategoriesToShow, error: emptyCategoriesError } = await supabase
+          .from('user_empty_categories_display')
+          .select('category_name')
+          .eq('user_id', userId)
+          .eq('cash_flow_id', cash_flow)
+          .eq('year', finalYear)
+          .eq('month', finalMonth);
+          
+        if (!emptyCategoriesError && emptyCategoriesToShow) {
+          showEmptyCategories = emptyCategoriesToShow.map(row => row.category_name);
+        }
+        console.log('🔍 [EMPTY FILTER DASHBOARD] Found empty categories to show:', showEmptyCategories);
+      } catch (error) {
+        console.error('❌ [EMPTY FILTER DASHBOARD] Error checking empty categories:', error);
+      }
+    }
+
     // Keep categories as ordered array (maintains display_order from database)
     const categories = {};
     const orderedCategories = [];
@@ -189,6 +215,45 @@ router.get('/', authenticateToken, async (req, res) => {
         is_shared_category: c.is_shared_category,
         sub_categories: c.sub_categories ? Object.keys(c.sub_categories).length : 0
       })));
+      
+      // Filter out empty categories based on whether month is finished or not
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+      const isMonthFinished = finalYear < currentYear || (finalYear === currentYear && finalMonth < currentMonth);
+      
+      console.log('🔍 [EMPTY FILTER DASHBOARD] Month info:', { 
+        finalYear, finalMonth, currentYear, currentMonth, isMonthFinished 
+      });
+      
+      const filteredCategories = actualData.category_breakdown.filter(category => {
+        const hasTransactions = category.count > 0;
+        const hasMonthlyTarget = category.monthly_target && category.monthly_target > 0;
+        const explicitlyRequested = showEmptyCategories.includes(category.name);
+        
+        let shouldShow;
+        if (isMonthFinished) {
+          // For finished months: show only categories with transactions (or explicitly requested)
+          shouldShow = hasTransactions || explicitlyRequested;
+        } else {
+          // For current/future months: show if has transactions OR monthly target (or explicitly requested)
+          shouldShow = hasTransactions || hasMonthlyTarget || explicitlyRequested;
+        }
+        
+        if (!shouldShow) {
+          console.log('🚫 [EMPTY FILTER DASHBOARD] Filtering out empty category:', category.name, { 
+            hasTransactions, hasMonthlyTarget, explicitlyRequested, isMonthFinished,
+            count: category.count, target: category.monthly_target 
+          });
+        }
+        
+        return shouldShow;
+      });
+      
+      console.log('🔍 [EMPTY FILTER DASHBOARD] Categories after filtering:', filteredCategories.length, 'from', actualData.category_breakdown.length);
+      
+      // Replace the category breakdown with filtered categories
+      actualData.category_breakdown = filteredCategories;
       
       actualData.category_breakdown.forEach(category => {
         const categoryData = {
