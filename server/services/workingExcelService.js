@@ -1493,35 +1493,25 @@ class WorkingExcelService {
         df.payment_month = paymentDate.month() + 1;
         df.payment_year = paymentDate.year();
         
-        // Calculate flow_month based on charge_date minus one month (for Max format)
+        // Calculate flow_month - use payment_date except for installment transactions
         if (!df.flow_month) {
-            if (df.charge_date && formatDetection.format && formatDetection.format.toLowerCase() === 'max') {
+            // Check if this is an installment transaction
+            const isInstallment = df.transaction_type && df.transaction_type.includes('תשלומים');
+            
+            if (isInstallment && df.charge_date) {
+                // For installments, use charge_date - 1 month
                 const chargeDate = moment(df.charge_date, ['DD-MM-YYYY', 'YYYY-MM-DD'], true);
                 if (chargeDate.isValid()) {
-                    // Calculate flow_month as one month before charge_date
                     const flowMonth = chargeDate.subtract(1, 'month').format('YYYY-MM');
                     df.flow_month = flowMonth;
-                    console.log(`🔍 [WorkingExcelService] Calculated flow_month for Max: ${df.flow_month} from charge_date: ${df.charge_date}`);
+                    console.log(`🔍 [WorkingExcelService] Installment flow_month: ${df.flow_month} from charge_date: ${df.charge_date}`);
                     
-                    // CRITICAL: Fix payment_date for Max installments
-                    if (df.transaction_type && df.transaction_type.includes('תשלומים')) {
-                        const originalPaymentDate = moment(df.payment_date, 'YYYY-MM-DD', true);
-                        const flowMonthDate = moment(flowMonth + '-01', 'YYYY-MM-DD');
-                        
-                        console.log(`💳 [MAX] Installment detected for ${df.business_name}:`);
-                        console.log(`   Original payment date: ${df.payment_date}`);
-                        console.log(`   Charge date: ${df.charge_date}`);
-                        console.log(`   Flow month: ${flowMonth}`);
-                        
-                        // Check if payment_date month is different from flow month
-                        if (originalPaymentDate.format('YYYY-MM') !== flowMonth) {
-                            // Keep same day, but change to flow month
-                            const adjustedDate = moment(flowMonth + '-' + originalPaymentDate.format('DD'), 'YYYY-MM-DD');
-                            df.payment_date = adjustedDate.format('YYYY-MM-DD');
-                            console.log(`   ✅ Adjusted payment date: ${df.payment_date}`);
-                        } else {
-                            console.log(`   ✅ Payment date already in correct month, no adjustment needed`);
-                        }
+                    // Adjust payment_date to match flow month for installments
+                    const originalPaymentDate = moment(df.payment_date, 'YYYY-MM-DD', true);
+                    if (originalPaymentDate.format('YYYY-MM') !== flowMonth) {
+                        const adjustedDate = moment(flowMonth + '-' + originalPaymentDate.format('DD'), 'YYYY-MM-DD');
+                        df.payment_date = adjustedDate.format('YYYY-MM-DD');
+                        console.log(`   ✅ Adjusted payment date for installment: ${df.payment_date}`);
                     }
                 } else {
                     // Fallback to payment_date if charge_date is invalid
@@ -1529,9 +1519,9 @@ class WorkingExcelService {
                     console.log(`🔍 [WorkingExcelService] Fallback flow_month: ${df.flow_month} from payment_date (invalid charge_date)`);
                 }
             } else {
-                // For non-Max formats, use payment_date as before
+                // For all other transactions (regular, immediate), use payment_date
                 df.flow_month = paymentDate.format('YYYY-MM');
-                console.log(`🔍 [WorkingExcelService] Calculated flow_month: ${df.flow_month} from payment_date: ${df.payment_date}`);
+                console.log(`🔍 [WorkingExcelService] Regular flow_month: ${df.flow_month} from payment_date: ${df.payment_date}`);
             }
         } else {
             console.log(`🔍 [WorkingExcelService] Preserving CSV flow_month: ${df.flow_month} for payment_date: ${df.payment_date}`);

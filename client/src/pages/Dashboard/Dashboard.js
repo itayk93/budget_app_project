@@ -272,10 +272,17 @@ const Dashboard = () => {
 
   // Create a proper data change handler that invalidates cache and refetches
   const handleDataChange = async () => {
+    console.log('🔍 [DASHBOARD] Data change triggered - invalidating cache and refetching');
     // Invalidate the React Query cache to ensure fresh data
     queryClient.invalidateQueries(['dashboard']);
     // Refetch the dashboard data
-    await refetchDashboard();
+    console.log('🔍 [DASHBOARD] Refetching dashboard data...');
+    const result = await refetchDashboard();
+    console.log('🔍 [DASHBOARD] Refetch complete, new data:', {
+      hasData: !!result?.data,
+      transactionCount: result?.data?.transaction_count,
+      categoriesCount: result?.data?.orderedCategories?.length
+    });
   };
 
   // Fetch cash flows separately for initial load

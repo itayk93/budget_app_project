@@ -24,7 +24,7 @@ const WeeklyBreakdown = ({
       const grouped = groupTransactionsByWeeks(transactions, year, month);
       setWeeklyData(grouped);
     }
-  }, [transactions, year, month]);
+  }, [transactions, year, month, categoryName]);
 
   const toggleWeekExpanded = (weekNumber, event) => {
     if (event) {
