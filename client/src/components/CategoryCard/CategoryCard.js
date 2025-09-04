@@ -413,22 +413,7 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
   const handleCategoryTransfer = async (transactionId, newCategory) => {
     try {
       const transaction = transactions?.find(t => t.id === transactionId);
-      console.log('🔍 [CATEGORY TRANSFER] Before update:', {
-        transactionId,
-        currentCategory: categoryName,
-        newCategory,
-        transaction: transaction ? {
-          id: transaction.id?.substring(0, 8),
-          business_name: transaction.business_name,
-          payment_date: transaction.payment_date,
-          current_category: transaction.category_name,
-          amount: transaction.amount
-        } : null
-      });
-      
       await transactionsAPI.update(transactionId, { category_name: newCategory });
-      
-      console.log('🔍 [CATEGORY TRANSFER] Update successful, triggering data refresh');
       if (onDataChange) {
         onDataChange();
       }

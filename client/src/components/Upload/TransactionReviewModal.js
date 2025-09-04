@@ -743,8 +743,7 @@ const TransactionReviewModal = ({
       category_name: 'הכנסות משתנות',
       notes: `העתקה מעסקת מטבע זר - שער חליפין: 1 ${foreignCurrency} = ${exchangeRate} ₪ - העתקה מתזרים ${cashFlows.find(cf => cf.id === selectedSourceCashFlowId)?.name || 'לא ידוע'}`,
       recipient_name: '',
-      cash_flow_id: targetCashFlowId,
-      is_income: true
+      cash_flow_id: targetCashFlowId
     };
 
     // Add the new transaction to the edited transactions list

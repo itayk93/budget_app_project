@@ -889,7 +889,8 @@ router.post('/finalize', authenticateToken, async (req, res) => {
     finalTransactions = finalTransactions.map(transaction => ({
       ...transaction,
       user_id: session ? session.userId : req.user.id,
-      cash_flow_id: session ? session.cashFlowId : (cashFlowId && cashFlowId.trim() ? cashFlowId : null),
+      // Preserve existing cash_flow_id from transaction, fallback to session/global if not present
+      cash_flow_id: transaction.cash_flow_id || (session ? session.cashFlowId : (cashFlowId && cashFlowId.trim() ? cashFlowId : null)),
       // Ensure payment_identifier is set from session if not already present
       payment_identifier: transaction.payment_identifier || (session ? session.paymentIdentifier : null) || null
     }));

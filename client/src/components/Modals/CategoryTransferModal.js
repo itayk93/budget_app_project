@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../Common/Modal';
+import CategoryAutocomplete from '../Common/CategoryAutocomplete';
 import './BudgetModal.css'; // Using same CSS styles
 import './CategoryChangeModal.css'; // Custom styles for category change modal
 
@@ -9,147 +10,27 @@ const CategoryTransferModal = ({
   transaction,
   onTransfer 
 }) => {
-  const [selectedCategory, setSelectedCategory] = useState('');
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showNewCategoryField, setShowNewCategoryField] = useState(false);
+  const [autocompleteValue, setAutocompleteValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Organized categories with groups
-  const categoryGroups = {
-    'הכנסות': {
-      icon: '💰',
-      categories: [
-        'הכנסות קבועות',
-        'הכנסות משתנות', 
-        'משכורת',
-        'עבודה נוספת',
-        'השקעות',
-        'מתנות',
-        'החזרי מס',
-        'אחר (הכנסות)'
-      ]
-    },
-    'דיור': {
-      icon: '🏠',
-      categories: [
-        'תשלום משכנתא',
-        'שכר דירה',
-        'ארנונה',
-        'חשמל',
-        'גז',
-        'מים',
-        'אינטרנט',
-        'טלפון',
-        'ביטוח דירה',
-        'ועד בית',
-        'תיקונים ותחזוקה'
-      ]
-    },
-    'הוצאות משתנות': {
-      icon: '🛒',
-      categories: [
-        'הוצאות משתנות',
-        'סופר',
-        'אוכל בחוץ',
-        'בגדים ונעליים',
-        'קניות',
-        'קוסמטיקה'
-      ]
-    },
-    'תחבורה': {
-      icon: '🚗',
-      categories: [
-        'תחבורה',
-        'דלק',
-        'ביטוח רכב',
-        'תחזוקת רכב',
-        'חנייה',
-        'תחבורה ציבורית',
-        'רכב ותחבורה ציבורית'
-      ]
-    },
-    'בריאות': {
-      icon: '🏥',
-      categories: [
-        'בריאות',
-        'רופא',
-        'רופא שיניים',
-        'תרופות',
-        'פארמה',
-        'ביטוח בריאות'
-      ]
-    },
-    'פנאי ובידור': {
-      icon: '🎭',
-      categories: [
-        'פנאי ובידור',
-        'קולנוע',
-        'מסעדות',
-        'ספורט',
-        'חופשות',
-        'טיסות לחו״ל',
-        'נופש'
-      ]
-    },
-    'דיגיטל': {
-      icon: '💻',
-      categories: [
-        'דיגיטל',
-        'נטפליקס',
-        'ספוטיפיי',
-        'משחקים',
-        'אפליקציות'
-      ]
-    },
-    'חינוך': {
-      icon: '🎓',
-      categories: [
-        'חינוך',
-        'לימודים',
-        'ספרים',
-        'קורסים'
-      ]
-    },
-    'חסכון והשקעות': {
-      icon: '💎',
-      categories: [
-        'חסכון קבוע',
-        'חסכון חד פעמי',
-        'השקעות',
-        'קרן פנסיה',
-        'ביטוח חיים'
-      ]
-    },
-    'אחר': {
-      icon: '📝',
-      categories: [
-        'מתנות',
-        'צדקה',
-        'עמלות',
-        'עמלות בנק',
-        'עמלות כרטיס אשראי',
-        'שונות',
-        'הוצאות לא תזרימיות',
-        'אחר'
-      ]
-    }
-  };
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedCategory('');
       setNewCategoryName('');
       setShowNewCategoryField(false);
+      setAutocompleteValue('');
       setError('');
     }
   }, [isOpen]);
 
-  const handleCategoryChange = (e) => {
-    const value = e.target.value;
-    setSelectedCategory(value);
-    
-    if (value === '__new_category__') {
+
+  const handleAutocompleteChange = (value) => {
+    setAutocompleteValue(value);
+    // If user selects "הוסף קטגוריה חדשה" we'll handle it in the transfer
+    if (value === '➕ הוסף קטגוריה חדשה') {
       setShowNewCategoryField(true);
     } else {
       setShowNewCategoryField(false);
@@ -158,7 +39,16 @@ const CategoryTransferModal = ({
   };
 
   const handleTransfer = async () => {
-    const categoryToUse = showNewCategoryField ? newCategoryName.trim() : selectedCategory;
+    let categoryToUse;
+    
+    if (showNewCategoryField) {
+      categoryToUse = newCategoryName.trim();
+    } else if (autocompleteValue === '➕ הוסף קטגוריה חדשה') {
+      setError('אנא הזן שם לקטגוריה החדשה');
+      return;
+    } else {
+      categoryToUse = autocompleteValue.trim();
+    }
     
     if (!categoryToUse) {
       setError('אנא בחר קטגוריה או הזן שם קטגוריה חדשה');
@@ -180,11 +70,8 @@ const CategoryTransferModal = ({
   };
 
   if (!isOpen || !transaction) {
-    console.log('🔍 [CategoryTransferModal] Not rendering:', { isOpen, hasTransaction: !!transaction });
     return null;
   }
-  
-  console.log('🔍 [CategoryTransferModal] Rendering modal for transaction:', transaction?.id);
 
   const modalFooter = (
     <div className="modal-footer">
@@ -198,7 +85,7 @@ const CategoryTransferModal = ({
       <button 
         className="btn btn-primary" 
         onClick={handleTransfer}
-        disabled={isLoading || (!selectedCategory && !newCategoryName.trim())}
+        disabled={isLoading || (!autocompleteValue.trim() && !newCategoryName.trim())}
       >
         {isLoading ? (
           <>
@@ -242,36 +129,32 @@ const CategoryTransferModal = ({
 
           {/* Category Selection */}
           <div className="category-selection-section">
-            <label htmlFor="category-select">בחר קטגוריה חדשה</label>
-            <select
-              id="category-select"
-              value={selectedCategory}
-              onChange={handleCategoryChange}
+            <label htmlFor="category-autocomplete">בחר או הקלד קטגוריה חדשה</label>
+            <CategoryAutocomplete
+              value={autocompleteValue}
+              onChange={handleAutocompleteChange}
+              placeholder="הקלד לחיפוש קטגוריה או הזן קטגוריה חדשה..."
               disabled={isLoading}
-            >
-              <option value="">-- בחר קטגוריה --</option>
-              {Object.entries(categoryGroups).map(([groupName, groupData]) => (
-                <optgroup key={groupName} label={`${groupData.icon} ${groupName}`}>
-                  {groupData.categories.map((category, index) => (
-                    <option key={`${groupName}-${index}`} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-              <option 
-                value="__new_category__" 
-                style={{
-                  borderTop: '2px solid #e9ecef', 
-                  marginTop: '8px', 
-                  paddingTop: '8px', 
-                  fontWeight: '600', 
-                  color: '#323E4B'
-                }}
-              >
-                ➕ הוסף קטגוריה חדשה
-              </option>
-            </select>
+              autoFocus={true}
+            />
+            
+            {/* Option to add new category */}
+            {autocompleteValue && !showNewCategoryField && (
+              <div className="new-category-option">
+                <button
+                  type="button"
+                  className="btn-link-style"
+                  onClick={() => {
+                    setShowNewCategoryField(true);
+                    setNewCategoryName(autocompleteValue);
+                    setAutocompleteValue('➕ הוסף קטגוריה חדשה');
+                  }}
+                  disabled={isLoading}
+                >
+                  ➕ הוסף "{autocompleteValue}" כקטגוריה חדשה
+                </button>
+              </div>
+            )}
           </div>
 
           {/* New Category Field */}

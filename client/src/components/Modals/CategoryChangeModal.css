@@ -245,6 +245,38 @@
   box-shadow: none;
 }
 
+/* New Category Option */
+.new-category-option {
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--gray-200);
+}
+
+.btn-link-style {
+  background: none;
+  border: none;
+  color: var(--color-blue);
+  cursor: pointer;
+  font-size: var(--font-small);
+  font-weight: 500;
+  padding: var(--spacing-xs) 0;
+  text-align: right;
+  direction: rtl;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  width: 100%;
+}
+
+.btn-link-style:hover:not(:disabled) {
+  color: var(--primary-500);
+  text-decoration: underline;
+}
+
+.btn-link-style:disabled {
+  color: var(--gray-400);
+  cursor: not-allowed;
+}
+
 /* New Category Section */
 .new-category-section {
   background: white;

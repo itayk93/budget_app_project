@@ -8,6 +8,49 @@ const router = express.Router();
 
 // ===== BASIC CATEGORY CRUD OPERATIONS =====
 
+// Search categories (for autocomplete) - WORKING APPROACH copied from /categories/order
+router.get('/search', authenticateToken, async (req, res) => {
+  try {
+    const { q } = req.query;
+    console.log('🔍 [CATEGORIES API] Search endpoint called with query:', q);
+    console.log('🔍 [CATEGORIES API] User ID:', req.user.id);
+    
+    // Get all categories using the WORKING approach from SupabaseService.getCategories
+    console.log('🔍 [CATEGORIES API] Using working approach - getting all categories from category_order');
+    const allCategories = await SupabaseService.getCategories(req.user.id);
+    console.log('🔍 [CATEGORIES API] Got categories count:', allCategories.length);
+    
+    // If no search query, return empty array (like original)
+    if (!q || q.length < 1) {
+      console.log('🔍 [CATEGORIES API] Empty query, returning empty array');
+      return res.json([]);
+    }
+
+    // Filter categories on server side (same logic as client-side filtering)
+    const searchTerm = q.toLowerCase();
+    const filteredCategories = allCategories.filter(category => {
+      const categoryName = (category.category_name || category.name || '').toLowerCase();
+      return categoryName.includes(searchTerm) || 
+             categoryName.split(' ').some(word => word.startsWith(searchTerm));
+    });
+
+    // Format for autocomplete (limit to 10 for performance)
+    const searchResults = filteredCategories
+      .slice(0, 10)
+      .map(category => ({ 
+        category_name: category.category_name || category.name 
+      }));
+
+    console.log('🔍 [CATEGORIES API] Filtered categories:', searchResults.length);
+    console.log('🔍 [CATEGORIES API] Sample results:', searchResults.slice(0, 3).map(c => c.category_name));
+
+    res.json(searchResults);
+  } catch (error) {
+    console.error('Search categories error:', error);
+    res.status(500).json({ error: 'Failed to search categories' });
+  }
+});
+
 // Get all categories
 router.get('/', authenticateToken, async (req, res) => {
   try {

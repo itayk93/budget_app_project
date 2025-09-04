@@ -954,11 +954,77 @@ class TransactionService {
 
   static async deleteTransaction(transactionId, userClient = null) {
     try {
+      console.log(`🗑️ [DELETE SERVICE] Starting delete for transaction: ${transactionId}`);
+      
       if (!transactionId) {
+        console.log(`❌ [DELETE SERVICE] Transaction ID is required but was: ${transactionId}`);
         return SharedUtilities.createErrorResponse('Transaction ID is required');
       }
+      
       const client = userClient || adminClient;
+      console.log(`🗑️ [DELETE SERVICE] Using client type: ${userClient ? 'userClient' : 'adminClient'}`);
 
+      // First, check if the transaction exists
+      const checkResult = await client
+        .from('transactions')
+        .select('id, user_id, business_name, amount')
+        .eq('id', transactionId)
+        .maybeSingle();
+      
+      console.log(`🗑️ [DELETE SERVICE] Transaction existence check:`, {
+        found: !!checkResult.data,
+        error: checkResult.error,
+        data: checkResult.data
+      });
+
+      if (checkResult.error) {
+        console.error(`❌ [DELETE SERVICE] Error checking transaction existence:`, checkResult.error);
+        throw checkResult.error;
+      }
+
+      if (!checkResult.data) {
+        console.log(`❌ [DELETE SERVICE] Transaction not found: ${transactionId}`);
+        return SharedUtilities.createErrorResponse('Transaction not found');
+      }
+
+      // Check if this transaction is referenced by other transactions (as duplicate_parent_id)
+      const childTransactionsResult = await client
+        .from('transactions')
+        .select('id, business_name, amount, duplicate_parent_id')
+        .eq('duplicate_parent_id', transactionId);
+        
+      console.log(`🗑️ [DELETE SERVICE] Child transactions check:`, {
+        found: childTransactionsResult.data?.length || 0,
+        error: childTransactionsResult.error,
+        children: childTransactionsResult.data
+      });
+
+      if (childTransactionsResult.error) {
+        console.error(`❌ [DELETE SERVICE] Error checking child transactions:`, childTransactionsResult.error);
+        throw childTransactionsResult.error;
+      }
+
+      // If there are child transactions, update them to remove the parent reference
+      if (childTransactionsResult.data && childTransactionsResult.data.length > 0) {
+        console.log(`🔄 [DELETE SERVICE] Updating ${childTransactionsResult.data.length} child transactions to remove parent reference`);
+        
+        const updateResult = await client
+          .from('transactions')
+          .update({ duplicate_parent_id: null })
+          .eq('duplicate_parent_id', transactionId);
+          
+        console.log(`🔄 [DELETE SERVICE] Child transactions update result:`, {
+          success: !updateResult.error,
+          error: updateResult.error
+        });
+
+        if (updateResult.error) {
+          console.error(`❌ [DELETE SERVICE] Error updating child transactions:`, updateResult.error);
+          throw updateResult.error;
+        }
+      }
+
+      // Now perform the delete
       const { data, error } = await client
         .from('transactions')
         .delete()
@@ -966,10 +1032,27 @@ class TransactionService {
         .select()
         .single();
 
-      if (error) throw error;
+      console.log(`🗑️ [DELETE SERVICE] Delete operation result:`, {
+        success: !error,
+        error: error,
+        dataReturned: !!data
+      });
+
+      if (error) {
+        console.error(`❌ [DELETE SERVICE] Delete operation failed:`, error);
+        throw error;
+      }
+      
+      console.log(`✅ [DELETE SERVICE] Transaction deleted successfully: ${transactionId}`);
       return SharedUtilities.createSuccessResponse(data, 'Transaction deleted successfully');
     } catch (error) {
-      console.error('Error deleting transaction:', error);
+      console.error(`❌ [DELETE SERVICE] Error deleting transaction ${transactionId}:`, {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        fullError: error
+      });
       return SharedUtilities.handleSupabaseError(error, 'delete transaction');
     }
   }
