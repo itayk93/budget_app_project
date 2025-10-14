@@ -65,6 +65,81 @@ router.post('/reorder', authenticateToken, async (req, res) => {
   }
 });
 
+// Create new category in category_order
+router.post('/order', authenticateToken, async (req, res) => {
+  try {
+    const { category_name, display_order, shared_category, use_shared_category, icon, weekly_display } = req.body;
+
+    if (!category_name) {
+      return res.status(400).json({ error: 'category_name is required' });
+    }
+
+    // Check if category already exists for this user
+    const { data: existingCategory, error: checkError } = await supabase
+      .from('category_order')
+      .select('id')
+      .eq('user_id', req.user.id)
+      .eq('category_name', category_name)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('Error checking existing category:', checkError);
+      throw checkError;
+    }
+
+    if (existingCategory) {
+      return res.status(200).json({ 
+        error: 'Category already exists in your category list',
+        existing: true,
+        data: existingCategory
+      });
+    }
+
+    // Get the next display_order if not provided
+    let finalDisplayOrder = display_order;
+    if (!finalDisplayOrder) {
+      const { data: lastCategory, error: orderError } = await supabase
+        .from('category_order')
+        .select('display_order')
+        .eq('user_id', req.user.id)
+        .order('display_order', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (orderError && orderError.code !== 'PGRST116') {
+        console.error('Error getting last display order:', orderError);
+        throw orderError;
+      }
+
+      finalDisplayOrder = (lastCategory?.display_order || 0) + 1;
+    }
+
+    // Create the new category in category_order
+    const { data, error } = await supabase
+      .from('category_order')
+      .insert([{
+        user_id: req.user.id,
+        category_name,
+        display_order: finalDisplayOrder,
+        shared_category: shared_category || null,
+        created_at: new Date().toISOString()
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating category:', error);
+      throw error;
+    }
+
+    console.log('✅ [NEW CATEGORY] Category created successfully:', data);
+    res.status(201).json(data);
+  } catch (error) {
+    console.error('Create category error:', error);
+    res.status(500).json({ error: 'Failed to create category' });
+  }
+});
+
 // Update shared category assignment
 router.post('/update-shared-category', authenticateToken, async (req, res) => {
   try {

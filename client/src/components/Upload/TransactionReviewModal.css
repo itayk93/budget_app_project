@@ -1333,3 +1333,10 @@
     margin-bottom: 6px;
   }
 }
+
+/* Native browser tooltip styling for desktop only */
+@media (min-width: 769px) {
+  .transaction-row[title]:hover {
+    background: rgba(0, 123, 255, 0.05) !important;
+  }
+}

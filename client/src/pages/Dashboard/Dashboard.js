@@ -216,18 +216,38 @@ const Dashboard = () => {
     ['dashboard', year, month, selectedCashFlow?.id, activeTab],
     async () => {
       try {
-        return await api.get('/dashboard', {
-          params: {
-            year: year,
-            month: month,
-            cash_flow: selectedCashFlow?.id,
-            all_time: activeTab === 'cumulative' ? '1' : '0',
+        // Always try authenticated API first
+        let result;
+        try {
+          result = await api.get('/dashboard', {
+            params: {
+              year: year,
+              month: month,
+              cash_flow: selectedCashFlow?.id,
+              all_time: activeTab === 'cumulative' ? '1' : '0',
               format: 'json'
-          }
-        });
+            }
+          });
+          console.log('🔍 [DASHBOARD] Regular dashboard API result received');
+        } catch (dashboardError) {
+          console.log('🔍 [DASHBOARD] Regular API failed, trying demo:', dashboardError.message);
+          // If authenticated dashboard fails, try demo
+          result = await api.get('/demo/dashboard', {
+            params: {
+              year: year,
+              month: month,
+              cash_flow: selectedCashFlow?.id,
+              all_time: activeTab === 'cumulative' ? '1' : '0',
+              format: 'json'
+            }
+          });
+          console.log('🔍 [DASHBOARD] Demo dashboard API result received');
+        }
+        
+        return result;
       } catch (error) {
-        console.error('Dashboard API failed, returning mock data:', error);
-        // Return mock data when API fails
+        console.error('Dashboard API failed completely, returning mock data:', error);
+        // Return mock data when all APIs fail
         return {
           summary: {
             total_income: 15000,
@@ -288,7 +308,26 @@ const Dashboard = () => {
   // Fetch cash flows separately for initial load
   const { data: cashFlows, isLoading: cashFlowsLoading } = useQuery(
     'cashFlows',
-    cashFlowsAPI.getAll
+    async () => {
+      try {
+        // Always try the authenticated API first
+        const result = await cashFlowsAPI.getAll();
+        console.log('🔍 [CASHFLOWS] Regular API result:', result);
+        
+        // If we get valid data, use it
+        if (Array.isArray(result) && result.length > 0) {
+          return result;
+        }
+        
+        // Fallback to demo if no authenticated data available
+        console.log('🔍 [CASHFLOWS] Falling back to demo data');
+        return await api.get('/demo/cash-flows');
+      } catch (error) {
+        console.error('🔍 [CASHFLOWS] Regular API failed, using demo:', error);
+        // If authenticated API fails, fall back to demo
+        return await api.get('/demo/cash-flows');
+      }
+    }
   );
 
 
@@ -352,7 +391,9 @@ const Dashboard = () => {
   // Set default cash flow and tab
   useEffect(() => {
     if (Array.isArray(cashFlows) && cashFlows.length > 0 && !selectedCashFlow) {
+      console.log('🔍 [INIT CASHFLOW] Setting initial cash flow from:', cashFlows.map(cf => ({id: cf.id, name: cf.name, is_default: cf.is_default})));
       const defaultCashFlow = cashFlows.find(cf => cf.is_default) || cashFlows[0];
+      console.log('🔍 [INIT CASHFLOW] Selected cash flow:', {id: defaultCashFlow.id, name: defaultCashFlow.name});
       setSelectedCashFlow(defaultCashFlow);
       
       // Set initial tab based on is_monthly field
@@ -1124,13 +1165,19 @@ const Dashboard = () => {
               className="mobile-flow-select"
               value={selectedCashFlow?.id || ''}
               onChange={(e) => {
-                const availableCashFlows = Array.isArray(dashboardData?.cash_flows) ? dashboardData.cash_flows : (Array.isArray(cashFlows) ? cashFlows : []);
+                // Always use the cashFlows data first (from dedicated API), then fallback to dashboard data
+                const availableCashFlows = Array.isArray(cashFlows) && cashFlows.length > 0 
+                  ? cashFlows 
+                  : (Array.isArray(dashboardData?.cash_flows) ? dashboardData.cash_flows : []);
                 const cashFlow = availableCashFlows.find(cf => cf.id === e.target.value);
                 setSelectedCashFlow(cashFlow);
               }}
             >
               {(() => {
-                const availableCashFlows = Array.isArray(dashboardData?.cash_flows) ? dashboardData.cash_flows : (Array.isArray(cashFlows) ? cashFlows : []);
+                // Always use the cashFlows data first (from dedicated API), then fallback to dashboard data
+                const availableCashFlows = Array.isArray(cashFlows) && cashFlows.length > 0 
+                  ? cashFlows 
+                  : (Array.isArray(dashboardData?.cash_flows) ? dashboardData.cash_flows : []);
                 return availableCashFlows.map(cashFlow => (
                   <option key={cashFlow.id} value={cashFlow.id}>
                     {cashFlow.name}
@@ -1187,7 +1234,13 @@ const Dashboard = () => {
           }}
         >
           {(() => {
-            const availableCashFlows = Array.isArray(dashboardData?.cash_flows) ? dashboardData.cash_flows : (Array.isArray(cashFlows) ? cashFlows : []);
+            // Always use the cashFlows data first (from dedicated API), then fallback to dashboard data
+            const availableCashFlows = Array.isArray(cashFlows) && cashFlows.length > 0 
+              ? cashFlows 
+              : (Array.isArray(dashboardData?.cash_flows) ? dashboardData.cash_flows : []);
+            
+            console.log('🔍 [DROPDOWN] Available cash flows:', availableCashFlows?.length, availableCashFlows?.map(cf => ({id: cf.id, name: cf.name})));
+            
             return availableCashFlows.map(cashFlow => (
               <option key={cashFlow.id} value={cashFlow.id}>
                 {cashFlow.name}

@@ -6,9 +6,51 @@
 const express = require('express');
 const { demoData } = require('../data/demo-data');
 const demoModeMiddleware = require('../middleware/demo-mode');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
 
-// Apply demo mode middleware to all routes
+// Demo login endpoint (no middleware needed)
+router.post('/login', async (req, res) => {
+  try {
+    console.log('🎭 Demo login requested');
+    
+    // Create JWT token for demo user (use userId to match middleware expectation)
+    const token = jwt.sign(
+      {
+        userId: 'demo-user-001',
+        user_id: 'demo-user-001',
+        email: 'demo@budgetlens.com',
+        name: 'משתמש דמו',
+        is_demo_user: true
+      },
+      process.env.JWT_SECRET || 'demo-secret-key',
+      { expiresIn: '24h' }
+    );
+    
+    // Return user data and token (same format as regular login)
+    res.json({
+      success: true,
+      user: {
+        id: 'demo-user-001',
+        email: 'demo@budgetlens.com',
+        name: 'משתמש דמו',
+        is_demo_user: true
+      },
+      token
+    });
+    
+    console.log('✅ Demo login successful');
+    
+  } catch (error) {
+    console.error('❌ Demo login error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'שגיאה בכניסה לדמו'
+    });
+  }
+});
+
+// Apply demo mode middleware to all other routes
 router.use(demoModeMiddleware);
 
 // Demo Dashboard Data

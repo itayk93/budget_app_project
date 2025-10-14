@@ -4,6 +4,7 @@ import { categoriesAPI, cashFlowsAPI } from '../../services/api';
 import LoadingSpinner from '../Common/LoadingSpinner';
 import CategoryDropdown from './CategoryDropdown';
 import Modal from '../Common/Modal';
+import SplitTransactionModal from '../Modals/SplitTransactionModal';
 import './TransactionReviewModal.css';
 
 const TransactionReviewModal = ({ 
@@ -58,6 +59,15 @@ const TransactionReviewModal = ({
   const [foreignCurrency, setForeignCurrency] = useState('');
   const [foreignAmount, setForeignAmount] = useState('');
   const [exchangeRate, setExchangeRate] = useState('');
+
+  // Split transaction state
+  const [isSplitModalOpen, setIsSplitModalOpen] = useState(false);
+  const [selectedTransactionForSplit, setSelectedTransactionForSplit] = useState(null);
+
+  // New category modal state
+  const [isNewCategoryModalOpen, setIsNewCategoryModalOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [selectedTransactionForCategory, setSelectedTransactionForCategory] = useState(null);
 
   // Simplified categories loading - directly manage loading state
   const [categoriesData, setCategoriesData] = useState([]);
@@ -468,9 +478,17 @@ const TransactionReviewModal = ({
   const handleCategoryChange = (tempId, categoryData) => {
     console.log('🔍 [TransactionReviewModal] Category change:', categoryData);
     
+    // Check if user wants to create a new category
+    if (categoryData === '__new_category__') {
+      setSelectedTransactionForCategory(editedTransactions.find(tx => tx.tempId === tempId));
+      setIsNewCategoryModalOpen(true);
+      setNewCategoryName('');
+      return;
+    }
+    
     // Since we're now using unique categories from transactions (just names),
     // we only store the category name
-    if (categoryData && typeof categoryData === 'string' && categoryData !== '__new_category__') {
+    if (categoryData && typeof categoryData === 'string') {
       handleTransactionChange(tempId, 'category_name', categoryData);
       console.log('✅ [TransactionReviewModal] Set category name:', categoryData);
     } else {
@@ -713,6 +731,153 @@ const TransactionReviewModal = ({
         setExchangeRate(rate.toFixed(4));
       }
     }
+  };
+
+  // Create tooltip content for transaction
+  const createTooltipContent = (transaction) => {
+    const fields = [
+      { label: 'תאריך', value: transaction.payment_date?.split('T')[0] || transaction.transaction_date?.split('T')[0] || '' },
+      { label: 'שם העסק', value: transaction.business_name || '' },
+      { label: 'סכום', value: transaction.amount || '' },
+      { label: 'מטבע', value: transaction.currency || 'ILS' },
+      { label: 'אמצעי תשלום', value: transaction.payment_method || '' },
+      { label: 'קטגוריה', value: transaction.category_name || '' },
+      { label: 'למי הכסף עובר', value: transaction.recipient_name || 'לא צוין' },
+      { label: 'הערות', value: transaction.notes || 'אין הערות' },
+      { label: 'מזהה תזרים', value: transaction.cash_flow_id || '' },
+      { label: 'מזהה זמני', value: transaction.tempId || '' }
+    ].filter(field => field.value !== ''); // Remove empty fields
+    
+    return fields.map(field => `${field.label}: ${field.value}`).join('\n');
+  };
+
+  // Handle split transaction
+  const handleSplitTransaction = (transaction) => {
+    setSelectedTransactionForSplit(transaction);
+    setIsSplitModalOpen(true);
+  };
+
+  // Handle creating new category
+  const handleCreateNewCategory = async () => {
+    if (!newCategoryName.trim()) {
+      alert('נא להזין שם קטגוריה');
+      return;
+    }
+
+    try {
+      console.log('🔍 [NEW CATEGORY] Creating category:', newCategoryName.trim());
+      
+      // Create the new category directly in category_order
+      const response = await fetch('/api/categories/order', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          category_name: newCategoryName.trim(),
+          display_order: 999, // Put new categories at the end
+          shared_category: null
+        })
+      });
+
+      const result = await response.json();
+      
+      // Check if category already exists
+      if (result.existing) {
+        console.log('ℹ️ [NEW CATEGORY] Category already exists:', result.data);
+        // Set the existing category for the selected transaction
+        if (selectedTransactionForCategory) {
+          handleTransactionChange(selectedTransactionForCategory.tempId, 'category_name', newCategoryName.trim());
+        }
+        // Close modal and reset
+        setIsNewCategoryModalOpen(false);
+        setNewCategoryName('');
+        setSelectedTransactionForCategory(null);
+        alert(`הקטגוריה "${newCategoryName.trim()}" כבר קיימת ונוספה לעסקה הנוכחית`);
+        return;
+      }
+      
+      if (!response.ok) {
+        throw new Error(`Failed to create category: ${response.status}`);
+      }
+
+      console.log('✅ [NEW CATEGORY] Category created successfully:', result);
+
+      // Add the new category to our local categories list
+      setCategoriesData(prev => [...prev, {
+        category_name: newCategoryName.trim(),
+        name: newCategoryName.trim(),
+        display_order: result.display_order || 999,
+        shared_category: result.shared_category || null,
+        use_shared_category: false, // Default for display
+        icon: '📝', // Default icon for display
+        weekly_display: true, // Default for display
+        color: '#5D7AFD', // This is for display purposes
+        category_type: 'variable_expense', // Default type
+        id: result.id,
+        user_id: result.user_id,
+        created_at: result.created_at
+      }]);
+
+      // Set the category for the selected transaction
+      if (selectedTransactionForCategory) {
+        handleTransactionChange(selectedTransactionForCategory.tempId, 'category_name', newCategoryName.trim());
+      }
+
+      // Close modal and reset
+      setIsNewCategoryModalOpen(false);
+      setNewCategoryName('');
+      setSelectedTransactionForCategory(null);
+      
+      alert(`✅ קטגוריה "${newCategoryName.trim()}" נוספה בהצלחה`);
+
+    } catch (error) {
+      console.error('❌ [NEW CATEGORY] Error creating category:', error);
+      alert('שגיאה ביצירת הקטגוריה. נסה שוב.');
+    }
+  };
+
+  // Handle split transaction completion
+  const handleSplitComplete = (splits) => {
+    if (!selectedTransactionForSplit || !splits || splits.length < 2) {
+      console.error('Invalid split data');
+      return;
+    }
+
+    console.log('🔀 [SPLIT] Handling split for transaction:', selectedTransactionForSplit.tempId);
+    console.log('🔀 [SPLIT] Splits received:', splits);
+
+    // Remove the original transaction
+    const newTransactions = editedTransactions.filter(t => t.tempId !== selectedTransactionForSplit.tempId);
+    
+    // Create new transactions from splits
+    const splitTransactions = splits.map((split, index) => ({
+      tempId: `${selectedTransactionForSplit.tempId}_split_${index}_${Date.now()}`,
+      user_id: selectedTransactionForSplit.user_id,
+      business_name: split.description || selectedTransactionForSplit.business_name,
+      payment_date: selectedTransactionForSplit.payment_date,
+      amount: parseFloat(split.amount),
+      currency: selectedTransactionForSplit.currency,
+      payment_method: selectedTransactionForSplit.payment_method,
+      category_name: split.category,
+      notes: split.notes || selectedTransactionForSplit.notes,
+      recipient_name: selectedTransactionForSplit.recipient_name,
+      cash_flow_id: selectedTransactionForSplit.cash_flow_id,
+      flow_month: split.month || selectedTransactionForSplit.flow_month,
+      isSplit: true,
+      originalTempId: selectedTransactionForSplit.tempId,
+      splitIndex: index
+    }));
+
+    // Add the split transactions
+    setEditedTransactions([...newTransactions, ...splitTransactions]);
+    
+    console.log('✅ [SPLIT] Created split transactions:', splitTransactions.length);
+    
+    // Close modal and reset state
+    setIsSplitModalOpen(false);
+    setSelectedTransactionForSplit(null);
   };
 
   // Submit foreign currency copy
@@ -986,7 +1151,12 @@ const TransactionReviewModal = ({
                       const rowClass = `transaction-row ${isDuplicate ? 'duplicate-row' : ''} ${isHiddenBusiness ? 'hidden-business-row' : ''} ${isDifferentCashFlow ? 'different-cash-flow' : ''}`;
                       
                       return (
-                      <tr key={transaction.tempId} className={rowClass}>
+                      <tr 
+                        key={transaction.tempId} 
+                        className={rowClass}
+                        {...(window.innerWidth > 768 ? { title: createTooltipContent(transaction) } : {})}
+                        style={{ cursor: window.innerWidth > 768 ? 'help' : 'default' }}
+                      >
                         <td>
                           <input
                             type="date"
@@ -1143,13 +1313,32 @@ const TransactionReviewModal = ({
                           )}
                         </td>
                         <td>
-                          <button
-                            onClick={() => handleDeleteTransaction(transaction.tempId)}
-                            className="delete-button"
-                            title="מחק עסקה"
-                          >
-                            🗑️
-                          </button>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button
+                              onClick={() => handleSplitTransaction(transaction)}
+                              className="split-button"
+                              title="פצל עסקה"
+                              style={{
+                                background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                padding: '4px 8px',
+                                fontSize: '12px',
+                                cursor: 'pointer',
+                                minWidth: '28px'
+                              }}
+                            >
+                              ✂️
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTransaction(transaction.tempId)}
+                              className="delete-button"
+                              title="מחק עסקה"
+                            >
+                              🗑️
+                            </button>
+                          </div>
                         </td>
                       </tr>
                       );
@@ -1225,13 +1414,32 @@ const TransactionReviewModal = ({
                             e.target.value
                           )}
                         />
-                        <button
-                          onClick={() => handleDeleteTransaction(transaction.tempId)}
-                          className="delete-button"
-                          title="מחק עסקה"
-                        >
-                          מחק
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={() => handleSplitTransaction(transaction)}
+                            className="split-button-mobile"
+                            title="פצל עסקה"
+                            style={{
+                              background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              padding: '8px 12px',
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                              fontWeight: '500'
+                            }}
+                          >
+                            ✂️ פצל
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTransaction(transaction.tempId)}
+                            className="delete-button"
+                            title="מחק עסקה"
+                          >
+                            מחק
+                          </button>
+                        </div>
                       </div>
 
                       <div className="card-field">
@@ -1653,6 +1861,113 @@ const TransactionReviewModal = ({
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Split Transaction Modal */}
+      <SplitTransactionModal
+        isOpen={isSplitModalOpen}
+        onClose={() => {
+          setIsSplitModalOpen(false);
+          setSelectedTransactionForSplit(null);
+        }}
+        transaction={selectedTransactionForSplit}
+        onSplit={handleSplitComplete}
+      />
+
+      {/* New Category Modal */}
+      <Modal
+        isOpen={isNewCategoryModalOpen}
+        onClose={() => {
+          setIsNewCategoryModalOpen(false);
+          setNewCategoryName('');
+          setSelectedTransactionForCategory(null);
+        }}
+        title="צור קטגוריה חדשה"
+        className="new-category-modal"
+      >
+        <div className="modal-content">
+          <div className="form-group" style={{marginBottom: '1rem'}}>
+            <label style={{
+              display: 'block',
+              marginBottom: '0.5rem',
+              fontWeight: '500',
+              fontSize: '14px',
+              color: '#333'
+            }}>
+              שם הקטגוריה החדשה:
+            </label>
+            <input
+              type="text"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              placeholder="הזן שם לקטגוריה החדשה..."
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '14px'
+              }}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleCreateNewCategory();
+                }
+              }}
+              autoFocus
+            />
+          </div>
+
+          <div className="alert alert-info" style={{
+            padding: '12px',
+            backgroundColor: '#e3f2fd',
+            border: '1px solid #2196F3',
+            borderRadius: '4px',
+            marginBottom: '1rem',
+            fontSize: '13px',
+            color: '#0d47a1'
+          }}>
+            <strong>💡 שימו לב:</strong> הקטגוריה החדשה תתווסף לרשימת הקטגוריות ותהיה זמינה לשימוש עתידי.
+          </div>
+
+          <div className="modal-footer" style={{
+            display: 'flex', 
+            justifyContent: 'flex-end', 
+            gap: '8px', 
+            paddingTop: '8px', 
+            borderTop: '1px solid #e9ecef'
+          }}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => {
+                setIsNewCategoryModalOpen(false);
+                setNewCategoryName('');
+                setSelectedTransactionForCategory(null);
+              }}
+              style={{
+                fontSize: '13px',
+                padding: '6px 12px',
+                minHeight: '32px'
+              }}
+            >
+              ביטול
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleCreateNewCategory}
+              disabled={!newCategoryName.trim()}
+              style={{
+                fontSize: '13px',
+                padding: '6px 12px',
+                minHeight: '32px',
+                opacity: !newCategoryName.trim() ? 0.6 : 1
+              }}
+            >
+              צור קטגוריה
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

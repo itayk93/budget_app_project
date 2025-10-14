@@ -213,6 +213,17 @@
   color: #adb5bd;
 }
 
+/* Remove number input spinners */
+.input-field[type="number"]::-webkit-outer-spin-button,
+.input-field[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.input-field[type="number"] {
+  -moz-appearance: textfield;
+}
+
 /* Add Split Button */
 .add-split-btn {
   background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);

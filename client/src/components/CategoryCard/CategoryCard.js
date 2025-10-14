@@ -1039,7 +1039,9 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                   </div>
                 </div>
                 
-                {Object.entries(categoryData.sub_categories || {}).map(([subCategoryName, subCategoryData]) => (
+                {Object.entries(categoryData.sub_categories || {})
+                  .sort(([a], [b]) => a.localeCompare(b, 'he'))
+                  .map(([subCategoryName, subCategoryData]) => (
                   <div key={subCategoryName} className="sub-category-item">
                     <div 
                       className="sub-category-header"
@@ -1153,7 +1155,7 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                       </div>
                     )}
                   </div>
-                ))}
+                  ))}
               </div>
             ) : (
               // Regular category view - show transactions directly or weekly breakdown

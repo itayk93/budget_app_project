@@ -505,25 +505,49 @@ const CategoryDropdown = ({ value, onChange, categories = [], placeholder = "ב�
             {loadingCategories ? (
               <div className="no-categories-simple">טוען קטגוריות...</div>
             ) : sortedGroups.length > 0 ? (
-              sortedGroups.map((group) => (
-                <div key={group.name} className="category-group-simple">
+              <>
+                {/* Add new category button at the top */}
+                <div className="category-group-simple">
                   <div className="group-header-simple">
-                    <span className="group-icon-simple">{group.icon}</span>
-                    <span className="group-name-simple">{group.name}</span>
+                    <span className="group-icon-simple">➕</span>
+                    <span className="group-name-simple">הוסף קטגוריה</span>
                   </div>
                   <div className="group-options-simple">
-                    {group.categories.map((category) => (
-                      <div
-                        key={category.id || category.category_name || category.name}
-                        className={`dropdown-option-simple ${value === (category.category_name || category.name) ? 'selected' : ''}`}
-                        onClick={() => handleCategorySelect(category)}
-                      >
-                        {highlightMatch(category.category_name || category.name, searchTerm)}
-                      </div>
-                    ))}
+                    <div
+                      className="dropdown-option-simple new-category-option"
+                      onClick={() => handleCategorySelect({ category_name: '__new_category__', name: '__new_category__' })}
+                      style={{ 
+                        backgroundColor: '#e8f5e8', 
+                        color: '#2e7d32', 
+                        fontWeight: '500',
+                        border: '1px dashed #4caf50'
+                      }}
+                    >
+                      ➕ צור קטגוריה חדשה
+                    </div>
                   </div>
                 </div>
-              ))
+                
+                {sortedGroups.map((group) => (
+                  <div key={group.name} className="category-group-simple">
+                    <div className="group-header-simple">
+                      <span className="group-icon-simple">{group.icon}</span>
+                      <span className="group-name-simple">{group.name}</span>
+                    </div>
+                    <div className="group-options-simple">
+                      {group.categories.map((category) => (
+                        <div
+                          key={category.id || category.category_name || category.name}
+                          className={`dropdown-option-simple ${value === (category.category_name || category.name) ? 'selected' : ''}`}
+                          onClick={() => handleCategorySelect(category)}
+                        >
+                          {highlightMatch(category.category_name || category.name, searchTerm)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </>
             ) : (
               <div className="no-categories-simple">
                 {searchTerm ? `לא נמצאו קטגוריות עבור "${searchTerm}"` : 'אין קטגוריות זמינות'}

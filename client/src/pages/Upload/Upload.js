@@ -1089,24 +1089,29 @@ const Upload = () => {
                     ) : (
                       <select
                         className="form-select"
-                        value={paymentIdentifier}
-                        onChange={(e) => setPaymentIdentifier(e.target.value)}
+                        value={paymentIdentifier && !paymentMethods.includes(paymentIdentifier) ? 'custom' : paymentIdentifier}
+                        onChange={(e) => {
+                          if (e.target.value === 'other') {
+                            const customValue = prompt('הכנס זיהוי תשלום מותאם אישית:');
+                            if (customValue && customValue.trim()) {
+                              setPaymentIdentifier(customValue.trim());
+                            } else {
+                              setPaymentIdentifier('');
+                            }
+                          } else {
+                            setPaymentIdentifier(e.target.value);
+                          }
+                        }}
                       >
                         <option value="">בחר זיהוי תשלום...</option>
                         {paymentMethods.map(paymentMethod => (
                           <option key={paymentMethod} value={paymentMethod}>{paymentMethod}</option>
                         ))}
+                        {paymentIdentifier && !paymentMethods.includes(paymentIdentifier) && (
+                          <option value="custom">{paymentIdentifier}</option>
+                        )}
                         <option value="other">אחר</option>
                       </select>
-                    )}
-                    {paymentIdentifier === 'other' && (
-                      <input
-                        type="text"
-                        className="form-input"
-                        style={{marginTop: '8px'}}
-                        placeholder="הכנס זיהוי תשלום אחר..."
-                        onChange={(e) => setPaymentIdentifier(e.target.value)}
-                      />
                     )}
                     </div>
                   )}

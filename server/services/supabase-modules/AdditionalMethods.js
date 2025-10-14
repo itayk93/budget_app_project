@@ -255,7 +255,7 @@ class AdditionalMethods {
 
     // First pass: identify all shared categories and their sub-categories
     Object.values(categoryBreakdown).forEach(category => {
-      if (category.shared_category && category.use_shared_target) {
+      if (category.shared_category) {
         // This category should be grouped under a shared category
         const sharedName = category.shared_category;
         
@@ -285,8 +285,8 @@ class AdditionalMethods {
         
         const sharedCategory = sharedCategoryMap.get(sharedName);
         
-        // Add this category as a sub-category (if it has transactions OR monthly target)
-        if (category.count > 0 || (category.monthly_target && category.monthly_target > 0)) {
+        // Add this category as a sub-category only if it has transactions
+        if (category.count > 0) {
           sharedCategory.sub_categories[category.name] = {
             name: category.name,
             amount: category.amount,
@@ -307,8 +307,8 @@ class AdditionalMethods {
           }
         }
       } else {
-        // This is a regular category (not shared) - add if it has transactions OR monthly target
-        if (category.count > 0 || (category.monthly_target && category.monthly_target > 0)) {
+        // This is a regular category (not shared) - add only if it has transactions
+        if (category.count > 0) {
           processedCategories[category.name] = {
             ...category,
             spent: category.type === 'income' ? category.amount : -category.amount,
@@ -319,12 +319,11 @@ class AdditionalMethods {
       }
     });
 
-    // Add all shared categories to the processed categories (if they have sub-categories or monthly target)
+    // Add all shared categories to the processed categories (only if they have sub-categories)
     sharedCategoryMap.forEach((sharedCategory, sharedName) => {
       const hasSubCategories = Object.keys(sharedCategory.sub_categories).length > 0;
-      const hasMonthlyTarget = sharedCategory.monthly_target && sharedCategory.monthly_target > 0;
       
-      if (hasSubCategories || hasMonthlyTarget) {
+      if (hasSubCategories) {
         processedCategories[sharedName] = {
           ...sharedCategory,
           spent: sharedCategory.type === 'income' ? sharedCategory.amount : -sharedCategory.amount

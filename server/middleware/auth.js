@@ -25,6 +25,22 @@ const authenticateToken = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+    
+    // Handle demo user
+    if (decoded.is_demo_user && decoded.userId === 'demo-user-001') {
+      req.user = {
+        id: decoded.userId,
+        email: decoded.email,
+        username: 'demo',
+        first_name: 'משתמש',
+        last_name: 'דמו',
+        is_demo_user: true
+      };
+      console.log('🎭 [AUTH] Authenticated demo user');
+      return next();
+    }
+    
+    // Handle regular user
     const user = await SupabaseService.getUserById(decoded.userId);
     
     if (!user) {
@@ -51,6 +67,21 @@ const optionalAuth = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+    
+    // Handle demo user
+    if (decoded.is_demo_user && decoded.userId === 'demo-user-001') {
+      req.user = {
+        id: decoded.userId,
+        email: decoded.email,
+        username: 'demo',
+        first_name: 'משתמש',
+        last_name: 'דמו',
+        is_demo_user: true
+      };
+      return next();
+    }
+    
+    // Handle regular user
     const user = await SupabaseService.getUserById(decoded.userId);
     
     if (user) {
