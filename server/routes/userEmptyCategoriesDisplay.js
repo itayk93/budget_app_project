@@ -8,7 +8,7 @@ router.get('/', async (req, res) => {
     const { year, month, cash_flow_id } = req.query;
     const userId = req.user.id;
 
-    console.log('🔍 [USER EMPTY CATEGORIES] GET request:', { userId, year, month, cash_flow_id });
+    // [USER EMPTY CATEGORIES] GET request log disabled
 
     if (!year || !month || !cash_flow_id) {
       return res.status(400).json({ 
@@ -23,8 +23,7 @@ router.get('/', async (req, res) => {
       .select('*')
       .limit(1);
 
-    console.log('🔍 [USER EMPTY CATEGORIES] Table check data:', tableCheck);
-    console.log('🔍 [USER EMPTY CATEGORIES] Table check error:', tableError);
+    // [USER EMPTY CATEGORIES] table check logs disabled
 
     if (tableError) {
       console.error('🚨 [USER EMPTY CATEGORIES] Table does not exist or no access:', tableError);
@@ -43,12 +42,7 @@ router.get('/', async (req, res) => {
       .eq('year', parseInt(year))
       .eq('month', parseInt(month));
 
-    console.log('🔍 [USER EMPTY CATEGORIES] Query filters:', {
-      user_id: userId,
-      cash_flow_id: cash_flow_id,
-      year: parseInt(year),
-      month: parseInt(month)
-    });
+    // [USER EMPTY CATEGORIES] query filters log disabled
 
     if (error) {
       console.error('🚨 [USER EMPTY CATEGORIES] Database error:', error);
@@ -60,8 +54,7 @@ router.get('/', async (req, res) => {
     }
 
     const categories = data.map(row => row.category_name);
-    console.log('✅ [USER EMPTY CATEGORIES] Retrieved categories:', categories);
-    console.log('✅ [USER EMPTY CATEGORIES] Raw data:', data);
+    // [USER EMPTY CATEGORIES] retrieved categories/raw data logs disabled
 
     res.json({
       success: true,
@@ -86,7 +79,7 @@ router.post('/add', async (req, res) => {
     const { categories, year, month, cash_flow_id } = req.body;
     const userId = req.user.id;
 
-    console.log('🔍 [USER EMPTY CATEGORIES] POST add request:', { userId, categories, year, month, cash_flow_id });
+    // [USER EMPTY CATEGORIES] POST add request log disabled
 
     if (!categories || !Array.isArray(categories) || !year || !month || !cash_flow_id) {
       return res.status(400).json({ 
@@ -104,7 +97,7 @@ router.post('/add', async (req, res) => {
       month: parseInt(month)
     }));
 
-    console.log('🔍 [USER EMPTY CATEGORIES] Preparing to insert:', insertData);
+    // [USER EMPTY CATEGORIES] preparing to insert log disabled
 
     // Insert with upsert (ignore conflicts)
     const { data, error } = await supabase
@@ -115,8 +108,7 @@ router.post('/add', async (req, res) => {
       })
       .select();
 
-    console.log('🔍 [USER EMPTY CATEGORIES] Insert result data:', data);
-    console.log('🔍 [USER EMPTY CATEGORIES] Insert result error:', error);
+    // [USER EMPTY CATEGORIES] insert result logs disabled
 
     if (error) {
       console.error('🚨 [USER EMPTY CATEGORIES] Insert error:', error);
@@ -127,7 +119,7 @@ router.post('/add', async (req, res) => {
       });
     }
 
-    console.log('✅ [USER EMPTY CATEGORIES] Categories added:', data?.length || 0);
+    // [USER EMPTY CATEGORIES] categories added log disabled
 
     res.json({
       success: true,
@@ -152,7 +144,7 @@ router.post('/remove', async (req, res) => {
     const { categories, year, month, cash_flow_id } = req.body;
     const userId = req.user.id;
 
-    console.log('🔍 [USER EMPTY CATEGORIES] POST remove request:', { userId, categories, year, month, cash_flow_id });
+    // [USER EMPTY CATEGORIES] POST remove request log disabled
 
     if (!categories || !Array.isArray(categories) || !year || !month || !cash_flow_id) {
       return res.status(400).json({ 
@@ -180,7 +172,7 @@ router.post('/remove', async (req, res) => {
       });
     }
 
-    console.log('✅ [USER EMPTY CATEGORIES] Categories removed:', data?.length || 0);
+    // [USER EMPTY CATEGORIES] categories removed log disabled
 
     res.json({
       success: true,
@@ -205,7 +197,7 @@ router.delete('/', async (req, res) => {
     const { year, month, cash_flow_id } = req.query;
     const userId = req.user.id;
 
-    console.log('🔍 [USER EMPTY CATEGORIES] DELETE request:', { userId, year, month, cash_flow_id });
+    // [USER EMPTY CATEGORIES] DELETE request log disabled
 
     if (!year || !month || !cash_flow_id) {
       return res.status(400).json({ 
@@ -232,7 +224,7 @@ router.delete('/', async (req, res) => {
       });
     }
 
-    console.log('✅ [USER EMPTY CATEGORIES] All categories cleared:', data?.length || 0);
+    // [USER EMPTY CATEGORIES] all categories cleared log disabled
 
     res.json({
       success: true,

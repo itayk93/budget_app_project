@@ -3,7 +3,6 @@ const cors = require('cors');
 const path = require('path');
 const helmet = require('helmet');
 const compression = require('compression');
-const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const session = require('express-session');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
@@ -39,8 +38,7 @@ app.use(limiter);
 // Compression
 app.use(compression());
 
-// Logging
-app.use(morgan('combined'));
+// Logging disabled (was morgan('combined'))
 
 // CORS configuration
 app.use(cors({
@@ -56,11 +54,7 @@ app.use(cors({
 app.use(express.json({ limit: '16mb' }));
 app.use(express.urlencoded({ extended: true, limit: '16mb' }));
 
-// Global request logging middleware
-app.use((req, res, next) => {
-  console.log(`🌐 [GLOBAL] ${req.method} ${req.originalUrl} - ${new Date().toISOString()}`);
-  next();
-});
+// Global request logging middleware disabled
 
 // Session configuration
 const sessionConfig = {
@@ -127,12 +121,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/transactions', transactionRoutes);
 
-// Add logging middleware for category routes
-app.use('/api/categories', (req, res, next) => {
-  console.log(`🔍 [CATEGORY ROUTE] ${req.method} ${req.originalUrl}`);
-  console.log(`🔍 [CATEGORY ROUTE] Body:`, req.body);
-  next();
-});
+// Category route verbose logging disabled
 
 app.use('/api/categories', categoryRoutes);
 app.use('/api/budgets', budgetRoutes);
@@ -200,7 +189,7 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 5001;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  // Startup port log disabled
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 

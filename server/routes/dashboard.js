@@ -165,8 +165,7 @@ router.get('/', authenticateToken, async (req, res) => {
       });
     }
 
-    console.log('🔍 DASHBOARD DEBUG INFO:', JSON.stringify(debugInfo, null, 2));
-    console.log('🚨 [DEBUG] About to process categories - actualData exists:', !!actualData, 'has category_breakdown:', !!actualData?.category_breakdown);
+    // Dashboard debug logs disabled
 
     // Check result
     if (!actualData) {
@@ -182,7 +181,7 @@ router.get('/', authenticateToken, async (req, res) => {
     // Check if user has requested to show empty categories for this period
     let showEmptyCategories = [];
     if (!allTime && finalYear && finalMonth && cash_flow) {
-      console.log('🔍 [EMPTY FILTER DASHBOARD] Checking for user empty categories:', { userId, finalYear, finalMonth, cash_flow });
+      // [EMPTY FILTER DASHBOARD] check log disabled
       try {
         const { createClient } = require('@supabase/supabase-js');
         const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
@@ -198,7 +197,7 @@ router.get('/', authenticateToken, async (req, res) => {
         if (!emptyCategoriesError && emptyCategoriesToShow) {
           showEmptyCategories = emptyCategoriesToShow.map(row => row.category_name);
         }
-        console.log('🔍 [EMPTY FILTER DASHBOARD] Found empty categories to show:', showEmptyCategories);
+        // [EMPTY FILTER DASHBOARD] found empty categories log disabled
       } catch (error) {
         console.error('❌ [EMPTY FILTER DASHBOARD] Error checking empty categories:', error);
       }
@@ -208,13 +207,15 @@ router.get('/', authenticateToken, async (req, res) => {
     const categories = {};
     const orderedCategories = [];
     if (actualData.category_breakdown && Array.isArray(actualData.category_breakdown)) {
-      console.log('📋 Dashboard categories before processing (with shared categories):', actualData.category_breakdown.map(c => ({ 
-        name: c.name, 
+      // Dashboard categories before processing log disabled
+      /* console.log('📋 Dashboard categories before processing (with shared categories):', actualData.category_breakdown.map(c => ({  */
+        name: c.name,
         display_order: c.display_order, 
         shared_category: c.shared_category,
         is_shared_category: c.is_shared_category,
         sub_categories: c.sub_categories ? Object.keys(c.sub_categories).length : 0
-      })));
+      /* })));
+      */
       
       // Filter out empty categories based on whether month is finished or not
       const now = new Date();
@@ -222,9 +223,7 @@ router.get('/', authenticateToken, async (req, res) => {
       const currentMonth = now.getMonth() + 1;
       const isMonthFinished = finalYear < currentYear || (finalYear === currentYear && finalMonth < currentMonth);
       
-      console.log('🔍 [EMPTY FILTER DASHBOARD] Month info:', { 
-        finalYear, finalMonth, currentYear, currentMonth, isMonthFinished 
-      });
+      // [EMPTY FILTER DASHBOARD] month info log disabled
       
       const filteredCategories = actualData.category_breakdown.filter(category => {
         const hasTransactions = category.count > 0;
@@ -241,16 +240,13 @@ router.get('/', authenticateToken, async (req, res) => {
         }
         
         if (!shouldShow) {
-          console.log('🚫 [EMPTY FILTER DASHBOARD] Filtering out empty category:', category.name, { 
-            hasTransactions, hasMonthlyTarget, explicitlyRequested, isMonthFinished,
-            count: category.count, target: category.monthly_target 
-          });
+          // [EMPTY FILTER DASHBOARD] filtering out category log disabled
         }
         
         return shouldShow;
       });
       
-      console.log('🔍 [EMPTY FILTER DASHBOARD] Categories after filtering:', filteredCategories.length, 'from', actualData.category_breakdown.length);
+      // [EMPTY FILTER DASHBOARD] categories after filtering log disabled
       
       // Replace the category breakdown with filtered categories
       actualData.category_breakdown = filteredCategories;
@@ -279,13 +275,7 @@ router.get('/', authenticateToken, async (req, res) => {
         orderedCategories.push(categoryData);
       });
       
-      console.log('✅ Final ordered categories (with shared category data):', orderedCategories.map(c => ({ 
-        name: c.name, 
-        display_order: c.display_order, 
-        shared_category: c.shared_category,
-        is_shared_category: c.is_shared_category,
-        sub_categories: c.sub_categories ? Object.keys(c.sub_categories).length : 0
-      })));
+      // Final ordered categories log disabled
     }
     
     // Prepare response data

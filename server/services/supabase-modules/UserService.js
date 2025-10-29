@@ -102,7 +102,7 @@ class UserService {
         return SharedUtilities.createErrorResponse('Invalid UUID format');
       }
 
-      console.log(`🔍 Looking up user with valid UUID: ${id}`);
+      // Looking up user log disabled
       // Use admin client for user management operations (bypasses RLS)
       const { data, error } = await adminClient
         .from('users')
@@ -112,7 +112,7 @@ class UserService {
 
       if (error) throw error;
       
-      console.log(`👤 User lookup result:`, data ? 'Found' : 'Not found');
+      // User lookup result log disabled
       return data ? SharedUtilities.createSuccessResponse(data) : null;
     } catch (error) {
       console.error(`❌ Error fetching user by ID ${id}:`, error);

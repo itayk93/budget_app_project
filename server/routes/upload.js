@@ -110,7 +110,7 @@ function loadSessions() {
       for (const [id, session] of Object.entries(sessions)) {
         uploadSessions.set(id, session);
       }
-      console.log(`Loaded ${uploadSessions.size} upload sessions from persistent storage`);
+      // Loaded upload sessions log disabled
     }
   } catch (error) {
     console.warn('Failed to load upload sessions:', error);

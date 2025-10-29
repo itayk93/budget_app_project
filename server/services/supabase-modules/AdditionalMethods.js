@@ -183,7 +183,7 @@ class AdditionalMethods {
       // Check if user has requested to show empty categories for this period
       let showEmptyCategories = [];
       if (!allTime && finalYear && finalMonth && cashFlowId) {
-        console.log('🔍 [EMPTY FILTER] Checking for user empty categories:', { userId, finalYear, finalMonth, cashFlowId });
+        // [EMPTY FILTER] user empty categories check log disabled
         const { data: emptyCategoriesToShow, error: emptyCategoriesError } = await supabase
           .from('user_empty_categories_display')
           .select('category_name')
@@ -195,11 +195,11 @@ class AdditionalMethods {
         if (!emptyCategoriesError && emptyCategoriesToShow) {
           showEmptyCategories = emptyCategoriesToShow.map(row => row.category_name);
         }
-        console.log('🔍 [EMPTY FILTER] Found empty categories to show:', showEmptyCategories);
+        // [EMPTY FILTER] found empty categories log disabled
       }
 
       // Filter out categories with zero transactions unless explicitly requested by user
-      console.log('🔍 [EMPTY FILTER] Starting filter process. Categories before filtering:', Object.keys(categoryBreakdown).length);
+      // [EMPTY FILTER] starting filter process log disabled
       const filteredCategoryBreakdown = {};
       Object.entries(categoryBreakdown).forEach(([categoryName, category]) => {
         const hasTransactions = category.count > 0;
@@ -210,10 +210,10 @@ class AdditionalMethods {
         if (hasTransactions || hasMonthlyTarget || explicitlyRequested) {
           filteredCategoryBreakdown[categoryName] = category;
         } else {
-          console.log('🚫 [EMPTY FILTER] Filtering out empty category:', categoryName, { hasTransactions, hasMonthlyTarget, explicitlyRequested });
+          // [EMPTY FILTER] filtering out empty category log disabled
         }
       });
-      console.log('🔍 [EMPTY FILTER] Categories after filtering:', Object.keys(filteredCategoryBreakdown).length);
+      // [EMPTY FILTER] categories after filtering log disabled
 
       // Process shared categories with filtered data
       const processedCategories = AdditionalMethods.processSharedCategories(filteredCategoryBreakdown);
@@ -413,7 +413,7 @@ class AdditionalMethods {
       if (error) throw error;
       return SharedUtilities.createSuccessResponse(data, 'User preference saved successfully');
     } catch (error) {
-      console.error('Error setting user preference:', error);
+      // Error setting user preference log disabled
       return SharedUtilities.handleSupabaseError(error, 'set user preference');
     }
   }

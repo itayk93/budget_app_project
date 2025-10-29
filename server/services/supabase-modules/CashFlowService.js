@@ -13,12 +13,12 @@ class CashFlowService {
   
   static async getCashFlows(userId, userClient = null) {
     try {
-      console.log('🔍 [CASHFLOW SERVICE] getCashFlows called with userId:', userId);
+      // [CASHFLOW SERVICE] getCashFlows debug log disabled
       SharedUtilities.validateUserId(userId);
 
       // Use secure client with user context (now uses admin client)
       const client = userClient || await SharedUtilities.createSecureClient(supabase, userId);
-      console.log('🔍 [CASHFLOW SERVICE] Using client type:', client === supabase ? 'original' : 'admin');
+      // [CASHFLOW SERVICE] client type log disabled
       
       // Query for user's cash flows
       const { data, error } = await client
@@ -28,15 +28,12 @@ class CashFlowService {
         .order('is_default', { ascending: false })
         .order('name');
 
-      console.log('🔍 [CASHFLOW SERVICE] Supabase query result:');
-      console.log('🔍 [CASHFLOW SERVICE] - Error:', error);
-      console.log('🔍 [CASHFLOW SERVICE] - Data:', data);
-      console.log('🔍 [CASHFLOW SERVICE] - Data count:', data ? data.length : 'null');
+      // [CASHFLOW SERVICE] verbose query result logs disabled
 
       if (error) throw error;
       
       const response = SharedUtilities.createSuccessResponse(data || []);
-      console.log('🔍 [CASHFLOW SERVICE] Final response:', response);
+      // [CASHFLOW SERVICE] final response log disabled
       return response;
     } catch (error) {
       console.error('Error fetching cash flows:', error);
@@ -70,7 +67,7 @@ class CashFlowService {
       
       // Use admin client for consistent access
       const client = await SharedUtilities.createSecureClient(supabase, userId);
-      console.log('🔍 [CASHFLOW SERVICE] getDefaultCashFlow for userId:', userId);
+      // [CASHFLOW SERVICE] getDefaultCashFlow debug log disabled
 
       // First try to get the default cash flow
       const { data: defaultFlow, error: defaultError } = await client
@@ -83,7 +80,7 @@ class CashFlowService {
       if (defaultError) throw defaultError;
 
       if (defaultFlow) {
-        console.log('🔍 [CASHFLOW SERVICE] Found default cash flow:', defaultFlow.id);
+        // [CASHFLOW SERVICE] default cash flow log disabled
         return SharedUtilities.createSuccessResponse(defaultFlow);
       }
 
@@ -99,14 +96,14 @@ class CashFlowService {
       if (firstError) throw firstError;
 
       if (firstFlow) {
-        console.log('🔍 [CASHFLOW SERVICE] Found first cash flow, setting as default:', firstFlow.id);
+        // [CASHFLOW SERVICE] found first cash flow log disabled
         // Set this as default
         await this.updateCashFlow(firstFlow.id, { is_default: true });
         return SharedUtilities.createSuccessResponse(firstFlow);
       }
 
       // No cash flows found - create a default one
-      console.log('🔍 [CASHFLOW SERVICE] No cash flows found, creating default for userId:', userId);
+      // [CASHFLOW SERVICE] creating default cash flow log disabled
       const defaultCashFlow = await this.createCashFlow({
         user_id: userId,
         name: 'Default Cash Flow',

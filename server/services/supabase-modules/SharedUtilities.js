@@ -30,7 +30,7 @@ class SharedUtilities {
       
       // For admin client (service role), we bypass RLS entirely
       // For user clients, we would set user context, but we'll use admin client for now
-      console.log('✅ [RLS] Using admin client - bypassing RLS for:', userId);
+      // [RLS] bypass log disabled
       return true;
     } catch (error) {
       console.error('❌ [RLS] Error setting user context:', error);
@@ -183,7 +183,10 @@ class SharedUtilities {
   // ===== ERROR HANDLING UTILITIES =====
   
   static handleSupabaseError(error, operation = 'operation') {
-    console.error(`Supabase ${operation} error:`, error);
+    // Suppress specific noisy error logs
+    if (operation !== 'set user preference') {
+      console.error(`Supabase ${operation} error:`, error);
+    }
     return {
       success: false,
       error: error.message || `Failed to perform ${operation}`,

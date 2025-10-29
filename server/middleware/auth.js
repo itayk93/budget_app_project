@@ -36,7 +36,7 @@ const authenticateToken = async (req, res, next) => {
         last_name: 'דמו',
         is_demo_user: true
       };
-      console.log('🎭 [AUTH] Authenticated demo user');
+      // Demo user auth log disabled
       return next();
     }
     
@@ -48,7 +48,7 @@ const authenticateToken = async (req, res, next) => {
     }
 
     req.user = user;
-    console.log('🔍 [AUTH] Authenticated user ID:', user.id);
+    // Authenticated user ID log disabled
     next();
   } catch (error) {
     // Log error without exposing sensitive data

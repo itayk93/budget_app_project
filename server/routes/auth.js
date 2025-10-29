@@ -185,7 +185,7 @@ router.get('/me', authenticateToken, async (req, res) => {
 
 // Verify token
 router.get('/verify', authenticateToken, (req, res) => {
-  console.log('🔐 Verify endpoint called successfully');
+  // Verify endpoint log disabled
   res.json({ 
     valid: true, 
     user: {
