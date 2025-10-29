@@ -190,7 +190,7 @@ const PORT = process.env.PORT || 5001;
 
 app.listen(PORT, () => {
   // Startup port log disabled
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  // Environment log disabled
 });
 
 module.exports = app;
