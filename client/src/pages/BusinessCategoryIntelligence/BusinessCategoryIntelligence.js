@@ -761,49 +761,46 @@ const BusinessCategoryIntelligence = () => {
         </div>
       )}
 
-      {/* Transaction Modal */}
+      {/* Transaction Modal (using Common/Modal) */}
       {transactionModal && (
-        <div className="bci-modal-overlay modal-overlay" onClick={closeModal}>
-          <div className="bci-transaction-modal modal" dir="rtl" onClick={(e) => e.stopPropagation()}>
-            <div className="bci-modal-header">
-              <h3>עסקאות של {transactionModal.businessName}</h3>
-              <button className="bci-close-btn" onClick={closeModal}>×</button>
-            </div>
-            
-            <div className="bci-modal-content">
-              {loadingTransactions ? (
-                <div className="bci-loading">טוען עסקאות...</div>
-              ) : businessTransactions.length === 0 ? (
-                <div className="bci-no-transactions">לא נמצאו עסקאות</div>
-              ) : (
-                <div className="bci-transactions-list">
-                  <table className="bci-transactions-table">
-                    <thead>
-                      <tr>
-                        <th>תאריך</th>
-                        <th>סכום</th>
-                        <th>אמצעי תשלום</th>
-                        <th>הערות</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {businessTransactions.map((transaction, index) => (
-                        <tr key={transaction.id || index}>
-                          <td>{new Date(transaction.payment_date).toLocaleDateString('he-IL')}</td>
-                          <td className={`bci-amount ${parseFloat(transaction.amount) < 0 ? 'negative' : 'positive'}`}>
-                            {Math.abs(parseFloat(transaction.amount)).toLocaleString()} {transaction.currency}
-                          </td>
-                          <td>{transaction.payment_method}</td>
-                          <td>{transaction.notes || '-'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+        <Modal isOpen={true} onClose={closeModal} className="bci-transaction-modal" size="large">
+          <div className="bci-modal-header">
+            <h3>עסקאות של {transactionModal.businessName}</h3>
+            <button className="bci-close-btn" onClick={closeModal}>×</button>
           </div>
-        </div>
+          <div className="bci-modal-content">
+            {loadingTransactions ? (
+              <div className="bci-loading">טוען עסקאות...</div>
+            ) : businessTransactions.length === 0 ? (
+              <div className="bci-no-transactions">לא נמצאו עסקאות</div>
+            ) : (
+              <div className="bci-transactions-list">
+                <table className="bci-transactions-table">
+                  <thead>
+                    <tr>
+                      <th>תאריך</th>
+                      <th>סכום</th>
+                      <th>אמצעי תשלום</th>
+                      <th>הערות</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {businessTransactions.map((transaction, index) => (
+                      <tr key={transaction.id || index}>
+                        <td>{new Date(transaction.payment_date).toLocaleDateString('he-IL')}</td>
+                        <td className={`bci-amount ${parseFloat(transaction.amount) < 0 ? 'negative' : 'positive'}`}>
+                          {Math.abs(parseFloat(transaction.amount)).toLocaleString()} {transaction.currency}
+                        </td>
+                        <td>{transaction.payment_method}</td>
+                        <td>{transaction.notes || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </Modal>
       )}
 
       {/* Specific Transactions Selection Modal (using Common/Modal wrapper) */}
