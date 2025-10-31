@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import Modal from '../Common/Modal';
 import { useQuery, useQueryClient } from 'react-query';
 import { transactionsAPI, cashFlowsAPI } from '../../services/api';
 import LoadingSpinner from '../Common/LoadingSpinner';
@@ -266,10 +267,25 @@ const TransactionSearchModal = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
+  const anotherModalOpen = (
+    showTransactionActionsModal ||
+    showSplitTransactionModal ||
+    showCategoryTransferModal ||
+    showCopyTransactionModal ||
+    showChangeMonthModal ||
+    showEditTransactionModal ||
+    showDeleteTransactionModal
+  );
+
   return (
     <>
-      <div className="transaction-search-modal-backdrop" onClick={(showTransactionActionsModal || showSplitTransactionModal || showCategoryTransferModal || showCopyTransactionModal || showChangeMonthModal || showEditTransactionModal || showDeleteTransactionModal) ? undefined : handleClose}></div>
-      <div className="transaction-search-modal modal" dir="rtl">
+      <Modal
+        isOpen={isOpen}
+        onClose={handleClose}
+        className="transaction-search-modal"
+        size="large"
+        closeOnBackdrop={!anotherModalOpen}
+      >
         <div className="modal-header">
           <div className="header-content-centered">
             <h2>חיפוש עסקאות</h2>
@@ -418,7 +434,7 @@ const TransactionSearchModal = ({ isOpen, onClose }) => {
             )}
           </div>
         </div>
-      </div>
+      </Modal>
 
       {/* All Transaction Modals */}
       {showTransactionActionsModal && createPortal(
