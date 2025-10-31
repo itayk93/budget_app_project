@@ -10,6 +10,7 @@ import MonthlyTargetModal from '../../components/Modals/MonthlyTargetModal';
 import MonthlyGoalModal from '../../components/MonthlyGoalModal/MonthlyGoalModal';
 import TransactionSearchModal from '../../components/TransactionSearchModal/TransactionSearchModal';
 import '../../pages/BusinessCategoryIntelligence/BusinessCategoryIntelligence.css';
+import Modal from '../../components/Common/Modal';
 
 const mockTransaction = {
   id: 'tx_1',
@@ -48,6 +49,7 @@ const ModalsGallery = () => {
         <button onClick={() => toggle('TransactionActionsModal')}>TransactionActionsModal</button>
         <button onClick={() => toggle('BCITransactionModal')}>BCI Transaction Modal</button>
         <button onClick={() => toggle('BCISpecificTransactionsModal')}>BCI Specific Transactions Modal</button>
+        <button onClick={() => toggle('BaseModal')}>Base Modal (Generic)</button>
       </div>
 
       {/* Actual modals wired with mock/no-op handlers */}
@@ -140,6 +142,26 @@ const ModalsGallery = () => {
         </div>
       )}
 
+      {/* Base Modal (Generic Style Showcase) */}
+      {open.BaseModal && (
+        <Modal
+          isOpen={true}
+          onClose={() => toggle('BaseModal', false)}
+          title="מודל כללי לדוגמה"
+          size="medium"
+          footer={(
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => toggle('BaseModal', false)}>ביטול</button>
+              <button className="btn btn-primary" onClick={() => toggle('BaseModal', false)}>אישור</button>
+            </div>
+          )}
+        >
+          <div className="modal-body">
+            זהו מודל לדוגמה שמציג את העיצוב הכללי (כותרת, גוף ותחתית).
+          </div>
+        </Modal>
+      )}
+
       {/* BCI Transaction Modal placeholder */}
       {open.BCITransactionModal && (
         <div className="bci-modal-overlay" onClick={() => toggle('BCITransactionModal', false)}>
@@ -174,4 +196,3 @@ const ModalsGallery = () => {
 };
 
 export default ModalsGallery;
-
