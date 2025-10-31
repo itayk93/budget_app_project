@@ -20,7 +20,7 @@ const TransactionActionsModal = ({ isOpen, onClose, transaction, categoryName, o
 
   return (
     <div className="modal-backdrop" onClick={handleBackdropClick}>
-      <div className="transaction-actions-modal" dir="rtl" onClick={(e) => e.stopPropagation()}>
+      <div className="transaction-actions-modal modal" dir="rtl" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>פעולות עבור: {transaction.business_name || transaction.description || 'עסקה ללא שם'}</h3>
           <button className="close-btn" onClick={onClose}>

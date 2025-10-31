@@ -366,6 +366,27 @@ a:hover {
   flex-direction: column;
 }
 
+/* RTL alignment for modal header and close buttons */
+[dir="rtl"] .modal-header {
+  direction: rtl;
+}
+[dir="rtl"] .modal-header .modal-title {
+  text-align: right;
+}
+[dir="rtl"] .modal-header .modal-close {
+  order: -1;
+}
+/* Support components that use generic .close-btn inside a modal header */
+[dir="rtl"] .modal-header .close-btn {
+  order: -1;
+  right: auto !important;
+  left: 20px;
+}
+/* BCI close alignment */
+[dir="rtl"] .bci-modal-header .bci-close-btn {
+  order: -1;
+}
+
 @keyframes modalSlideIn {
   from {
     opacity: 0;

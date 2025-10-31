@@ -910,6 +910,7 @@ export default function StocksDashboard() {
 
             {showMonthlyChart && (
                 <div 
+                    className="modal-overlay"
                     style={{
                         position: 'fixed',
                         top: 0,
@@ -925,6 +926,7 @@ export default function StocksDashboard() {
                     onClick={() => setShowMonthlyChart(false)}
                 >
                     <div 
+                        className="modal"
                         style={{
                             backgroundColor: 'white',
                             borderRadius: '12px',
@@ -937,7 +939,7 @@ export default function StocksDashboard() {
                         dir="rtl"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexDirection: 'row-reverse' }}>
                             <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937', margin: 0 }}>
                                 גרף ביצועים חודשי
                             </h2>
@@ -962,6 +964,7 @@ export default function StocksDashboard() {
 
             {showUploadModal && (
                 <div 
+                    className="modal-overlay"
                     style={{
                         position: 'fixed',
                         top: 0,
@@ -977,6 +980,7 @@ export default function StocksDashboard() {
                     onClick={() => setShowUploadModal(false)}
                 >
                     <div 
+                        className="modal"
                         style={{
                             backgroundColor: 'white',
                             borderRadius: '12px',
@@ -989,7 +993,7 @@ export default function StocksDashboard() {
                         dir="rtl"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexDirection: 'row-reverse' }}>
                             <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937', margin: 0 }}>
                                 העלאת צילום מסך Blink
                             </h2>
@@ -1017,6 +1021,7 @@ export default function StocksDashboard() {
 
             {showManualEntryModal && (
                 <div 
+                    className="modal-overlay"
                     style={{
                         position: 'fixed',
                         top: 0,
@@ -1032,6 +1037,7 @@ export default function StocksDashboard() {
                     onClick={() => setShowManualEntryModal(false)}
                 >
                     <div 
+                        className="modal"
                         style={{
                             backgroundColor: 'white',
                             borderRadius: '12px',
@@ -1044,7 +1050,7 @@ export default function StocksDashboard() {
                         dir="rtl"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexDirection: 'row-reverse' }}>
                             <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937', margin: 0 }}>
                                 רשומה ידנית
                             </h2>
