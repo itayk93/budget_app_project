@@ -53,31 +53,31 @@ class WorkingExcelService {
   async getCategoryByBusinessName(businessName, amount = null, sourceType = null, userId = null) {
     if (!businessName) return null;
     
-    console.log(`🔍 [getCategoryByBusinessName] Called with: businessName="${businessName}", amount=${amount}, sourceType="${sourceType}", userId=${userId}`);
+    logger.debug('AUTO-CATEGORY', `getCategoryByBusinessName called`, { businessName, amount, sourceType, userId });
     
     // Check cache first
     const cacheKey = `${businessName}_${userId}`;
     if (this.businessCategoryCache.has(cacheKey)) {
       const cachedCategory = this.businessCategoryCache.get(cacheKey);
-      console.log(`🎯 [getCategoryByBusinessName] Cache hit: "${businessName}" -> "${cachedCategory}"`);
+      logger.debug('AUTO-CATEGORY', `Cache hit for business`, { businessName, cachedCategory });
       return cachedCategory;
     }
     
     try {
       // Call the SupabaseService auto-categorization with userId
-      console.log(`🔍 [getCategoryByBusinessName] Calling SupabaseService.getAutoCategoryForBusiness...`);
+      logger.debug('AUTO-CATEGORY', `Calling SupabaseService.getAutoCategoryForBusiness`);
       const autoCategory = await SupabaseService.getAutoCategoryForBusiness(businessName, amount, sourceType, userId);
       
       if (autoCategory) {
         // Cache the result
         this.businessCategoryCache.set(cacheKey, autoCategory);
-        console.log(`✅ [getCategoryByBusinessName] Auto-categorized "${businessName}" as "${autoCategory}"`);
+        logger.debug('AUTO-CATEGORY', `Auto-categorized business`, { businessName, autoCategory });
         return autoCategory;
       } else {
-        console.log(`❌ [getCategoryByBusinessName] No auto-category found for "${businessName}"`);
+        logger.debug('AUTO-CATEGORY', `No auto-category found`, { businessName });
       }
     } catch (error) {
-      console.warn(`❌ [getCategoryByBusinessName] Error getting auto category for business ${businessName}:`, error);
+      logger.warn('AUTO-CATEGORY', `Error getting auto category for business`, { businessName, error: error?.message });
     }
     
     return null;
@@ -861,11 +861,11 @@ class WorkingExcelService {
         if (!mapped.flow_month) {
           mapped.flow_month = date.format('YYYY-MM');
           if (process.env.DEBUG === 'true') {
-              console.log(`🔍 [WorkingExcelService] Calculated flow_month: ${mapped.flow_month} from payment_date: ${mapped.payment_date}`);
+              logger.debug('WorkingExcelService', 'Calculated flow_month from payment_date', { flow_month: mapped.flow_month, payment_date: mapped.payment_date });
           }
         } else {
           if (process.env.DEBUG === 'true') {
-              console.log(`🔍 [WorkingExcelService] Preserving CSV flow_month: ${mapped.flow_month} for payment_date: ${mapped.payment_date}`);
+              logger.debug('WorkingExcelService', 'Preserving CSV flow_month', { flow_month: mapped.flow_month, payment_date: mapped.payment_date });
           }
         }
       }
@@ -941,8 +941,8 @@ class WorkingExcelService {
         
         // Read the sheet using the found header row
         rawData = XLSX.utils.sheet_to_json(worksheet, { range: headerRowIndex });
-        console.log(`📊 Raw data columns after reading from header row ${headerRowIndex}:`, Object.keys(rawData[0] || {}));
-        console.log(`📊 First row sample data:`, rawData[0]);
+        logger.debug('WorkingExcelService', 'Raw data columns after reading from header row', { headerRowIndex, columns: Object.keys(rawData[0] || {}) });
+        logger.debug('WorkingExcelService', 'First row sample data', { row: rawData[0] });
 
       } else {
         throw new Error('Unsupported file format');
@@ -953,17 +953,17 @@ class WorkingExcelService {
         return { success: true, data: [], currencyGroups: {}, detectedFormat: 'unknown', totalRows: 0, processedTransactions: 0 };
       }
 
-      console.log('📊 Raw data loaded:', { rows: rawData.length, columns: Object.keys(rawData[0] || {}).length });
+      logger.debug('WorkingExcelService', 'Raw data loaded', { rows: rawData.length, columns: Object.keys(rawData[0] || {}).length });
       
       // Use the detected format from the header finding step
       const detectedFileSource = formatDetection ? formatDetection.format : fileSource;
-      console.log(`🎯 Using detected format: '${detectedFileSource}' for mapping.`);
+      logger.debug('WorkingExcelService', 'Using detected format for mapping', { detectedFileSource });
 
       let processedData = await this.mapSheet(rawData, detectedFileSource, uploadId);
       processedData = this.fixEuroAmounts(processedData);
       
       const currencyGroups = this.groupByCurrency(processedData);
-      console.log('💱 Currency groups:', Object.keys(currencyGroups));
+      logger.debug('WorkingExcelService', 'Currency groups', { groups: Object.keys(currencyGroups) });
 
       return {
         success: true,
@@ -1008,13 +1008,12 @@ class WorkingExcelService {
     }
 
     const headers = Object.keys(data[0]).map(h => h.trim());
-    console.log('🔍 Headers found:', headers);
+    logger.debug('WorkingExcelService', 'Headers found', { headers });
     
     // Debug: log first few rows for Isracard debugging
     if (fileSource === 'isracard') {
-      console.log('🏦 Isracard file - first 3 rows for debugging:');
       for (let i = 0; i < Math.min(3, data.length); i++) {
-        console.log(`Row ${i}:`, data[i]);
+        logger.debug('WorkingExcelService', 'Isracard debug row', { rowIndex: i, row: data[i] });
       }
     }
 
@@ -1169,7 +1168,7 @@ class WorkingExcelService {
             // Excel dates typically start from 1900, serial numbers 40000+ are roughly 2009+
             // 45000+ are roughly 2023+, which makes sense for recent transactions
             if (numVal >= 40000 && numVal <= 50000) {
-                console.log(`✅ Detected Excel date serial: ${numVal}`);
+                logger.debug('WorkingExcelService', 'Detected Excel date serial', { serial: numVal });
                 return true;
             }
             return false;
@@ -1203,56 +1202,56 @@ class WorkingExcelService {
         
         // Debug logging for all columns to see what we're processing
         if (process.env.DEBUG === 'true') {
-            console.log(`🔍 Processing column: "${col}" (lowercase: "${lc}") with value: "${val}"`);
+            logger.debug('WorkingExcelService', 'Processing column', { col, lc, val });
         }
 
         if (lc.includes('תאריך') || lc.includes('date')) {
             if (process.env.DEBUG === 'true') {
-                console.log(`🔍 Date column found: "${col}" with value: ${val} (type: ${typeof val})`);
+                logger.debug('WorkingExcelService', 'Date column found', { col, val, type: typeof val });
             }
             // Only process if value is not empty and looks like a date
             if (val && val.toString().trim() !== '' && looks_like_date(val)) {
                 if (process.env.DEBUG === 'true') {
-                    console.log(`✅ Date value "${val}" passed looks_like_date check`);
+                    logger.debug('WorkingExcelService', 'Date value passed looks_like_date check', { val });
                 }
                 // For Isracard, specifically handle purchase date and bank charge date
                 if (lc.includes('תאריך רכישה')) {
                     df.payment_date = val;
                     if (process.env.DEBUG === 'true') {
-                        console.log(`📅 Set payment_date from תאריך רכישה: ${val}`);
+                        logger.debug('WorkingExcelService', 'Set payment_date from תאריך רכישה', { val });
                     }
                 } else if (lc.includes('תאריך חיוב בבנק')) {
                     df.charge_date = val;
                     if (process.env.DEBUG === 'true') {
-                        console.log(`📅 Set charge_date from תאריך חיוב בבנק: ${val}`);
+                        logger.debug('WorkingExcelService', 'Set charge_date from תאריך חיוב בבנק', { val });
                     }
                 } else if (lc.includes('תאריך החיוב בחשבון') || lc.includes('תאריך החיוב')) {
                     df.charge_date = val;
                     if (process.env.DEBUG === 'true') {
-                        console.log(`📅 Set charge_date from תאריך החיוב: ${val}`);
+                        logger.debug('WorkingExcelService', 'Set charge_date from תאריך החיוב', { val });
                     }
                 } else if (lc.includes('תאריך התשלום') || lc.includes('תאריך עסקה') || (!df.payment_date && (lc.includes('תאריך') || lc.includes('date')))) {
                     df.payment_date = val;
-                    console.log(`📅 Set payment_date from תאריך עסקה/תאריך התשלום: ${val}`);
+                    logger.debug('WorkingExcelService', 'Set payment_date from תאריך עסקה/תאריך התשלום', { val });
                 } else if (!df.charge_date) {
                     df.charge_date = val;
                     if (process.env.DEBUG === 'true') {
-                        console.log(`📅 Set charge_date as fallback: ${val}`);
+                        logger.debug('WorkingExcelService', 'Set charge_date as fallback', { val });
                     }
                 }
             } else {
                 if (process.env.DEBUG === 'true') {
-                    console.warn(`❌ Date value "${val}" did not pass looks_like_date check`);
+                    logger.debug('WorkingExcelService', 'Date value did not pass looks_like_date check', { val });
                 }
             }
             continue;
         }
 
         if (lc.includes('סכום חיוב')) {
-            console.log(`💰 Found amount column (סכום חיוב): "${col}" with value: "${val}"`);
+            logger.debug('WorkingExcelService', 'Found amount column (סכום חיוב)', { col, val });
             // Use the robust parseAmount function
             let amt = this.parseAmount(val);
-            console.log(`💰 Parsed amount result: ${amt}`);
+            logger.debug('WorkingExcelService', 'Parsed amount result', { amt });
             
             if (amt === null) {
                 console.warn(`⚠️ Invalid amount '${val}', setting to 0`);
@@ -1262,7 +1261,7 @@ class WorkingExcelService {
             // For credit card formats (Isracard, CAL, Max), multiply by -1 to make it negative (expense)
             if (formatDetection.format && ['isracard', 'cal', 'max'].includes(formatDetection.format.toLowerCase())) {
                 df.amount = amt > 0 ? -amt : amt;
-                console.log(`💰 Applied ${formatDetection.format} format (negative): ${df.amount}`);
+                logger.debug('WorkingExcelService', 'Applied format (negative amount)', { format: formatDetection.format, amount: df.amount });
             } else {
                 df.amount = amt;
                 console.log(`💰 Set amount: ${df.amount}`);
@@ -1412,14 +1411,14 @@ class WorkingExcelService {
         }
         
         if (lc.includes('קטגוריה') && !lc.includes('תזרים')) {
-            console.log(`🏷️ Found source category column (קטגוריה): "${col}" with value: "${val}"`);
+            logger.debug('WorkingExcelService', 'Found source category column (קטגוריה)', { col, val });
             df.source_category = val;
             continue;
         }
 
         if (lc.includes('ענף')) {
-            console.log(`🏷️ Found source category column (ענף): "${col}" with value: "${val}"`);
-            console.log(`🏷️ Setting df.source_category = "${val}"`);
+            logger.debug('WorkingExcelService', 'Found source category column (ענף)', { col, val });
+            logger.debug('WorkingExcelService', 'Setting df.source_category', { source_category: val });
             logger.info('UPLOAD', 'Found ענף column in processRow', {
                 columnName: col,
                 columnLowercase: lc,
@@ -1451,7 +1450,7 @@ class WorkingExcelService {
         }
 
         if (lc.includes('סוג עסקה')) {
-            console.log(`🏷️ Found transaction type column: "${col}" with value: "${val}"`);
+            logger.debug('WorkingExcelService', 'Found transaction type column', { col, val });
             df.transaction_type = val;
             continue;
         }
@@ -1465,7 +1464,7 @@ class WorkingExcelService {
         if (lc.includes('שייך לתזרים חודש') || lc.includes('flow_month')) {
             if (val && String(val).trim()) {
                 df.flow_month = String(val).trim();
-                console.log(`🔍 [WorkingExcelService] Found flow_month in CSV: ${df.flow_month}`);
+                logger.debug('WorkingExcelService', 'Found flow_month in CSV', { flow_month: df.flow_month });
             }
             continue;
         }
@@ -1473,11 +1472,11 @@ class WorkingExcelService {
 
     // Always parse and validate the payment date
     if (process.env.DEBUG === 'true') {
-        console.log(`🔄 About to parse payment_date: "${df.payment_date}" (type: ${typeof df.payment_date})`);
+        logger.debug('WorkingExcelService', 'About to parse payment_date', { payment_date: df.payment_date, type: typeof df.payment_date });
     }
     df.payment_date = this.parseDate(df.payment_date);
     if (process.env.DEBUG === 'true') {
-        console.log(`🔄 After parsing payment_date: "${df.payment_date}"`);
+        logger.debug('WorkingExcelService', 'After parsing payment_date', { payment_date: df.payment_date });
     }
     
     // Set and parse charge_date if not already set - do this BEFORE flow_month calculation
@@ -1504,31 +1503,31 @@ class WorkingExcelService {
                 if (chargeDate.isValid()) {
                     const flowMonth = chargeDate.subtract(1, 'month').format('YYYY-MM');
                     df.flow_month = flowMonth;
-                    console.log(`🔍 [WorkingExcelService] Installment flow_month: ${df.flow_month} from charge_date: ${df.charge_date}`);
+                    logger.debug('WorkingExcelService', 'Installment flow_month', { flow_month: df.flow_month, charge_date: df.charge_date });
                     
                     // Adjust payment_date to match flow month for installments
                     const originalPaymentDate = moment(df.payment_date, 'YYYY-MM-DD', true);
                     if (originalPaymentDate.format('YYYY-MM') !== flowMonth) {
                         const adjustedDate = moment(flowMonth + '-' + originalPaymentDate.format('DD'), 'YYYY-MM-DD');
                         df.payment_date = adjustedDate.format('YYYY-MM-DD');
-                        console.log(`   ✅ Adjusted payment date for installment: ${df.payment_date}`);
+                        logger.debug('WorkingExcelService', 'Adjusted payment date for installment', { payment_date: df.payment_date });
                     }
                 } else {
                     // Fallback to payment_date if charge_date is invalid
                     df.flow_month = paymentDate.format('YYYY-MM');
-                    console.log(`🔍 [WorkingExcelService] Fallback flow_month: ${df.flow_month} from payment_date (invalid charge_date)`);
+                    logger.debug('WorkingExcelService', 'Fallback flow_month from payment_date (invalid charge_date)', { flow_month: df.flow_month });
                 }
             } else {
                 // For all other transactions (regular, immediate), use payment_date
                 df.flow_month = paymentDate.format('YYYY-MM');
-                console.log(`🔍 [WorkingExcelService] Regular flow_month: ${df.flow_month} from payment_date: ${df.payment_date}`);
+                logger.debug('WorkingExcelService', 'Regular flow_month from payment_date', { flow_month: df.flow_month, payment_date: df.payment_date });
             }
         } else {
-            console.log(`🔍 [WorkingExcelService] Preserving CSV flow_month: ${df.flow_month} for payment_date: ${df.payment_date}`);
+            logger.debug('WorkingExcelService', 'Preserving CSV flow_month', { flow_month: df.flow_month, payment_date: df.payment_date });
         }
     } else {
         // Invalid date - return null to indicate this transaction should be skipped
-        console.warn(`Transaction with invalid payment_date will be skipped: ${df.business_name || 'Unknown'}`);
+        logger.warn('WorkingExcelService', 'Transaction with invalid payment_date will be skipped', { business_name: df.business_name || 'Unknown' });
         return null;
     }
 
@@ -1848,7 +1847,7 @@ class WorkingExcelService {
         // CAL format has an off-by-one error in date serialization - subtract 1 day
         if (this.currentFormatDetection && this.currentFormatDetection.format === 'cal') {
           adjustedSerial = serialNum - 1;
-          console.log(`🔧 CAL format detected, adjusting serial from ${serialNum} to ${adjustedSerial}`);
+          logger.debug('WorkingExcelService', 'CAL format detected; adjusting serial', { from: serialNum, to: adjustedSerial });
         }
         
         const daysSinceEpoch = adjustedSerial - 1;
@@ -1859,7 +1858,7 @@ class WorkingExcelService {
           const month = String(convertedDate.getMonth() + 1).padStart(2, '0');
           const day = String(convertedDate.getDate()).padStart(2, '0');
           const result = `${year}-${month}-${day}`;
-          console.log(`✅ Excel serial ${serialNum} converted to: ${result}`);
+          logger.debug('WorkingExcelService', 'Excel serial converted', { serial: serialNum, result });
           WorkingExcelService.dateCache.set(dateString, result);
           return result;
         }
@@ -3480,8 +3479,8 @@ class WorkingExcelService {
         throw new Error('Unsupported file format');
       }
 
-      console.log('📊 Raw data loaded:', { rows: rawData.length, columns: Object.keys(rawData[0] || {}).length });
-      console.log('📋 File processing summary: Processing', rawData.length, 'rows from uploaded file');
+      logger.debug('WorkingExcelService', 'Raw data loaded', { rows: rawData.length, columns: Object.keys(rawData[0] || {}).length });
+      logger.debug('WorkingExcelService', 'File processing summary', { rows: rawData.length });
 
       if (progressCallback) {
         progressCallback('detecting', { progress: 25, status: 'מזהה פורמט...' });
@@ -3489,7 +3488,7 @@ class WorkingExcelService {
 
       // Detect format
       const formatDetection = this.detectFormat(rawData, fileSource);
-      console.log('🎯 Format detected:', formatDetection);
+      logger.debug('WorkingExcelService', 'Format detected', { formatDetection });
 
       if (progressCallback) {
         progressCallback('processing', { progress: 40, status: 'מעבד רשומות...' });
@@ -3776,14 +3775,14 @@ class WorkingExcelService {
         progressCallback('reading', { progress: 25, status: 'מעבד גיליון אלקטרוני...' });
       }
       
-      console.log(`📊 Excel file read: ${data.length} rows`);
-      console.log(`📊 Raw data loaded: { rows: ${data.length}, columns: ${Object.keys(data[0] || {}).length} }`);
-      console.log(`🔍 Headers found:`, Object.keys(data[0] || {}));
+      logger.debug('WorkingExcelService', 'Excel file read', { rows: data.length });
+      logger.debug('WorkingExcelService', 'Raw data loaded', { rows: data.length, columns: Object.keys(data[0] || {}).length });
+      logger.debug('WorkingExcelService', 'Headers found', { headers: Object.keys(data[0] || {}) });
       
       // Check if this looks like an Isracard/Max file by examining the structure
       if (data.length > 0) {
         const firstRowKeys = Object.keys(data[0]);
-        console.log(`🔍 First row keys:`, firstRowKeys);
+        logger.debug('WorkingExcelService', 'First row keys', { keys: firstRowKeys });
         
         const hasIsracardIndicators = firstRowKeys.some(key => 
           key.includes('פירוט עסקאות') || 

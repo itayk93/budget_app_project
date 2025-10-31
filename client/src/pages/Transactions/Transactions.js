@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { transactionsAPI, categoriesAPI, cashFlowsAPI } from '../../services/api';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import Modal from '../../components/Common/Modal';
+import './Transactions.css';
 import CategoryDropdown from '../../components/Upload/CategoryDropdown';
 
 // Editable Category Badge Component
@@ -286,10 +287,12 @@ const Transactions = () => {
     amount: '',
     payment_date: '',
     category_name: '',
-    description: '',
+    notes: '',
     payment_method: 'credit_card',
     currency: 'ILS'
   });
+  // Income/Expense toggle: true = expense (negative), false = income (positive)
+  const [isExpense, setIsExpense] = useState(true);
 
   // Fetch data
   const { data: cashFlows, isLoading: cashFlowsLoading } = useQuery(
@@ -431,18 +434,22 @@ const Transactions = () => {
       amount: '',
       payment_date: '',
       category_name: '',
-      description: '',
+      notes: '',
       payment_method: 'credit_card',
       currency: 'ILS'
     });
+    setIsExpense(true);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const rawAmount = Math.abs(parseFloat(formData.amount));
+    const amount = isExpense ? -Math.abs(rawAmount || 0) : Math.abs(rawAmount || 0);
+
     const transactionData = {
       ...formData,
       cash_flow_id: selectedCashFlow?.id,
-      amount: parseFloat(formData.amount)
+      amount
     };
 
     if (selectedTransaction) {
@@ -456,13 +463,14 @@ const Transactions = () => {
     setSelectedTransaction(transaction);
     setFormData({
       business_name: transaction.business_name || '',
-      amount: Math.abs(transaction.amount).toString(),
+      amount: Math.abs(transaction.amount ?? 0).toString(),
       payment_date: transaction.payment_date?.split('T')[0] || '',
       category_name: transaction.category_name || '',
-      description: transaction.description || '',
+      notes: transaction.notes || '',
       payment_method: transaction.payment_method || 'credit_card',
       currency: transaction.currency || 'ILS'
     });
+    setIsExpense((transaction.amount ?? 0) < 0);
     setIsEditModalOpen(true);
   };
 
@@ -1131,56 +1139,71 @@ const Transactions = () => {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         title="הוספת תנועה חדשה"
+        className="transactions-modal"
       >
         <form onSubmit={handleSubmit}>
+          {/* Type Toggle */}
           <div className="form-group">
-            <label className="form-label">שם העסק</label>
-            <input
-              type="text"
-              className="form-input"
-              value={formData.business_name}
-              onChange={(e) => setFormData({...formData, business_name: e.target.value})}
-              required
-            />
+            <label className="form-label">סוג תנועה</label>
+            <div className="type-toggle">
+              <button type="button" className={`toggle-btn ${isExpense ? 'active' : ''}`} onClick={() => setIsExpense(true)}>הוצאה</button>
+              <button type="button" className={`toggle-btn ${!isExpense ? 'active' : ''}`} onClick={() => setIsExpense(false)}>הכנסה</button>
+            </div>
+          </div>
+          {/* Row: Business + Amount */}
+          <div className="form-row two-cols">
+            <div className="form-group">
+              <label className="form-label">שם העסק</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.business_name}
+                onChange={(e) => setFormData({...formData, business_name: e.target.value})}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">סכום</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                className="form-input"
+                value={formData.amount}
+                onChange={(e) => setFormData({...formData, amount: e.target.value.replace(/-/g, '')})}
+                onKeyDown={(e) => { if (e.key === '-' || e.key === 'Subtract') e.preventDefault(); }}
+                required
+              />
+            </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">סכום</label>
-            <input
-              type="number"
-              step="0.01"
-              className="form-input"
-              value={formData.amount}
-              onChange={(e) => setFormData({...formData, amount: e.target.value})}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">תאריך</label>
-            <input
-              type="date"
-              className="form-input"
-              value={formData.payment_date}
-              onChange={(e) => setFormData({...formData, payment_date: e.target.value})}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">קטגוריה</label>
-            <select
-              className="form-select"
-              value={formData.category_name}
-              onChange={(e) => setFormData({...formData, category_name: e.target.value})}
-            >
-              <option value="">בחר קטגוריה</option>
-              {categories?.map(category => (
-                <option key={category.id} value={category.name}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+          {/* Row: Date + Category */}
+          <div className="form-row two-cols">
+            <div className="form-group">
+              <label className="form-label">תאריך</label>
+              <input
+                type="date"
+                className="form-input"
+                value={formData.payment_date}
+                onChange={(e) => setFormData({...formData, payment_date: e.target.value})}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">קטגוריה</label>
+              <select
+                className="form-select"
+                value={formData.category_name}
+                onChange={(e) => setFormData({...formData, category_name: e.target.value})}
+              >
+                <option value="">בחר קטגוריה</option>
+                {categories?.map(category => (
+                  <option key={category.id} value={category.name}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="form-group">
@@ -1202,8 +1225,8 @@ const Transactions = () => {
             <label className="form-label">תיאור</label>
             <textarea
               className="form-textarea"
-              value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              value={formData.notes}
+              onChange={(e) => setFormData({...formData, notes: e.target.value})}
               rows="3"
             />
           </div>
@@ -1232,49 +1255,64 @@ const Transactions = () => {
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         title="עריכת תנועה"
+        className="transactions-modal"
       >
         <form onSubmit={handleSubmit}>
+          {/* Type Toggle */}
           <div className="form-group">
-            <label className="form-label">שם העסק</label>
-            <input
-              type="text"
-              className="form-input"
-              value={formData.business_name}
-              onChange={(e) => setFormData({...formData, business_name: e.target.value})}
-              required
-            />
+            <label className="form-label">סוג תנועה</label>
+            <div className="type-toggle">
+              <button type="button" className={`toggle-btn ${isExpense ? 'active' : ''}`} onClick={() => setIsExpense(true)}>הוצאה</button>
+              <button type="button" className={`toggle-btn ${!isExpense ? 'active' : ''}`} onClick={() => setIsExpense(false)}>הכנסה</button>
+            </div>
+          </div>
+          {/* Row: Business + Amount */}
+          <div className="form-row two-cols">
+            <div className="form-group">
+              <label className="form-label">שם העסק</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.business_name}
+                onChange={(e) => setFormData({...formData, business_name: e.target.value})}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">סכום</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                className="form-input"
+                value={formData.amount}
+                onChange={(e) => setFormData({...formData, amount: e.target.value.replace(/-/g, '')})}
+                onKeyDown={(e) => { if (e.key === '-' || e.key === 'Subtract') e.preventDefault(); }}
+                required
+              />
+            </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">סכום</label>
-            <input
-              type="number"
-              step="0.01"
-              className="form-input"
-              value={formData.amount}
-              onChange={(e) => setFormData({...formData, amount: e.target.value})}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">תאריך</label>
-            <input
-              type="date"
-              className="form-input"
-              value={formData.payment_date}
-              onChange={(e) => setFormData({...formData, payment_date: e.target.value})}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">קטגוריה</label>
-            <CategoryDropdown
-              value={formData.category_name}
-              onChange={(categoryName) => setFormData({...formData, category_name: categoryName})}
-              placeholder="בחר קטגוריה..."
-            />
+          {/* Row: Date + Category */}
+          <div className="form-row two-cols">
+            <div className="form-group">
+              <label className="form-label">תאריך</label>
+              <input
+                type="date"
+                className="form-input"
+                value={formData.payment_date}
+                onChange={(e) => setFormData({...formData, payment_date: e.target.value})}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">קטגוריה</label>
+              <CategoryDropdown
+                value={formData.category_name}
+                onChange={(categoryName) => setFormData({...formData, category_name: categoryName})}
+                placeholder="בחר קטגוריה..."
+              />
+            </div>
           </div>
 
           <div className="form-group">
@@ -1296,8 +1334,8 @@ const Transactions = () => {
             <label className="form-label">תיאור</label>
             <textarea
               className="form-textarea"
-              value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              value={formData.notes}
+              onChange={(e) => setFormData({...formData, notes: e.target.value})}
               rows="3"
             />
           </div>

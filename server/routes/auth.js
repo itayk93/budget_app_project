@@ -88,14 +88,15 @@ router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
     
-    console.log('🔍 Login attempt:', {
+    const logger = require('../utils/logger');
+    logger.debug('AUTH', 'Login attempt', {
       username: username,
       passwordLength: password ? password.length : 0,
       timestamp: new Date().toISOString()
     });
 
     if (!username || !password) {
-      console.log('❌ Missing credentials');
+      logger.debug('AUTH', 'Missing credentials');
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
@@ -106,18 +107,18 @@ router.post('/login', async (req, res) => {
     }
 
     if (!user) {
-      console.log('❌ User not found:', username);
+      logger.debug('AUTH', 'User not found', { username });
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    console.log('👤 User found:', user.username, user.email);
+    logger.debug('AUTH', 'User found', { username: user.username, email: user.email });
 
     // Verify password
     const isValid = await SupabaseService.verifyPassword(password, user.password_hash);
-    console.log('🔑 Password verification:', isValid ? 'SUCCESS' : 'FAILED');
+    logger.debug('AUTH', 'Password verification', { result: isValid ? 'SUCCESS' : 'FAILED' });
     
     if (!isValid) {
-      console.log('❌ Invalid password for user:', username);
+      logger.debug('AUTH', 'Invalid password for user', { username });
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 

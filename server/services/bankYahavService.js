@@ -7,17 +7,18 @@ class BankYahavService {
   
   static async processYahavFile(filePath, userId, cashFlowId, options = {}) {
     try {
-      console.log('📄 Processing Bank Yahav file:', filePath);
+      const logger = require('../utils/logger');
+      logger.debug('BANK_YAHAV', 'Processing Bank Yahav file', { filePath });
       
       // Read the Excel file (.xls or .xlsx)
       const workbook = XLSX.readFile(filePath);
       const allTransactions = [];
       
-      console.log(`📊 Found ${workbook.SheetNames.length} sheets in file`);
+      logger.debug('BANK_YAHAV', 'Found sheets in file', { count: workbook.SheetNames.length });
       
       // Process each sheet
       for (const sheetName of workbook.SheetNames) {
-        console.log(`  -> Processing sheet: ${sheetName}`);
+        logger.debug('BANK_YAHAV', 'Processing sheet', { sheetName });
         
         const worksheet = workbook.Sheets[sheetName];
         
@@ -25,11 +26,11 @@ class BankYahavService {
         const headerRowIndex = this.findHeaderRow(worksheet);
         
         if (headerRowIndex === -1) {
-          console.log(`Header not found in sheet: ${sheetName}. Skipping.`);
+          logger.debug('BANK_YAHAV', 'Header not found in sheet, skipping', { sheetName });
           continue;
         }
         
-        console.log(`  -> Header found at row: ${headerRowIndex + 1}`);
+        logger.debug('BANK_YAHAV', 'Header found', { row: headerRowIndex + 1 });
         
         // Convert to JSON starting from header row
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
@@ -38,7 +39,7 @@ class BankYahavService {
         });
         
         if (!jsonData || jsonData.length < 2) {
-          console.log(`Sheet ${sheetName} has insufficient data. Skipping.`);
+          logger.debug('BANK_YAHAV', 'Sheet has insufficient data, skipping', { sheetName });
           continue;
         }
         
@@ -47,7 +48,7 @@ class BankYahavService {
         allTransactions.push(...sheetTransactions);
       }
       
-      console.log(`✅ Processed ${allTransactions.length} transactions from all sheets`);
+      logger.debug('BANK_YAHAV', 'Processed transactions from all sheets', { total: allTransactions.length });
       
       // Group by currency for multi-step processing
       const currencyGroups = this.groupByCurrency(allTransactions);
@@ -122,8 +123,9 @@ class BankYahavService {
     const transactions = [];
     const headers = jsonData[0] || [];
     
-    console.log(`🔍 Processing ${jsonData.length - 1} data rows from sheet: ${sheetName}`);
-    console.log('🔍 Headers found:', headers);
+    const logger = require('../utils/logger');
+    logger.debug('BANK_YAHAV', 'Processing sheet row count', { sheetName, rows: jsonData.length - 1 });
+    logger.debug('BANK_YAHAV', 'Headers found', { headers });
     
     // Define column mappings for Bank Yahav format
     const mapping = {
@@ -135,7 +137,7 @@ class BankYahavService {
       amount_credit_col: this.findColumnIndex(headers, ['זכות(₪)', 'זכות'])
     };
     
-    console.log('🔍 Column mapping:', mapping);
+    logger.debug('BANK_YAHAV', 'Column mapping', { mapping });
     
     // Fallback for charge date if not found
     if (mapping.charge_date_col === -1) {
@@ -161,7 +163,7 @@ class BankYahavService {
         const paymentDate = this.parseDate(paymentDateRaw);
         
         if (!paymentDate) {
-          console.log(`⚠️ Skipping row ${i}: invalid or missing date`);
+          logger.debug('BANK_YAHAV', 'Skipping row: invalid or missing date', { row: i });
           continue;
         }
         
@@ -170,7 +172,7 @@ class BankYahavService {
         let businessName = this.cleanString(businessNameRaw);
         
         if (!businessName) {
-          console.log(`⚠️ Skipping row ${i}: missing business name`);
+          logger.debug('BANK_YAHAV', 'Skipping row: missing business name', { row: i });
           continue;
         }
         
@@ -183,7 +185,7 @@ class BankYahavService {
         const amount = creditAmount - debitAmount; // Credit positive, debit negative
         
         if (amount === 0) {
-          console.log(`⚠️ Skipping row ${i}: zero amount transaction`);
+          logger.debug('BANK_YAHAV', 'Skipping row: zero amount', { row: i });
           continue;
         }
         

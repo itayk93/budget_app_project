@@ -208,13 +208,19 @@ router.get('/', authenticateToken, async (req, res) => {
     const orderedCategories = [];
     if (actualData.category_breakdown && Array.isArray(actualData.category_breakdown)) {
       // Dashboard categories before processing log disabled
-      /* console.log('📋 Dashboard categories before processing (with shared categories):', actualData.category_breakdown.map(c => ({  */
-        name: c.name,
-        display_order: c.display_order, 
-        shared_category: c.shared_category,
-        is_shared_category: c.is_shared_category,
-        sub_categories: c.sub_categories ? Object.keys(c.sub_categories).length : 0
-      /* })));
+      // The following console log was partially commented and caused a syntax error.
+      // Keeping it fully commented to avoid breaking the server.
+      /*
+      console.log(
+        '📋 Dashboard categories before processing (with shared categories):',
+        actualData.category_breakdown.map(c => ({
+          name: c.name,
+          display_order: c.display_order,
+          shared_category: c.shared_category,
+          is_shared_category: c.is_shared_category,
+          sub_categories: c.sub_categories ? Object.keys(c.sub_categories).length : 0
+        }))
+      );
       */
       
       // Filter out empty categories based on whether month is finished or not

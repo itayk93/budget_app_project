@@ -15,16 +15,15 @@ router.get('/order', authenticateToken, async (req, res) => {
   res.set('ETag', Date.now().toString()); // Force different ETag each time
   
   try {
-    console.log('🚀 CATEGORY ORDER API CALLED - TIME:', new Date().toISOString());
-    console.log('📊 Getting category order for user:', req.user.id);
+    const logger = require('../../utils/logger');
+    logger.debug('CATEGORIES ORDER', 'CATEGORY ORDER API CALLED', { time: new Date().toISOString(), userId: req.user.id });
     
     const categories = await SupabaseService.getCategories(req.user.id);
-    console.log('📝 Found categories count:', categories.length);
+    logger.debug('CATEGORIES ORDER', 'Found categories count', { count: categories.length });
     
     // Return categories without transaction counts to avoid 44 DB queries
     // Transaction counts can be fetched separately if needed
-    console.log('✅ About to send response with', categories.length, 'categories');
-    console.log('🎯 Sample category names:', categories.slice(0, 3).map(c => c.name));
+    logger.debug('CATEGORIES ORDER', 'About to send response', { count: categories.length, sample: categories.slice(0, 3).map(c => c.name) });
     
     res.json({
       categories: categories,

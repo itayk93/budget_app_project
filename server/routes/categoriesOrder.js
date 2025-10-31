@@ -11,8 +11,8 @@ router.get('/', authenticateToken, async (req, res) => {
   res.set('Expires', '0');
   res.set('ETag', Date.now().toString()); // Force different ETag each time
   try {
-    console.log('🚀 CATEGORY ORDER API CALLED - TIME:', new Date().toISOString());
-    console.log('Getting category order for user:', req.user.id);
+    const logger = require('../utils/logger');
+    logger.debug('CATEGORIES', 'CATEGORY ORDER API CALLED', { time: new Date().toISOString(), userId: req.user.id });
     
     const userId = req.user.id || req.user.user_id;
     if (!userId) {

@@ -1043,7 +1043,7 @@ async function processUploadAsync(uploadId) {
       );
     } else {
       // Initialize working Excel service for non-Blink files
-      console.log('🔧 [UPLOAD ROUTE] Initializing WorkingExcelService for non-Blink file:', {
+      logger.debug('UPLOAD ROUTE', 'Initializing WorkingExcelService for non-Blink file', {
         fileSource: session.fileSource,
         forceImport: session.forceImport,
         uploadId
@@ -1057,7 +1057,7 @@ async function processUploadAsync(uploadId) {
       });
 
       // Process the file with working service
-      console.log('🔧 [UPLOAD ROUTE] About to call processFinancialFileMultiStep');
+      logger.debug('UPLOAD ROUTE', 'About to call processFinancialFileMultiStep');
       result = await excelService.processFinancialFileMultiStep(
         session.filePath,
         session.userId,
@@ -1076,7 +1076,7 @@ async function processUploadAsync(uploadId) {
       );
     }
 
-    console.log('🔧 [UPLOAD ROUTE] processFinancialFileMultiStep completed with result:', {
+    logger.debug('UPLOAD ROUTE', 'processFinancialFileMultiStep completed with result', {
       success: result.success,
       has_duplicates: result.has_duplicates,
       needs_transaction_review: result.needs_transaction_review,
@@ -3302,7 +3302,7 @@ router.post('/bank-yahav/process', authenticateToken, upload.single('file'), asy
     const userId = req.user.id;
     const uploadId = Date.now() + '-' + Math.round(Math.random() * 1E9);
 
-    console.log('🏦 Processing Bank Yahav file:', {
+    logger.debug('BANK_YAHAV', 'Processing Bank Yahav file', {
       uploadId,
       filename: req.file.filename,
       originalname: req.file.originalname,
@@ -3430,7 +3430,7 @@ router.post('/bank-yahav/select-currencies', authenticateToken, async (req, res)
       }
     }
 
-    console.log(`🏦 Selected ${selectedTransactions.length} transactions from currencies: ${selectedCurrencies.join(', ')}`);
+    logger.debug('BANK_YAHAV', 'Selected transactions from currencies', { count: selectedTransactions.length, currencies: selectedCurrencies });
 
     // Update session with selected transactions
     session.selectedTransactions = selectedTransactions;
@@ -3507,7 +3507,7 @@ router.post('/bank-yahav/import', authenticateToken, async (req, res) => {
 
     const transactionsToImport = session.selectedTransactions || session.transactions;
     
-    console.log(`🏦 Importing ${transactionsToImport.length} Bank Yahav transactions with user selections`);
+    logger.debug('BANK_YAHAV', 'Importing Bank Yahav transactions', { count: transactionsToImport.length });
 
     // Import transactions with user selections
     const importResults = await BankYahavService.importSelectedTransactions(
@@ -3518,7 +3518,7 @@ router.post('/bank-yahav/import', authenticateToken, async (req, res) => {
     // Cleanup session
     uploadSessions.delete(uploadId);
 
-    console.log(`✅ Bank Yahav import completed: ${importResults.success} success, ${importResults.duplicates} duplicates, ${importResults.errors} errors, ${importResults.skipped} skipped`);
+    logger.debug('BANK_YAHAV', 'Bank Yahav import completed', { success: importResults.success, duplicates: importResults.duplicates, errors: importResults.errors, skipped: importResults.skipped });
 
     return res.json({
       success: true,
@@ -3540,7 +3540,7 @@ router.get('/hidden-businesses', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     
-    console.log(`🔍 Fetching hidden business names for user: ${userId}`);
+    logger.debug('UPLOAD ROUTE', 'Fetching hidden business names for user', { userId });
     
     const hiddenBusinessesData = await HiddenBusinessService.getHiddenBusinessNames(userId);
     const hiddenBusinesses = hiddenBusinessesData.map(item => item.business_name);

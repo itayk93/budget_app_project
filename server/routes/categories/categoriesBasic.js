@@ -12,17 +12,17 @@ const router = express.Router();
 router.get('/search', authenticateToken, async (req, res) => {
   try {
     const { q } = req.query;
-    console.log('🔍 [CATEGORIES API] Search endpoint called with query:', q);
-    console.log('🔍 [CATEGORIES API] User ID:', req.user.id);
+    const logger = require('../../utils/logger');
+    logger.debug('CATEGORIES API', 'Search endpoint called', { q, userId: req.user.id });
     
     // Get all categories using the WORKING approach from SupabaseService.getCategories
-    console.log('🔍 [CATEGORIES API] Using working approach - getting all categories from category_order');
+    logger.debug('CATEGORIES API', 'Using working approach - getting all categories from category_order');
     const allCategories = await SupabaseService.getCategories(req.user.id);
-    console.log('🔍 [CATEGORIES API] Got categories count:', allCategories.length);
+    logger.debug('CATEGORIES API', 'Got categories count', { count: allCategories.length });
     
     // If no search query, return empty array (like original)
     if (!q || q.length < 1) {
-      console.log('🔍 [CATEGORIES API] Empty query, returning empty array');
+      logger.debug('CATEGORIES API', 'Empty query, returning empty array');
       return res.json([]);
     }
 
@@ -41,8 +41,7 @@ router.get('/search', authenticateToken, async (req, res) => {
         category_name: category.category_name || category.name 
       }));
 
-    console.log('🔍 [CATEGORIES API] Filtered categories:', searchResults.length);
-    console.log('🔍 [CATEGORIES API] Sample results:', searchResults.slice(0, 3).map(c => c.category_name));
+    logger.debug('CATEGORIES API', 'Filtered categories', { count: searchResults.length, sample: searchResults.slice(0, 3).map(c => c.category_name) });
 
     res.json(searchResults);
   } catch (error) {
@@ -54,11 +53,12 @@ router.get('/search', authenticateToken, async (req, res) => {
 // Get all categories
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    console.log('🔍 [CATEGORIES ROUTE] User ID:', req.user.id);
+    const logger = require('../../utils/logger');
+    logger.debug('CATEGORIES ROUTE', 'Get categories', { userId: req.user.id });
     const userClient = createUserClient(req.user.token);
     const result = await CategoryService.getCategories(req.user.id, userClient);
-    console.log('🔍 [CATEGORIES ROUTE] Service result:', result);
-    console.log('🔍 [CATEGORIES ROUTE] Categories count:', result.data?.length || 0);
+    logger.debug('CATEGORIES ROUTE', 'Service result', { success: result.success });
+    logger.debug('CATEGORIES ROUTE', 'Categories count', { count: result.data?.length || 0 });
     if (result.success) {
       res.json(result.data);
     } else {

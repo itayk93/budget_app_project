@@ -5,6 +5,10 @@ class Logger {
     constructor() {
         this.logsDir = path.join(__dirname, '../../logs');
         this.ensureLogDirectory();
+
+        // Env-based toggles
+        this.consoleEnabled = process.env.ENABLE_CONSOLE_LOGS === 'true';
+        this.fileEnabled = process.env.ENABLE_FILE_LOGS === 'true';
     }
 
     ensureLogDirectory() {
@@ -36,6 +40,7 @@ class Logger {
     }
 
     logToConsole(level, category, message, data) {
+        if (!this.consoleEnabled) return; // Suppress console output unless explicitly enabled
         const emoji = {
             ERROR: '❌',
             WARN: '⚠️',
@@ -55,21 +60,21 @@ class Logger {
     log(level, category, message, data = null, context = {}) {
         const entry = this.formatLogEntry(level, category, message, data, context);
         
-        // Always log to console
+        // Console output (guarded by env toggle)
         this.logToConsole(level, category, message, data);
-        
-        // Log to appropriate files
-        this.writeToFile('app.log', entry);
-        
-        // Category-specific log files
-        if (category === 'UPLOAD') {
-            this.writeToFile('upload.log', entry);
-        } else if (category === 'AUTH') {
-            this.writeToFile('auth.log', entry);
-        } else if (category === 'DATABASE') {
-            this.writeToFile('database.log', entry);
-        } else if (category === 'ERROR') {
-            this.writeToFile('error.log', entry);
+
+        // File output (guarded by env toggle)
+        if (this.fileEnabled) {
+            this.writeToFile('app.log', entry);
+            if (category === 'UPLOAD') {
+                this.writeToFile('upload.log', entry);
+            } else if (category === 'AUTH') {
+                this.writeToFile('auth.log', entry);
+            } else if (category === 'DATABASE') {
+                this.writeToFile('database.log', entry);
+            } else if (category === 'ERROR') {
+                this.writeToFile('error.log', entry);
+            }
         }
     }
 

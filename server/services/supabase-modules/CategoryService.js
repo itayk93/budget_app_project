@@ -13,12 +13,13 @@ class CategoryService {
   
   static async getCategories(userId = null, userClient = null) {
     try {
-      console.log('🔍 [CATEGORY SERVICE] Getting categories for user:', userId);
+      const logger = require('../../utils/logger');
+      logger.debug('CATEGORY SERVICE', 'Getting categories for user', { userId });
       const client = userClient || adminClient;
       
       // TEMP FIX: Get categories from category_order instead of category table
       if (userId) {
-        console.log('🔍 [CATEGORY SERVICE] Using category_order table as temp fix...');
+        logger.debug('CATEGORY SERVICE', 'Using category_order table as temp fix...');
         const { data: categoryOrder, error } = await client
           .from('category_order')
           .select('*')
@@ -30,7 +31,7 @@ class CategoryService {
           throw error;
         }
         
-        console.log('🔍 [CATEGORY SERVICE] Category order results:', categoryOrder?.length || 0);
+        logger.debug('CATEGORY SERVICE', 'Category order results', { count: categoryOrder?.length || 0 });
         
         // Convert category_order to category format - include ALL fields for hierarchy
         const categories = categoryOrder?.map(order => ({
@@ -53,7 +54,7 @@ class CategoryService {
           show_in_weekly_view: order.weekly_display
         })) || [];
         
-        console.log('🔍 [CATEGORY SERVICE] Converted categories:', categories.length);
+        logger.debug('CATEGORY SERVICE', 'Converted categories', { count: categories.length });
         return SharedUtilities.createSuccessResponse(categories);
       }
 
@@ -71,12 +72,9 @@ class CategoryService {
         query = query.eq('user_id', userId);
       }
 
-      console.log('🔍 [CATEGORY SERVICE] Executing query...');
+      logger.debug('CATEGORY SERVICE', 'Executing query...');
       const { data: categories, error } = await query.order('name');
-      console.log('🔍 [CATEGORY SERVICE] Raw categories from DB:', categories?.length || 0);
-      if (categories && categories.length > 0) {
-        console.log('🔍 [CATEGORY SERVICE] First category:', categories[0]);
-      }
+      logger.debug('CATEGORY SERVICE', 'Raw categories from DB', { count: categories?.length || 0 });
       if (error) {
         console.error('🔍 [CATEGORY SERVICE] DB Error:', error);
         throw error;
@@ -92,9 +90,9 @@ class CategoryService {
 
       // Apply user's preferred category order if user_id is provided
       if (userId) {
-        console.log('🔍 [CATEGORY SERVICE] Getting user category order...');
+        logger.debug('CATEGORY SERVICE', 'Getting user category order...');
         const preferredOrder = await this.getUserCategoryOrder(userId, client);
-        console.log('🔍 [CATEGORY SERVICE] Preferred order count:', preferredOrder?.length || 0);
+        logger.debug('CATEGORY SERVICE', 'Preferred order count', { count: preferredOrder?.length || 0 });
         if (preferredOrder && preferredOrder.length > 0) {
           const categoryMap = {};
           processedCategories.forEach(cat => {
@@ -453,8 +451,8 @@ class CategoryService {
         return null;
       }
       const client = userClient || adminClient;
-
-      console.log(`🔍 [getMostFrequentCategoryForBusiness] Searching for business: "${businessName}", userId: ${userId}`);
+      const logger = require('../../utils/logger');
+      logger.debug('CATEGORY', 'Searching for business frequency', { businessName, userId });
 
       let query = client
         .from('transactions')
@@ -466,19 +464,19 @@ class CategoryService {
       // Add user filter if provided
       if (userId) {
         query = query.eq('user_id', userId);
-        console.log(`🔍 [getMostFrequentCategoryForBusiness] Added userId filter: ${userId}`);
+        logger.debug('CATEGORY', 'Added userId filter', { userId });
       } else {
-        console.log(`⚠️ [getMostFrequentCategoryForBusiness] No userId provided - searching across all users`);
+        logger.warn('CATEGORY', 'No userId provided - searching across all users');
       }
 
       const { data, error } = await query;
 
       if (error) throw error;
 
-      console.log(`🔍 [getMostFrequentCategoryForBusiness] Query result: ${data ? data.length : 0} transactions found`);
+      logger.debug('CATEGORY', 'Query result count', { count: data ? data.length : 0 });
 
       if (!data || data.length === 0) {
-        console.log(`❌ [getMostFrequentCategoryForBusiness] No transactions found for business: "${businessName}"`);
+        logger.debug('CATEGORY', 'No transactions found for business', { businessName });
         return null;
       }
 
@@ -491,7 +489,7 @@ class CategoryService {
         }
       });
 
-      console.log(`🔍 [getMostFrequentCategoryForBusiness] Category frequency for "${businessName}":`, categoryFrequency);
+      logger.debug('CATEGORY', 'Category frequency', { businessName, categoryFrequency });
 
       // Find most frequent category
       let mostFrequentCategory = null;
@@ -504,7 +502,7 @@ class CategoryService {
         }
       }
 
-      console.log(`✅ [getMostFrequentCategoryForBusiness] Most frequent category for "${businessName}": "${mostFrequentCategory}" (${maxCount} occurrences)`);
+      logger.debug('CATEGORY', 'Most frequent category', { businessName, mostFrequentCategory, count: maxCount });
       return mostFrequentCategory;
     } catch (error) {
       console.error('Error getting most frequent category for business:', error);
@@ -523,10 +521,12 @@ class CategoryService {
       const frequentCategory = await this.getMostFrequentCategoryForBusiness(businessName, userId, client);
       
       if (frequentCategory) {
-        console.log(`🎯 [AUTO-CATEGORY] Found frequent category for "${businessName}": "${frequentCategory}"`);
+        const logger = require('../../utils/logger');
+        logger.debug('AUTO-CATEGORY', 'Found frequent category', { businessName, frequentCategory });
         return frequentCategory;
       } else {
-        console.log(`🔍 [AUTO-CATEGORY] No frequent category found for "${businessName}", using patterns`);
+        const logger = require('../../utils/logger');
+        logger.debug('AUTO-CATEGORY', 'No frequent category found, using patterns', { businessName });
       }
 
       // If no frequent category found, use business name patterns or amount-based logic

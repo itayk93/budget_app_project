@@ -699,15 +699,17 @@ class ComprehensiveExcelService {
       processedData = allFrames;
       
     } else if (fileType === 'csv') {
-      console.log(`[convertFileToDataFrame] Processing CSV file...`);
+      const logger = require('../utils/logger');
+      logger.debug('COMPREHENSIVE_EXCEL', 'Processing CSV file...');
       processedData = await this.readCsvWithHebrewHeaders(srcPath);
-      console.log(`[convertFileToDataFrame] CSV processing complete: ${processedData.length} rows`);
+      logger.debug('COMPREHENSIVE_EXCEL', 'CSV processing complete', { rows: processedData.length });
     } else {
       throw new Error(`Unsupported file type: ${fileType}`);
     }
     
     // Validate and clean data before filtering
-    console.log(`[convertFileToDataFrame] Before data validation: ${processedData.length} rows`);
+    const logger = require('../utils/logger');
+    logger.debug('COMPREHENSIVE_EXCEL', 'Before data validation', { rows: processedData.length });
     processedData = processedData.map(row => {
       // Ensure amount is valid number or null
       if (row.amount !== null && row.amount !== undefined) {
@@ -739,9 +741,11 @@ class ComprehensiveExcelService {
           // Only calculate flow_month if not already set from CSV
           if (!row.flow_month) {
             row.flow_month = dateMoment.format('YYYY-MM');
-            console.log(`🔍 [ComprehensiveExcelService] Calculated flow_month: ${row.flow_month} from payment_date: ${row.payment_date}`);
+            const logger = require('../utils/logger');
+            logger.debug('COMPREHENSIVE_EXCEL', 'Calculated flow_month from payment_date', { flow_month: row.flow_month, payment_date: row.payment_date });
           } else {
-            console.log(`🔍 [ComprehensiveExcelService] Preserving CSV flow_month: ${row.flow_month} for payment_date: ${row.payment_date}`);
+            const logger = require('../utils/logger');
+            logger.debug('COMPREHENSIVE_EXCEL', 'Preserving CSV flow_month', { flow_month: row.flow_month, payment_date: row.payment_date });
           }
           row.payment_month = dateMoment.month() + 1;
           row.payment_year = dateMoment.year();
@@ -752,7 +756,7 @@ class ComprehensiveExcelService {
     });
     
     // Filter out rows with missing essential data
-    console.log(`[convertFileToDataFrame] Before filtering missing data: ${processedData.length} rows`);
+    logger.debug('COMPREHENSIVE_EXCEL', 'Before filtering missing data', { rows: processedData.length });
     processedData = processedData.filter(row => 
       row.business_name && 
       row.payment_date && 
@@ -761,23 +765,23 @@ class ComprehensiveExcelService {
       row.amount !== undefined &&
       !isNaN(row.amount)
     );
-    console.log(`[convertFileToDataFrame] After filtering missing data: ${processedData.length} rows`);
+    logger.debug('COMPREHENSIVE_EXCEL', 'After filtering missing data', { rows: processedData.length });
     
     // Apply overrides based on file source
     const isBudgetLens = fileSource && fileSource.toLowerCase() === 'budgetlens';
-    console.log(`[convertFileToDataFrame] Is BudgetLens file: ${isBudgetLens}`);
+    logger.debug('COMPREHENSIVE_EXCEL', 'Is BudgetLens file', { isBudgetLens });
     
     if (!isBudgetLens) {
       // For non-BudgetLens files, apply overrides if provided
       if (paymentMethodOverride) {
-        console.log(`[convertFileToDataFrame] Applying payment method override: ${paymentMethodOverride}`);
+        logger.debug('COMPREHENSIVE_EXCEL', 'Applying payment method override', { paymentMethodOverride });
         processedData.forEach(row => {
           row.payment_method = paymentMethodOverride;
         });
       }
       
       if (paymentIdentifierOverride) {
-        console.log(`[convertFileToDataFrame] Applying payment identifier override: ${paymentIdentifierOverride}`);
+        logger.debug('COMPREHENSIVE_EXCEL', 'Applying payment identifier override', { paymentIdentifierOverride });
         processedData.forEach(row => {
           row.payment_identifier = paymentIdentifierOverride;
         });

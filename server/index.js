@@ -7,6 +7,14 @@ const rateLimit = require('express-rate-limit');
 const session = require('express-session');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
+// Optional: silence console logs (log/info/debug) when enabled via env
+if (process.env.SILENCE_CONSOLE === 'true') {
+  ['log', 'info', 'debug'].forEach((method) => {
+    // eslint-disable-next-line no-console
+    console[method] = () => {};
+  });
+}
+
 const app = express();
 
 // Security middleware

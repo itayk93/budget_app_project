@@ -596,6 +596,16 @@ class TransactionService {
         }
       }
 
+      // Normalize incoming fields from clients that still send `description`
+      // Map `description` -> `notes` and ensure we don't pass unknown columns to Supabase
+      if (transactionData && transactionData.description && !transactionData.notes) {
+        transactionData.notes = transactionData.description;
+      }
+      // Explicitly remove non-table fields that may arrive from the client
+      if (transactionData) {
+        delete transactionData.description;
+      }
+
       // Use recipient name and notes as provided from file processing
       let finalRecipientName = transactionData.recipient_name;
       let finalNotes = transactionData.notes;
@@ -751,6 +761,15 @@ class TransactionService {
         return SharedUtilities.createErrorResponse('Transaction ID is required');
       }
       const client = userClient || adminClient;
+
+      // Normalize clients that still send `description` instead of `notes`
+      if (updateData && updateData.description && !updateData.notes) {
+        updateData.notes = updateData.description;
+      }
+      // Remove unknown columns before passing to Supabase
+      if (updateData) {
+        delete updateData.description;
+      }
 
       // Use recipient name and notes as provided
       let finalRecipientName = updateData.recipient_name;

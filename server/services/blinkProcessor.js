@@ -221,8 +221,9 @@ class BlinkProcessor {
                 
                 // If at least 3 of the required headers are found, this is our header row
                 if (matchCount >= 3) {
-                    console.log(`[BLINK_PROCESSOR] Found header row at ${rowNum}, starting from column ${actualStartCol} with ${matchCount} matching headers`);
-                    console.log(`[BLINK_PROCESSOR] Headers found: ${row.slice(actualStartCol, actualStartCol + this.expectedHeaders.length)}`);
+                    const logger = require('../utils/logger');
+                    logger.debug('BLINK_PROCESSOR', 'Found header row', { row: rowNum, startCol: actualStartCol, matchCount });
+                    logger.debug('BLINK_PROCESSOR', 'Headers found', { headers: row.slice(actualStartCol, actualStartCol + this.expectedHeaders.length) });
                     return { row: rowNum, startCol: actualStartCol };
                 }
             }

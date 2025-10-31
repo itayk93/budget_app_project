@@ -1,0 +1,39 @@
+.transactions-modal { max-width: 560px; }
+.transactions-modal .modal-body { padding: 8px; }
+
+.transactions-modal .form-group { margin: 6px 0; }
+.transactions-modal .form-label { margin-bottom: 4px; }
+
+.transactions-modal .form-input,
+.transactions-modal .form-select,
+.transactions-modal .form-textarea {
+  padding: 6px 10px;
+  min-height: 32px;
+  font-size: 13px;
+}
+.transactions-modal .form-textarea { min-height: 56px; }
+
+.transactions-modal .modal-header { padding: 10px 14px; }
+.transactions-modal .modal-footer { padding: 8px 14px; }
+
+.transactions-modal input[type=number]::-webkit-outer-spin-button,
+.transactions-modal input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.transactions-modal input[type=number] { -moz-appearance: textfield; }
+
+.transactions-modal .form-row.two-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  align-items: start;
+}
+.transactions-modal .form-row.two-cols .form-group { margin: 0; }
+.transactions-modal .form-row.two-cols .form-input,
+.transactions-modal .form-row.two-cols .form-select { height: 34px; }
+
+.transactions-modal .type-toggle { display: inline-flex; gap: 4px; background: #f3f4f6; border-radius: 9999px; padding: 3px; }
+.transactions-modal .toggle-btn { border: none; background: transparent; padding: 4px 10px; border-radius: 9999px; cursor: pointer; font-weight: 500; font-size: 13px; }
+.transactions-modal .toggle-btn.active { background: #111827; color: #fff; }
+
+@media (max-width: 640px) {
+  .transactions-modal .form-row.two-cols { grid-template-columns: 1fr; }
+}
