@@ -941,36 +941,13 @@ export default function StocksDashboard() {
             )}
 
             {showUploadModal && (
-                <div 
-                    className="modal-overlay"
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 1000,
-                    }}
-                    onClick={() => setShowUploadModal(false)}
+                <Modal
+                    isOpen={true}
+                    onClose={() => setShowUploadModal(false)}
+                    className="stocks-inline-modal"
+                    size="full"
                 >
-                    <div 
-                        className="modal"
-                        style={{
-                            backgroundColor: 'white',
-                            borderRadius: '12px',
-                            padding: '2rem',
-                            maxWidth: '90vw',
-                            maxHeight: '90vh',
-                            overflow: 'auto',
-                            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                        }}
-                        dir="rtl"
-                        onClick={(e) => e.stopPropagation()}
-                    >
+                    <div style={{ padding: '2rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexDirection: 'row-reverse' }}>
                             <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937', margin: 0 }}>
                                 העלאת צילום מסך Blink
@@ -994,40 +971,17 @@ export default function StocksDashboard() {
                             onTransactionsImported={handleTransactionsImported}
                         />
                     </div>
-                </div>
+                </Modal>
             )}
 
             {showManualEntryModal && (
-                <div 
-                    className="modal-overlay"
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 1000,
-                    }}
-                    onClick={() => setShowManualEntryModal(false)}
+                <Modal
+                    isOpen={true}
+                    onClose={() => setShowManualEntryModal(false)}
+                    className="stocks-inline-modal"
+                    size="full"
                 >
-                    <div 
-                        className="modal"
-                        style={{
-                            backgroundColor: 'white',
-                            borderRadius: '12px',
-                            padding: '2rem',
-                            maxWidth: '90vw',
-                            maxHeight: '90vh',
-                            overflow: 'auto',
-                            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                        }}
-                        dir="rtl"
-                        onClick={(e) => e.stopPropagation()}
-                    >
+                    <div style={{ padding: '2rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexDirection: 'row-reverse' }}>
                             <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937', margin: 0 }}>
                                 רשומה ידנית
@@ -1052,7 +1006,7 @@ export default function StocksDashboard() {
                             <p>הפיצ'ר בפיתוח - בקרוב יתאפשר להוסיף עסקאות באופן ידני</p>
                         </div>
                     </div>
-                </div>
+                </Modal>
             )}
             
             <style>
