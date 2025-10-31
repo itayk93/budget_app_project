@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './BusinessCategoryIntelligence.css';
+import Modal from '../../components/Common/Modal';
 
 const BusinessCategoryIntelligence = () => {
   const [businesses, setBusinesses] = useState([]);
@@ -805,90 +806,90 @@ const BusinessCategoryIntelligence = () => {
         </div>
       )}
 
-      {/* Specific Transactions Selection Modal */}
+      {/* Specific Transactions Selection Modal (using Common/Modal wrapper) */}
       {specificTransactionsModal && (
-        <div className="modal-overlay" onClick={closeSpecificTransactionsModal}>
-          <div className="specific-transactions-modal modal" dir="rtl" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>בחר רשומות לעדכון - {specificTransactionsModal.businessName}</h3>
-              <div className="modal-header-info">
-                <span>קטגוריה חדשה: <strong>{specificTransactionsModal.newCategory}</strong></span>
-              </div>
-              <button className="close-btn" onClick={closeSpecificTransactionsModal}>×</button>
+        <Modal
+          isOpen={true}
+          onClose={closeSpecificTransactionsModal}
+          className="specific-transactions-modal"
+          size="large"
+        >
+          <div className="modal-header">
+            <h3>בחר רשומות לעדכון - {specificTransactionsModal.businessName}</h3>
+            <div className="modal-header-info">
+              <span>קטגוריה חדשה: <strong>{specificTransactionsModal.newCategory}</strong></span>
             </div>
-            
-            <div className="modal-content">
-              {loadingSpecificTransactions ? (
-                <div className="loading">טוען רשומות...</div>
-              ) : specificTransactions.length === 0 ? (
-                <div className="no-transactions">לא נמצאו רשומות</div>
-              ) : (
-                <>
-                  <div className="modal-actions">
-                    <button 
-                      className="select-all-transactions-btn"
-                      onClick={handleSelectAllTransactions}
-                    >
-                      {selectedTransactionIds.size === specificTransactions.length ? 'בטל בחירת הכל' : 'בחר הכל'}
-                    </button>
-                    <div className="selected-count">
-                      נבחרו: {selectedTransactionIds.size} מתוך {specificTransactions.length}
-                    </div>
-                  </div>
-                  
-                  <div className="transactions-list">
-                    <table className="transactions-table">
-                      <thead>
-                        <tr>
-                          <th>בחר</th>
-                          <th>תאריך</th>
-                          <th>סכום</th>
-                          <th>אמצעי תשלום</th>
-                          <th>הערות</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {specificTransactions.map((transaction, index) => (
-                          <tr key={transaction.id || index}>
-                            <td className="checkbox-cell">
-                              <input 
-                                type="checkbox"
-                                checked={selectedTransactionIds.has(transaction.id)}
-                                onChange={(e) => handleTransactionSelect(transaction.id, e.target.checked)}
-                              />
-                            </td>
-                            <td>{new Date(transaction.payment_date).toLocaleDateString('he-IL')}</td>
-                            <td className={`amount ${parseFloat(transaction.amount) < 0 ? 'negative' : 'positive'}`}>
-                              {Math.abs(parseFloat(transaction.amount)).toLocaleString()} {transaction.currency}
-                            </td>
-                            <td>{transaction.payment_method}</td>
-                            <td>{transaction.notes || '-'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  
-                  <div className="modal-footer">
-                    <button 
-                      className="cancel-btn"
-                      onClick={closeSpecificTransactionsModal}
-                    >
-                      ביטול
-                    </button>
-                    <button 
-                      className="update-selected-btn"
-                      onClick={handleUpdateSelectedTransactions}
-                      disabled={selectedTransactionIds.size === 0}
-                    >
-                      עדכן {selectedTransactionIds.size} רשומות נבחרות
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+            <button className="close-btn" onClick={closeSpecificTransactionsModal}>×</button>
           </div>
-        </div>
+          <div className="modal-content">
+            {loadingSpecificTransactions ? (
+              <div className="loading">טוען רשומות...</div>
+            ) : specificTransactions.length === 0 ? (
+              <div className="no-transactions">לא נמצאו רשומות</div>
+            ) : (
+              <>
+                <div className="modal-actions">
+                  <button 
+                    className="select-all-transactions-btn"
+                    onClick={handleSelectAllTransactions}
+                  >
+                    {selectedTransactionIds.size === specificTransactions.length ? 'בטל בחירת הכל' : 'בחר הכל'}
+                  </button>
+                  <div className="selected-count">
+                    נבחרו: {selectedTransactionIds.size} מתוך {specificTransactions.length}
+                  </div>
+                </div>
+                <div className="transactions-list">
+                  <table className="transactions-table">
+                    <thead>
+                      <tr>
+                        <th>בחר</th>
+                        <th>תאריך</th>
+                        <th>סכום</th>
+                        <th>אמצעי תשלום</th>
+                        <th>הערות</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {specificTransactions.map((transaction, index) => (
+                        <tr key={transaction.id || index}>
+                          <td className="checkbox-cell">
+                            <input 
+                              type="checkbox"
+                              checked={selectedTransactionIds.has(transaction.id)}
+                              onChange={(e) => handleTransactionSelect(transaction.id, e.target.checked)}
+                            />
+                          </td>
+                          <td>{new Date(transaction.payment_date).toLocaleDateString('he-IL')}</td>
+                          <td className={`amount ${parseFloat(transaction.amount) < 0 ? 'negative' : 'positive'}`}>
+                            {Math.abs(parseFloat(transaction.amount)).toLocaleString()} {transaction.currency}
+                          </td>
+                          <td>{transaction.payment_method}</td>
+                          <td>{transaction.notes || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="modal-footer">
+                  <button 
+                    className="cancel-btn"
+                    onClick={closeSpecificTransactionsModal}
+                  >
+                    ביטול
+                  </button>
+                  <button 
+                    className="update-selected-btn"
+                    onClick={handleUpdateSelectedTransactions}
+                    disabled={selectedTransactionIds.size === 0}
+                  >
+                    עדכן {selectedTransactionIds.size} רשומות נבחרות
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </Modal>
       )}
     </div>
   );
