@@ -269,7 +269,7 @@ const TransactionSearchModal = ({ isOpen, onClose }) => {
   return (
     <>
       <div className="transaction-search-modal-backdrop" onClick={(showTransactionActionsModal || showSplitTransactionModal || showCategoryTransferModal || showCopyTransactionModal || showChangeMonthModal || showEditTransactionModal || showDeleteTransactionModal) ? undefined : handleClose}></div>
-      <div className="transaction-search-modal">
+      <div className="transaction-search-modal" dir="rtl">
         <div className="modal-header">
           <div className="header-content-centered">
             <h2>חיפוש עסקאות</h2>

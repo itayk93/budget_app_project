@@ -763,7 +763,7 @@ const BusinessCategoryIntelligence = () => {
       {/* Transaction Modal */}
       {transactionModal && (
         <div className="bci-modal-overlay" onClick={closeModal}>
-          <div className="bci-transaction-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="bci-transaction-modal" dir="rtl" onClick={(e) => e.stopPropagation()}>
             <div className="bci-modal-header">
               <h3>עסקאות של {transactionModal.businessName}</h3>
               <button className="bci-close-btn" onClick={closeModal}>×</button>
@@ -808,7 +808,7 @@ const BusinessCategoryIntelligence = () => {
       {/* Specific Transactions Selection Modal */}
       {specificTransactionsModal && (
         <div className="modal-overlay" onClick={closeSpecificTransactionsModal}>
-          <div className="specific-transactions-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="specific-transactions-modal" dir="rtl" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>בחר רשומות לעדכון - {specificTransactionsModal.businessName}</h3>
               <div className="modal-header-info">

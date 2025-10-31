@@ -69,6 +69,7 @@ const Modal = ({
     <div className="modal-overlay" onClick={handleBackdropClick}>
       <div 
         className={`modal ${sizeClass} ${className}`}
+        dir="rtl"
         role="dialog"
         aria-modal="true"
         // Stop all click events from bubbling to the page beneath
