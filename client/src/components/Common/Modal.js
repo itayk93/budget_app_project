@@ -14,12 +14,28 @@ const Modal = ({
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      // Prevent interactions with the page behind the modal
+      const appRoot = document.getElementById('root') || document.querySelector('#app');
+      if (appRoot) {
+        appRoot.setAttribute('inert', '');
+        appRoot.setAttribute('aria-hidden', 'true');
+      }
     } else {
       document.body.style.overflow = 'unset';
+      const appRoot = document.getElementById('root') || document.querySelector('#app');
+      if (appRoot) {
+        appRoot.removeAttribute('inert');
+        appRoot.removeAttribute('aria-hidden');
+      }
     }
 
     return () => {
       document.body.style.overflow = 'unset';
+      const appRoot = document.getElementById('root') || document.querySelector('#app');
+      if (appRoot) {
+        appRoot.removeAttribute('inert');
+        appRoot.removeAttribute('aria-hidden');
+      }
     };
   }, [isOpen]);
 
@@ -51,7 +67,15 @@ const Modal = ({
 
   return createPortal(
     <div className="modal-overlay" onClick={handleBackdropClick}>
-      <div className={`modal ${sizeClass} ${className}`}>
+      <div 
+        className={`modal ${sizeClass} ${className}`}
+        role="dialog"
+        aria-modal="true"
+        // Stop all click events from bubbling to the page beneath
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onMouseUp={(e) => e.stopPropagation()}
+      >
         {title && (
           <div className="modal-header">
             <h3 className="modal-title">{title}</h3>

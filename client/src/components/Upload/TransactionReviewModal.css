@@ -334,7 +334,8 @@
 
 .transactions-table th {
   background: #f9fafb;
-  padding: 12px;
+  /* Increase header height to avoid clipping */
+  padding: 16px 12px; /* was 12px */
   text-align: right;
   font-weight: 500;
   color: #6b7280;
@@ -343,6 +344,9 @@
   top: 0;
   z-index: 10;
   font-size: 13px;
+  line-height: 1.35; /* improve readability and prevent cut-off */
+  white-space: nowrap; /* keep headers on one line */
+  min-height: 44px; /* ensure a slightly taller row */
 }
 
 .transaction-row {

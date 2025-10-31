@@ -141,10 +141,11 @@ const SplitTransactionModal = ({
     // Check if total matches original amount
     const totalSplit = getTotalSplitAmount();
     const originalAmount = getOriginalAmount();
+    const TOLERANCE = 0.05; // tolerate small rounding differences (0.05₪)
     const difference = Math.abs(totalSplit - originalAmount);
     
-    if (difference > 0.01) { // Allow small rounding differences
-      return `סך הפיצולים (${totalSplit.toFixed(1)} ₪) חייב להיות שווה לסכום המקורי (${originalAmount.toFixed(1)} ₪). הפרש נוכחי: ${difference.toFixed(1)} ₪`;
+    if (difference > TOLERANCE) {
+      return `סך הפיצולים (${totalSplit.toFixed(1)} ₪) חייב להיות שווה לסכום המקורי (${originalAmount.toFixed(1)} ₪). הפרש נוכחי: ${difference.toFixed(2)} ₪`;
     }
 
     return null;
@@ -224,9 +225,12 @@ const SplitTransactionModal = ({
 
   if (!transaction) return null;
 
+  // Totals and tolerance handling
   const originalAmount = getOriginalAmount();
   const totalSplit = getTotalSplitAmount();
-  const difference = totalSplit - originalAmount;
+  const TOLERANCE = 0.05; // allow minor rounding (< 5 agorot)
+  const differenceAbs = Math.abs(totalSplit - originalAmount);
+  const withinTolerance = differenceAbs <= TOLERANCE;
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="פיצול עסקה" className="split-modal" style={{ zIndex: 10001 }}>
@@ -263,6 +267,10 @@ const SplitTransactionModal = ({
                     step="0.1"
                     value={split.amount}
                     onChange={(e) => handleSplitChange(index, 'amount', e.target.value)}
+                    onWheel={(e) => {
+                      // Prevent mouse wheel from changing the number value when focused
+                      e.currentTarget.blur();
+                    }}
                     className="input-field"
                     placeholder="0.0"
                   />
@@ -324,12 +332,14 @@ const SplitTransactionModal = ({
           </button>
         </div>
 
-        <div className={`totals-summary ${difference !== 0 ? 'warning' : ''}`}>
+        <div className={`totals-summary ${withinTolerance ? '' : 'warning'}`}>
           <div><strong>סכום מקורי:</strong> {originalAmount.toFixed(1)} ₪</div>
           <div><strong>סך פיצולים:</strong> {totalSplit.toFixed(1)} ₪</div>
-          <div style={{ color: difference === 0 ? '#155724' : '#856404' }}>
-            <strong>הפרש:</strong> {difference.toFixed(1)} ₪
-          </div>
+          {!withinTolerance && (
+            <div style={{ color: '#856404' }}>
+              <strong>הפרש:</strong> {differenceAbs.toFixed(2)} ₪
+            </div>
+          )}
         </div>
 
         {error && <div className="error-message">{error}</div>}
