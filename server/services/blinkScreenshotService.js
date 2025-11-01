@@ -33,24 +33,29 @@ class BlinkScreenshotService {
                 
                 אנא נתח את התמונה וחלץ את כל הפעילויות הפיננסיות שמוצגות בה.
                 
-                עבור כל פעילות, חלץ את המידע הבא:
-                1. סמל המניה/פעילות (symbol) - כמו TSLA, AAPL וכו' (עבור מניות), או תיאור כמו "הפקדה", "דיבידנד"
-                2. תאריך הפעילות (date) - בפורמט YYYY-MM-DD. חשוב מאוד: המר תאריכים עבריים בצורה נכונה:
-                   - "01 יולי 2025" = "2025-07-01"
-                   - "09 יוני 2025" = "2025-06-09" 
-                   - "23 יוני 2025" = "2025-06-23"
-                   - "11 יוני 2025" = "2025-06-11"
-                   חודשים בעברית: ינואר=01, פברואר=02, מרץ=03, אפריל=04, מאי=05, יוני=06, יולי=07, אוגוסט=08, ספטמבר=09, אוקטובר=10, נובמבר=11, דצמבר=12
+                עבור כל פעילות, חלץ את המידע הבא (כולל גם הטקסטים הגולמיים מהמסך כדי שנוכל לאמת ולבצע תיקונים לוגיים):
+                1. סמל המניה/פעילות (symbol) - כמו TSLA, AAPL וכו' (עבור מניות), או תיאור כמו "הפקדה", "דיבידנד".
+                2. תאריך הפעילות (date) - בפורמט YYYY-MM-DD. חשוב מאוד: המר תאריכים עבריים בצורה נכונה (למשל "17 אוקט׳ 2025" → "2025-10-17").
+                   חודשים בעברית: ינואר=01, פברואר=02, מרץ=03, אפריל=04, מאי=05, יוני=06, יולי=07, אוגוסט=08, ספטמבר=09, אוקטובר=10, נובמבר=11, דצמבר=12.
                 3. סוג הפעילות (type):
                    - "Buy" - קנייה (כאשר הסכום שלילי ויש סמל מניה)
                    - "Sell" - מכירה (כאשר הסכום חיובי ויש סמל מניה) 
                    - "Deposit" - הפקדה (כאשר רשום "הפקדה")
                    - "Dividend" - דיבידנד (כאשר רשום "דיבידנד")
-                4. כמות המניות (quantity) - רק עבור עסקאות מניות, null עבור הפקדות/דיבידנדים
-                5. מחיר למניה (price) - רק עבור עסקאות מניות, null עבור הפקדות/דיבידנדים
-                6. סכום כולל (amount) - הסכום בדולרים (חיובי או שלילי כפי שמוצג)
+                   - "Tax" - חיוב מס/ניכוי מס (מופיע כ"חיוב מס" או דומה; בדרך כלל סכום שלילי, ללא סמל מניה)
+                4. טקסטים גולמיים:
+                   - action_text: הטקסט בעמודה הימנית (למשל "קניה", "מכירה", "הפקדה", "דיבידנד", "חיוב מס אוגוסט" וכו').
+                   - center_text: הטקסט בעמודה האמצעית (לרוב סמל המניה, לעתים ריק בשורות כמו הפקדה/חיוב מס).
+                   - quantity_text: אם מופיע מתחת לסמל בסגנון "מניות 2.4273" או "2.4273 מניות" — החזר את המחרוזת כפי שהיא.
+                5. כמות המניות (quantity) - עבור עסקאות מניות בלבד. נסה לחלץ לפי quantity_text; אם לא מופיע — נסה להסיק אם ברור. אחרת השאר null.
+                6. מחיר למניה (price) - עבור עסקאות מניות בלבד. אם קיימת גם כמות וגם סכום — חשב price = ABS(amount) / quantity וענה עם 4 ספרות אחרי הנקודה. אחרת, אם לא ניתן להסיק — השאר null.
+                7. סכום כולל (amount) - הסכום בדולרים כפי שמוצג, חיובי/שלילי.
                 
-                חלץ את כל השורות שמוצגות בתמונה, כולל הפקדות ודיבידנדים.
+                הנחיות נוספות:
+                - ודא שכמות (quantity) מעוגלת ל-4 ספרות אחרי הנקודה, אם נמצאה.
+                - אם מופיע טקסט בעברית בסגנון "מניות X.XXXX" או "X.XXXX מניות" — זהו את X.XXXX ככמות.
+                - החזר את כל השורות שמוצגות בתמונה, כולל הפקדות ודיבידנדים.
+                - כאשר action_text הוא "הפקדה"/"דיבידנד"/"חיוב מס ..." — סוג הפעילות נקבע לפיהם גם אם center_text מכיל סמל שנשאב בטעות.
                 
                 החזר את התוצאות כ-JSON תקין בפורמט הבא:
                 {
@@ -59,9 +64,23 @@ class BlinkScreenshotService {
                             "symbol": "TSLA",
                             "date": "2025-07-01",
                             "type": "Buy",
+                            "quantity": 2.4273,
+                            "price": 61.23,
+                            "amount": -103.82,
+                            "action_text": "קניה",
+                            "center_text": "TSLA",
+                            "quantity_text": "מניות 2.4273"
+                        },
+                        {
+                            "symbol": "חיוב מס",
+                            "date": "2025-10-05",
+                            "type": "Tax",
                             "quantity": null,
                             "price": null,
-                            "amount": -103.82
+                            "amount": -8.10,
+                            "action_text": "חיוב מס אוגוסט",
+                            "center_text": "",
+                            "quantity_text": null
                         },
                         {
                             "symbol": "הפקדה",
@@ -69,14 +88,17 @@ class BlinkScreenshotService {
                             "type": "Deposit",
                             "quantity": null,
                             "price": null,
-                            "amount": 292.79
+                            "amount": 292.79,
+                            "action_text": "הפקדה",
+                            "center_text": "",
+                            "quantity_text": null
                         }
                     ]
                 }
                 
                 חשוב: 
                 - החזר רק JSON תקין, ללא טקסט נוסף
-                - עבור עסקאות מניות, השאר quantity ו-price כ-null (המשתמש ימלא אותם ידנית)
+                - עבור עסקאות מניות, נסה למלא quantity; ואם ניתן — חשב גם price בהתאם לכללים לעיל
                 - תמיד תכלול את כל השורות שמוצגות בתמונה
             `;
 
@@ -119,16 +141,60 @@ class BlinkScreenshotService {
             console.log(`[BLINK_SCREENSHOT] Extracted ${transactions.length} transactions`);
 
             // Validate and clean up the transactions
-            const validTransactions = transactions
-                .filter(tx => tx.symbol && tx.date && tx.type && tx.amount)
-                .map(tx => ({
-                    symbol: tx.type === 'Deposit' ? 'הפקדה' : tx.type === 'Dividend' ? 'דיבידנד' : tx.symbol.toUpperCase(),
-                    date: tx.date,
-                    type: tx.type,
-                    quantity: tx.quantity ? parseFloat(tx.quantity) : null,
-                    price: tx.price ? parseFloat(tx.price) : null,
-                    amount: parseFloat(tx.amount)
-                }));
+            const normalizeType = (t) => {
+                if (!t) return 'Other';
+                const s = String(t).toLowerCase();
+                if (/(buy|קנ(י|י)ה)/.test(s)) return 'Buy';
+                if (/(sell|מכ(י|י)רה)/.test(s)) return 'Sell';
+                if (/(deposit|הפקד(ה)?)/.test(s)) return 'Deposit';
+                if (/(dividend|דיבידנד)/.test(s)) return 'Dividend';
+                if (/(tax|מס|ניכוי\s*מס|חיוב\s*מס)/.test(s)) return 'Tax';
+                return 'Other';
+            };
+
+            let validTransactions = transactions
+                .filter(tx => tx && tx.date && tx.type && tx.amount !== undefined && tx.amount !== null)
+                .map(tx => {
+                    const rawAction = (tx.action_text || '').toLowerCase();
+                    const rawCenter = (tx.center_text || '').toUpperCase();
+                    let finalType = normalizeType(tx.type);
+                    if (/הפקד/.test(rawAction)) finalType = 'Deposit';
+                    else if (/דיבידנד/.test(rawAction)) finalType = 'Dividend';
+                    else if (/חיוב\s*מס|מס\s|tax/.test(rawAction)) finalType = 'Tax';
+                    else if (/קנ(י|י)ה/.test(rawAction)) finalType = 'Buy';
+                    else if (/מכ(י|י)רה/.test(rawAction)) finalType = 'Sell';
+
+                    let symbol = (tx.symbol || '').toUpperCase();
+                    if (finalType === 'Deposit') symbol = 'הפקדה';
+                    else if (finalType === 'Tax') symbol = 'חיוב מס';
+                    else if (finalType === 'Dividend' && !symbol) symbol = rawCenter;
+                    else if (!symbol) symbol = rawCenter;
+
+                    // Fill quantity from quantity_text if needed
+                    let quantity = tx.quantity;
+                    if ((quantity === undefined || quantity === null || quantity === '') && tx.quantity_text) {
+                        const m = String(tx.quantity_text).match(/([\d.,]+)/);
+                        if (m) quantity = parseFloat(m[1].replace(',', '.'));
+                    }
+
+                    return {
+                        symbol,
+                        date: tx.date,
+                        type: finalType,
+                        quantity: quantity != null && quantity !== '' ? parseFloat(Number(quantity).toFixed(4)) : null,
+                        price: tx.price != null && tx.price !== '' ? parseFloat(Number(tx.price).toFixed(4)) : null,
+                        amount: parseFloat(tx.amount)
+                    };
+                });
+
+            // If quantity exists and price missing, compute price from amount/quantity
+            validTransactions = validTransactions.map(tx => {
+                if ((tx.type === 'Buy' || tx.type === 'Sell') && tx.quantity && !tx.price && tx.amount) {
+                    const price = Math.abs(tx.amount) / tx.quantity;
+                    return { ...tx, price: parseFloat(price.toFixed(4)) };
+                }
+                return tx;
+            });
 
             // Check for duplicates after extraction
             const duplicateInfo = await this.checkForDuplicates(validTransactions, userId);
@@ -170,6 +236,9 @@ class BlinkScreenshotService {
                         break;
                     case 'Dividend':
                         businessName = transaction.symbol;
+                        break;
+                    case 'Tax':
+                        businessName = 'חיוב מס';
                         break;
                     default:
                         businessName = transaction.symbol;
@@ -217,6 +286,8 @@ class BlinkScreenshotService {
             case 'Deposit':
             case 'Dividend':
                 return Math.abs(transaction.amount);
+            case 'Tax':
+                return -Math.abs(transaction.amount);
             default:
                 return parseFloat(transaction.amount);
         }
@@ -303,6 +374,15 @@ class BlinkScreenshotService {
                             sourceType = 'investment';
                             transactionType = 'Dividend';
                             categoryName = 'דיבידנד';
+                            quantity = null;
+                            break;
+                        case 'Tax':
+                            amount = -Math.abs(transaction.amount);
+                            businessName = 'חיוב מס';
+                            notes = `Tax charge: $${Math.abs(transaction.amount)}`;
+                            sourceType = 'investment';
+                            transactionType = 'Tax';
+                            categoryName = 'מס/עמלות';
                             quantity = null;
                             break;
                             

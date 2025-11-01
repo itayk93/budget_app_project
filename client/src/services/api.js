@@ -325,6 +325,7 @@ export const stocksAPI = {
   addStock: (data) => api.post('/stocks/portfolio', data),
   getPrices: () => api.get('/stocks/prices'),
   updatePrices: () => api.post('/stocks/prices/update'),
+  deleteTransaction: (id) => api.delete(`/stocks/transactions/${id}`),
 };
 
 // Health check

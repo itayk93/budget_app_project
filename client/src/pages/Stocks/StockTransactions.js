@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../../services/api';
+import api, { stocksAPI } from '../../services/api';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import BlinkUpload from '../../components/Stocks/BlinkUpload';
 
@@ -85,6 +85,19 @@ const StockTransactions = () => {
 
     const formatDate = (dateString) => {
         return new Date(dateString).toLocaleDateString('he-IL');
+    };
+
+    const handleDelete = async (id) => {
+        if (!id) return;
+        const ok = window.confirm('למחוק את העסקה הזו? הפעולה בלתי הפיכה.');
+        if (!ok) return;
+        try {
+            await stocksAPI.deleteTransaction(id);
+            setTransactions(prev => prev.filter(t => t.id !== id));
+        } catch (err) {
+            console.error('Delete failed', err);
+            alert(err.response?.data?.error || 'מחיקה נכשלה');
+        }
     };
 
     if (loading && !transactions.length) {
@@ -255,13 +268,22 @@ const StockTransactions = () => {
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <Link 
-                                                            to={`/stocks/chart/${transaction.stock_symbol}`}
-                                                            className="btn btn-sm btn-outline-primary"
-                                                            title="הצג גרף מחירים"
-                                                        >
-                                                            <i className="fas fa-chart-line"></i>
-                                                        </Link>
+                                                        <div className="d-flex gap-2">
+                                                            <Link 
+                                                                to={`/stocks/chart/${transaction.stock_symbol}`}
+                                                                className="btn btn-sm btn-outline-primary"
+                                                                title="הצג גרף מחירים"
+                                                            >
+                                                                <i className="fas fa-chart-line"></i>
+                                                            </Link>
+                                                            <button
+                                                                className="btn btn-sm btn-outline-danger"
+                                                                title="מחק עסקה"
+                                                                onClick={() => handleDelete(transaction.id)}
+                                                            >
+                                                                <i className="fas fa-trash"></i>
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}

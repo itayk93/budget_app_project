@@ -108,6 +108,57 @@ router.get('/transactions', auth, async (req, res) => {
 });
 
 /**
+ * @route   DELETE /api/stocks/transactions/:id
+ * @desc    Delete a stock transaction (investment-origin)
+ * @access  Private
+ */
+router.delete('/transactions/:id', auth, async (req, res) => {
+    try {
+        const userId = req.user.user_id || req.user.id;
+        const { id } = req.params;
+
+        const supabase = getSupabase();
+
+        // Fetch the transaction to validate ownership and type
+        const { data: tx, error: fetchError } = await supabase
+            .from('transactions')
+            .select('id, user_id, source_type, payment_method')
+            .eq('id', id)
+            .single();
+
+        if (fetchError || !tx) {
+            return res.status(404).json({ success: false, error: 'Transaction not found' });
+        }
+
+        if (tx.user_id !== userId) {
+            return res.status(403).json({ success: false, error: 'Not authorized to delete this transaction' });
+        }
+
+        // Allow delete for investment-origin records (Blink or marked investment)
+        const isInvestment = tx.source_type === 'investment' || tx.payment_method === 'Blink';
+        if (!isInvestment) {
+            return res.status(400).json({ success: false, error: 'Only investment transactions can be deleted here' });
+        }
+
+        const { error: deleteError } = await supabase
+            .from('transactions')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', userId);
+
+        if (deleteError) {
+            return res.status(500).json({ success: false, error: deleteError.message || 'Failed to delete transaction' });
+        }
+
+        return res.json({ success: true });
+
+    } catch (err) {
+        console.error('Error in DELETE /api/stocks/transactions/:id:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+/**
  * @route   GET /api/stocks/recent-transactions
  * @desc    Get recent stock transactions
  * @access  Private

@@ -487,7 +487,7 @@ const RealizedGainsTable = ({ gains }) => (
     </div>
 );
 
-const AllTransactionsTable = ({ transactions }) => (
+const AllTransactionsTable = ({ transactions, onDelete }) => (
     <div style={{
         backgroundColor: 'white',
         padding: '1.5rem',
@@ -504,6 +504,7 @@ const AllTransactionsTable = ({ transactions }) => (
                         <th style={{ padding: '0.75rem', fontSize: '0.875rem', fontWeight: '600', color: '#64748b', textAlign: 'right' }}>תיאור</th>
                         <th style={{ padding: '0.75rem', fontSize: '0.875rem', fontWeight: '600', color: '#64748b', textAlign: 'right' }}>סוג</th>
                         <th style={{ padding: '0.75rem', fontSize: '0.875rem', fontWeight: '600', color: '#64748b', textAlign: 'center' }}>סכום</th>
+                        <th style={{ padding: '0.75rem', fontSize: '0.875rem', fontWeight: '600', color: '#64748b', textAlign: 'center' }}>פעולות</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -515,6 +516,22 @@ const AllTransactionsTable = ({ transactions }) => (
                                 <td style={{ padding: '0.75rem', fontWeight: '600' }}>{tx.business_name}</td>
                                 <td style={{ padding: '0.75rem', color: '#374151' }}>{tx.transaction_type}</td>
                                 <td className="currency-value" style={{ padding: '0.75rem', textAlign: 'center', fontFamily: 'monospace', color: amountColor }}>{formatCurrency(tx.amount)}</td>
+                                <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                                    <button
+                                        title="מחק"
+                                        onClick={() => onDelete && onDelete(tx.id)}
+                                        style={{
+                                            background: 'none',
+                                            border: '1px solid #fecaca',
+                                            color: '#dc2626',
+                                            padding: '0.25rem 0.5rem',
+                                            borderRadius: '0.5rem',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        <i className="fas fa-trash"></i>
+                                    </button>
+                                </td>
                             </tr>
                         )
                     })}
@@ -666,6 +683,18 @@ export default function StocksDashboard() {
     const [showMonthlyChart, setShowMonthlyChart] = useState(false);
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [showManualEntryModal, setShowManualEntryModal] = useState(false);
+    
+    const handleDeleteTx = async (id) => {
+        if (!id) return;
+        const ok = window.confirm('למחוק את העסקה הזו?');
+        if (!ok) return;
+        try {
+            await api.delete(`/stocks/transactions/${id}`);
+            setTransactions(prev => prev.filter(t => t.id !== id));
+        } catch (e) {
+            alert(e.response?.data?.error || 'מחיקה נכשלה');
+        }
+    };
 
     const fetchCashFlows = async () => {
         try {
@@ -810,7 +839,7 @@ export default function StocksDashboard() {
             case 'realized':
                 return <RealizedGainsTable gains={realizedGains} />;
             case 'history':
-                return <AllTransactionsTable transactions={allTransactions} />;
+                return <AllTransactionsTable transactions={allTransactions} onDelete={handleDeleteTx} />;
             default:
                 return null;
         }

@@ -175,6 +175,14 @@ const BlinkScreenshotUpload = ({ cashFlowId, onTransactionsImported }) => {
         }
     };
 
+    // Prevent mouse-wheel from changing number inputs
+    const preventNumberScroll = (e) => {
+        // When a number input is focused, scrolling changes its value in some browsers.
+        // Blur on wheel to avoid accidental changes.
+        e.preventDefault();
+        e.currentTarget.blur();
+    };
+
     return (
         <>
             <div className="blink-upload-container">
@@ -309,7 +317,11 @@ const BlinkScreenshotUpload = ({ cashFlowId, onTransactionsImported }) => {
                                                         type="text"
                                                         value={transaction.symbol || ''}
                                                         onChange={(e) => handleEditTransaction(index, 'symbol', e.target.value)}
-                                                        placeholder={transaction.type === 'Deposit' ? 'הפקדה' : transaction.type === 'Dividend' ? 'AAPL' : 'TSLA'}
+                                                        placeholder={
+                                                            transaction.type === 'Deposit' ? 'הפקדה' :
+                                                            transaction.type === 'Dividend' ? 'AAPL' :
+                                                            transaction.type === 'Tax' ? 'חיוב מס' : 'TSLA'
+                                                        }
                                                         className="blink-form-input"
                                                     />
                                                 </div>
@@ -342,6 +354,7 @@ const BlinkScreenshotUpload = ({ cashFlowId, onTransactionsImported }) => {
                                                         <option value="Sell">מכירה</option>
                                                         <option value="Deposit">הפקדה</option>
                                                         <option value="Dividend">דיבידנד</option>
+                                                        <option value="Tax">חיוב מס</option>
                                                     </select>
                                                 </div>
                                                 
@@ -352,6 +365,9 @@ const BlinkScreenshotUpload = ({ cashFlowId, onTransactionsImported }) => {
                                                     <input
                                                         type="number"
                                                         step="0.01"
+                                                        dir="ltr"
+                                                        inputMode="decimal"
+                                                        onWheel={preventNumberScroll}
                                                         value={transaction.amount || ''}
                                                         onChange={(e) => handleEditTransaction(index, 'amount', e.target.value)}
                                                         className="blink-form-input"
@@ -370,6 +386,9 @@ const BlinkScreenshotUpload = ({ cashFlowId, onTransactionsImported }) => {
                                                             <input
                                                                 type="number"
                                                                 step="0.0001"
+                                                                dir="ltr"
+                                                                inputMode="decimal"
+                                                                onWheel={preventNumberScroll}
                                                                 value={transaction.quantity || ''}
                                                                 onChange={(e) => handleEditTransaction(index, 'quantity', e.target.value)}
                                                                 placeholder="0.5000"
@@ -384,6 +403,9 @@ const BlinkScreenshotUpload = ({ cashFlowId, onTransactionsImported }) => {
                                                             <input
                                                                 type="number"
                                                                 step="0.01"
+                                                                dir="ltr"
+                                                                inputMode="decimal"
+                                                                onWheel={preventNumberScroll}
                                                                 value={transaction.price || ''}
                                                                 onChange={(e) => handleEditTransaction(index, 'price', e.target.value)}
                                                                 placeholder="150.00"

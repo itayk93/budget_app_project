@@ -73,17 +73,63 @@ const TransactionSearchModal = ({ isOpen, onClose }) => {
       return;
     }
 
-    const query = searchQuery.toLowerCase();
+    const rawQuery = searchQuery.trim();
+    const query = rawQuery.toLowerCase();
+
+    // Detect if query is numeric-only for amount search, allowing: ₪, commas, dot, range and comparators
+    const hasLetters = /[a-zA-Z\u0590-\u05FF]/.test(rawQuery); // includes Hebrew
+    const cleaned = rawQuery.replace(/\s+/g, '');
+
+    // Patterns
+    const rangeMatch = cleaned.match(/^₪?(-?\d+(?:[.,]\d+)?)\-(-?\d+(?:[.,]\d+)?)₪?$/);
+    const compMatch = cleaned.match(/^(<=|>=|<|>|=)?₪?(-?\d+(?:[.,]\d+)?)₪?$/);
+
+    const toNumber = (str) => {
+      if (str == null) return NaN;
+      const n = parseFloat(String(str).replace(/[^\d.-]/g, '').replace(',', '.'));
+      return isNaN(n) ? NaN : n;
+    };
+
+    const isNumericQuery = !hasLetters && (rangeMatch || compMatch);
+
     const filtered = allTransactions.transactions.filter(transaction => {
       const businessName = (transaction.business_name || '').toLowerCase();
       const description = (transaction.description || '').toLowerCase();
       const categoryName = (transaction.category_name || '').toLowerCase();
-      const amount = Math.abs(parseFloat(transaction.amount)).toString();
-      
+      const amountAbs = Math.abs(toNumber(transaction.amount));
+
+      if (isNumericQuery) {
+        if (rangeMatch) {
+          const a = toNumber(rangeMatch[1]);
+          const b = toNumber(rangeMatch[2]);
+          if (isNaN(a) || isNaN(b)) return false;
+          const min = Math.min(a, b);
+          const max = Math.max(a, b);
+          return amountAbs >= min && amountAbs <= max;
+        }
+        if (compMatch) {
+          const op = compMatch[1] || '=';
+          const val = toNumber(compMatch[2]);
+          if (isNaN(val)) return false;
+          switch (op) {
+            case '<': return amountAbs < val;
+            case '>': return amountAbs > val;
+            case '<=': return amountAbs <= val;
+            case '>=': return amountAbs >= val;
+            case '=':
+            default:
+              // Exact match on whole currency units (rounded) OR within 0.5 tolerance
+              return Math.round(amountAbs) === Math.round(val) || Math.abs(amountAbs - val) < 0.5;
+          }
+        }
+      }
+
+      // Fallback: textual includes across fields + amount string includes
+      const amountStr = String(amountAbs);
       return businessName.includes(query) ||
              description.includes(query) ||
              categoryName.includes(query) ||
-             amount.includes(query);
+             amountStr.includes(query);
     });
 
     // Sort by date (newest first)
@@ -325,7 +371,7 @@ const TransactionSearchModal = ({ isOpen, onClose }) => {
               <input
                 type="text"
                 className="search-input"
-                placeholder="הקלד לחיפוש עסקאות (שם עסק, תיאור, קטגוריה, סכום)..."
+                placeholder="חיפוש: שם/תיאור/קטגוריה או סכום (לדוגמה: 150, 100-200, >=200)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus

@@ -322,6 +322,18 @@
   color: var(--gray-900);
 }
 
+/* Number inputs: prevent spin buttons and force LTR so '-' appears on the left */
+.blink-form-input[type="number"] {
+  direction: ltr;
+  text-align: right; /* visual alignment to the right while keeping LTR number order */
+  -moz-appearance: textfield; /* Firefox: remove spinners */
+}
+.blink-form-input[type="number"]::-webkit-outer-spin-button,
+.blink-form-input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .blink-form-input:hover,
 .blink-form-select:hover {
   border-color: var(--color-blue);
