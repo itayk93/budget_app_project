@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
@@ -98,9 +99,16 @@ app.use(session(sessionConfig));
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Serve React app in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../client/build')));
+// Serve React app when build exists (production or Render)
+const buildPath = path.join(__dirname, '../client/build');
+const shouldServeClient =
+  fs.existsSync(buildPath) ||
+  process.env.SERVE_CLIENT === 'true' ||
+  process.env.NODE_ENV === 'production' ||
+  process.env.RENDER === 'true';
+
+if (shouldServeClient) {
+  app.use(express.static(buildPath));
 }
 
 // Import routes
@@ -173,10 +181,10 @@ app.get('/logo.png', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/public/logo.svg'));
 });
 
-// Serve React app for all other routes in production
-if (process.env.NODE_ENV === 'production') {
+// Serve React app for all other routes when enabled
+if (shouldServeClient) {
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/build/index.html'));
+    res.sendFile(path.join(buildPath, 'index.html'));
   });
 }
 
