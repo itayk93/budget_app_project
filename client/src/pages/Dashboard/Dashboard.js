@@ -1317,7 +1317,7 @@ const Dashboard = () => {
                       onClick={() => selectMonth(option.year, option.month)}
                     >
                       <div className="month-option-name">{option.name}</div>
-                      <div className="month-option-balance">{formatCurrency(option.balance)}</div>
+                      <div className="month-option-balance" dir="ltr">{formatCurrency(option.balance)}</div>
                       <div className="month-option-count">{option.transactions_count} עסקאות</div>
                     </button>
                   ))}
@@ -1333,7 +1333,7 @@ const Dashboard = () => {
         >
           <div className="goal-info">
             <span className="goal-label">יעד חודשי:</span>
-            <span className="goal-amount-display">
+            <span className="goal-amount-display" dir="ltr">
               {formatCurrency(goalAmount)}
             </span>
           </div>
@@ -1379,7 +1379,7 @@ const Dashboard = () => {
               })()}
             </div>
             <div className="balance-amount">
-              <span className="amount-value">
+              <span className="amount-value" dir="ltr">
                 {(() => {
                   const today = new Date();
                   const isCurrentMonth = currentDate.getFullYear() === today.getFullYear() && 
@@ -1403,12 +1403,20 @@ const Dashboard = () => {
                   
                   // For past months or monthly view, show income/expenses
                   if (!isCurrentMonth || viewMode === 'monthly') {
-                    return `הכנסות: ${formatCurrency(summary.income)} | הוצאות: ${formatCurrency(summary.expenses)}`;
+                    return (
+                      <>
+                        הכנסות: <span dir="ltr">{formatCurrency(summary.income)}</span> | הוצאות: <span dir="ltr">{formatCurrency(summary.expenses)}</span>
+                      </>
+                    );
                   } else {
                     // Weekly view for current month only
                     const currentDay = today.getDay();
                     const daysRemainingInWeek = currentDay === 6 ? 0 : 6 - currentDay + 1;
-                    return `מתוך מאזן חודשי: ${formatCurrency(summary.net)} | ${daysRemainingInWeek} ימים נותרו בשבוע`;
+                    return (
+                      <>
+                        מתוך מאזן חודשי: <span dir="ltr">{formatCurrency(summary.net)}</span> | {daysRemainingInWeek} ימים נותרו בשבוע
+                      </>
+                    );
                   }
                 })()}
               </span>

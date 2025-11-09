@@ -641,7 +641,7 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
       <div className="category-header">
         <div className="ri-bold-title">{categoryName}</div>
         <div className="category-header-actions">
-          <div className={`ri-bold-body ${isIncome ? 'text-green' : 'text-red'}`}>
+          <div className={`ri-bold-body ${isIncome ? 'text-green' : 'text-red'}`} dir="ltr">
             {formatCurrency(spent)}
           </div>
           {isEmpty && onRemoveEmpty && (
@@ -794,7 +794,7 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                             : (weeklyDisplay ? 'יעד השבוע' : 'יעד החודש');
                         })()}
                       </div>
-                      <div className="target-value target">
+                      <div className="target-value target" dir="ltr">
                         {(() => {
                           const effectiveTarget = (categoryData?.shared_category && useSharedTarget && sharedTarget) 
                             ? sharedTarget.monthly_target 
@@ -904,22 +904,22 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                       return isIncome ? (
                         weeklyDisplay ? (
                           effectiveSpending >= (effectiveTarget * 7 / 30)
-                            ? `השגת את צפי השבוע! הכנסת ${formatCurrency(effectiveSpending - (effectiveTarget * 7 / 30))} מעל הצפוי`
-                            : `נשאר להכניס השבוע ${formatCurrency((effectiveTarget * 7 / 30) - effectiveSpending)} להשגת הצפי`
+                            ? <>{`השגת את צפי השבוע! הכנסת `}<span dir="ltr">{formatCurrency(effectiveSpending - (effectiveTarget * 7 / 30))}</span>{` מעל הצפוי`}</>
+                            : <>{`נשאר להכניס השבוע `}<span dir="ltr">{formatCurrency((effectiveTarget * 7 / 30) - effectiveSpending)}</span>{` להשגת הצפי`}</>
                         ) : (
                           effectiveSpending >= effectiveTarget
-                            ? `השגת את הצפי! הכנסת ${formatCurrency(effectiveSpending - effectiveTarget)} מעל הצפוי`
-                            : `נשאר להכניס ${formatCurrency(effectiveTarget - effectiveSpending)} להשגת הצפי`
+                            ? <>{`השגת את הצפי! הכנסת `}<span dir="ltr">{formatCurrency(effectiveSpending - effectiveTarget)}</span>{` מעל הצפוי`}</>
+                            : <>{`נשאר להכניס `}<span dir="ltr">{formatCurrency(effectiveTarget - effectiveSpending)}</span>{` להשגת הצפי`}</>
                         )
                       ) : (
                         weeklyDisplay ? (
                           (effectiveTarget * 7 / 30) - effectiveSpending >= 0 
-                            ? `נשאר להוציא השבוע ${formatCurrency((effectiveTarget * 7 / 30) - effectiveSpending)}`
-                            : `חרגת מהיעד השבועי ב${formatCurrency(effectiveSpending - (effectiveTarget * 7 / 30))}`
+                            ? <>{`נשאר להוציא השבוע `}<span dir="ltr">{formatCurrency((effectiveTarget * 7 / 30) - effectiveSpending)}</span></>
+                            : <>{`חרגת מהיעד השבועי ב`}<span dir="ltr">{formatCurrency(effectiveSpending - (effectiveTarget * 7 / 30))}</span></>
                         ) : (
                           effectiveTarget - effectiveSpending >= 0 
-                            ? `נשאר להוציא ${formatCurrency(effectiveTarget - effectiveSpending)}`
-                            : `חרגת מהיעד ב${formatCurrency(effectiveSpending - effectiveTarget)}`
+                            ? <>{`נשאר להוציא `}<span dir="ltr">{formatCurrency(effectiveTarget - effectiveSpending)}</span></>
+                            : <>{`חרגת מהיעד ב`}<span dir="ltr">{formatCurrency(effectiveSpending - effectiveTarget)}</span></>
                         )
                       );
                     })()}
@@ -937,8 +937,8 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                           ? sharedTarget.monthly_target 
                           : monthlyTarget;
                         return isIncome 
-                          ? `צפי שבועי מחושב על בסיס צפי חודשי של ${formatCurrency(effectiveTarget)}`
-                          : `יעד שבועי מחושב על בסיס יעד חודשי של ${formatCurrency(effectiveTarget)}`;
+                          ? <>{`צפי שבועי מחושב על בסיס צפי חודשי של `}<span dir="ltr">{formatCurrency(effectiveTarget)}</span></>
+                          : <>{`יעד שבועי מחושב על בסיס יעד חודשי של `}<span dir="ltr">{formatCurrency(effectiveTarget)}</span></>;
                       })()}
                     </div>
                   )}
@@ -956,11 +956,11 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
             <div className="budget-info-section">
               <div className="budget-item">
                 <div className="budget-label">יצא</div>
-                <div className="budget-value spent">{formatCurrency(spent)}</div>
+                <div className="budget-value spent" dir="ltr">{formatCurrency(spent)}</div>
               </div>
               <div className="budget-item">
                 <div className="budget-label">צפוי לצאת</div>
-                <div className="budget-value target">{formatCurrency(budget)}</div>
+                <div className="budget-value target" dir="ltr">{formatCurrency(budget)}</div>
               </div>
             </div>
 
@@ -975,8 +975,8 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
             {/* Remaining Text */}
             <div className={`remaining-text ${progressState}`}>
               {remaining >= 0 
-                ? `נשאר להוציא ${formatCurrency(remaining)}`
-                : `חרגת מהיעד ב${formatCurrency(Math.abs(remaining))}`
+                ? <>{`נשאר להוציא `}<span dir="ltr">{formatCurrency(remaining)}</span></>
+                : <>{`חרגת מהיעד ב`}<span dir="ltr">{formatCurrency(Math.abs(remaining))}</span></>
               }
             </div>
 
@@ -1053,7 +1053,7 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                     >
                       <div className="sub-category-info">
                         <div className="sub-category-name">{subCategoryName}</div>
-                        <div className="sub-category-amount">
+                        <div className="sub-category-amount" dir="ltr">
                           {formatCurrency(Math.abs(subCategoryData.spent || 0))}
                         </div>
                         <div className="sub-category-count">
@@ -1136,7 +1136,7 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                                 </div>
                               </div>
                               
-                              <div className={`font-bold text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-full whitespace-nowrap flex-shrink-0 ${
+                              <div dir="ltr" className={`font-bold text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-full whitespace-nowrap flex-shrink-0 ${
                                 isIncome 
                                   ? 'text-emerald-600 bg-emerald-50 border border-emerald-100' 
                                   : 'text-red-600 bg-red-50 border border-red-100'
@@ -1234,7 +1234,7 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
                       </div>
                     </div>
                     
-                    <div className={`font-bold text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-full whitespace-nowrap flex-shrink-0 ${
+                    <div dir="ltr" className={`font-bold text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-full whitespace-nowrap flex-shrink-0 ${
                       isIncome 
                         ? 'text-emerald-600 bg-emerald-50 border border-emerald-100' 
                         : 'text-red-600 bg-red-50 border border-red-100'

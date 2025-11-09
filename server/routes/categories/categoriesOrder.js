@@ -18,16 +18,36 @@ router.get('/order', authenticateToken, async (req, res) => {
     const logger = require('../../utils/logger');
     logger.debug('CATEGORIES ORDER', 'CATEGORY ORDER API CALLED', { time: new Date().toISOString(), userId: req.user.id });
     
-    const categories = await SupabaseService.getCategories(req.user.id);
+    const categoriesResponse = await SupabaseService.getCategories(req.user.id);
+    const categories = Array.isArray(categoriesResponse)
+      ? categoriesResponse
+      : Array.isArray(categoriesResponse?.data)
+        ? categoriesResponse.data
+        : [];
+
+    if (!Array.isArray(categoriesResponse)) {
+      logger.warn('CATEGORIES ORDER', 'Received non-array response from getCategories', {
+        hasDataProp: !!categoriesResponse?.data,
+        keys: categoriesResponse ? Object.keys(categoriesResponse) : null
+      });
+    }
+    
     logger.debug('CATEGORIES ORDER', 'Found categories count', { count: categories.length });
     
     // Return categories without transaction counts to avoid 44 DB queries
     // Transaction counts can be fetched separately if needed
     logger.debug('CATEGORIES ORDER', 'About to send response', { count: categories.length, sample: categories.slice(0, 3).map(c => c.name) });
     
+    const sharedCategories = [...new Set(
+      categories
+        .map(category => category.shared_category)
+        .filter(Boolean)
+    )];
+    
     res.json({
-      categories: categories,
-      total_count: categories.length
+      categories,
+      total_count: categories.length,
+      sharedCategories
     });
   } catch (error) {
     console.error('Get category order error:', error);
@@ -46,7 +66,7 @@ router.post('/reorder', authenticateToken, async (req, res) => {
 
     const updatePromises = categoryOrders.map(({ id, display_order }) => {
       return supabase
-        .from('category')
+        .from('category_order')
         .update({ 
           display_order,
           updated_at: new Date().toISOString()
@@ -149,7 +169,7 @@ router.post('/update-shared-category', authenticateToken, async (req, res) => {
     }
 
     const { data: category, error } = await supabase
-      .from('category')
+      .from('category_order')
       .update({ 
         shared_category: sharedCategoryName || null,
         updated_at: new Date().toISOString()

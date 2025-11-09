@@ -768,8 +768,18 @@ class TransactionService {
       }
       // Remove unknown/virtual columns before passing to Supabase
       if (updateData) {
-        delete updateData.description;
-        delete updateData.cash_flow; // relation field returned from select(*, cash_flow:cash_flow_id(...))
+        const derivedFieldsToRemove = [
+          'description',
+          'cash_flow',            // relation field returned from select(*, cash_flow:cash_flow_id(...))
+          'currency_symbol',      // client-only formatting helper
+          'formatted_amount',     // client-only formatted string
+          'category_display_order'// injected when we sort transactions client-side
+        ];
+        derivedFieldsToRemove.forEach(field => {
+          if (field in updateData) {
+            delete updateData[field];
+          }
+        });
       }
 
       // Use recipient name and notes as provided

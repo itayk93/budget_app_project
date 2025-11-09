@@ -48,8 +48,21 @@ const CategoryOrder = () => {
       console.log('🔍 [CATEGORY ORDER] API Response:', data);
       console.log('🔍 [CATEGORY ORDER] Categories count:', data.categories ? data.categories.length : 'undefined');
       console.log('🔍 [CATEGORY ORDER] Shared categories:', data.sharedCategories);
-      setCategories(data.categories || []);
-      setSharedCategories(data.sharedCategories || []);
+
+      const fetchedCategories = data.categories || [];
+      // Backend currently does not return sharedCategories, so derive them from the fetched list
+      const derivedSharedCategories = [...new Set(
+        fetchedCategories
+          .map(cat => cat.shared_category)
+          .filter(Boolean)
+      )];
+      
+      setCategories(fetchedCategories);
+      setSharedCategories(
+        (data.sharedCategories && data.sharedCategories.length > 0)
+          ? data.sharedCategories
+          : derivedSharedCategories
+      );
       setError(null);
     } catch (err) {
       console.error('Error fetching categories:', err);
