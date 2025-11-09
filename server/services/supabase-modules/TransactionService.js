@@ -766,9 +766,10 @@ class TransactionService {
       if (updateData && updateData.description && !updateData.notes) {
         updateData.notes = updateData.description;
       }
-      // Remove unknown columns before passing to Supabase
+      // Remove unknown/virtual columns before passing to Supabase
       if (updateData) {
         delete updateData.description;
+        delete updateData.cash_flow; // relation field returned from select(*, cash_flow:cash_flow_id(...))
       }
 
       // Use recipient name and notes as provided

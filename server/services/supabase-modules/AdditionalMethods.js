@@ -116,8 +116,11 @@ class AdditionalMethods {
       // Now process transactions and update existing categories
       (transactions || []).forEach(transaction => {
         const amount = parseFloat(transaction.amount) || 0;
+        const absoluteAmount = Math.abs(amount);
         const categoryName = transaction.category?.name || transaction.category_name || 'Uncategorized';
         const categoryType = transaction.category?.category_type || AdditionalMethods.inferCategoryType(categoryName);
+        const categoryNameLower = categoryName.toLowerCase();
+        const isSavingsCategory = categoryNameLower.includes('חיסכון') || categoryNameLower.includes('חסכון');
         
         // Get category order info to check if this is non-cash-flow
         const orderInfo = categoryOrderMap.get(categoryName) || {};
@@ -125,14 +128,23 @@ class AdditionalMethods {
 
         // Update category totals - EXCLUDE non-cash-flow transactions
         if (!isNonCashFlow) {
-          if (categoryType === 'income' && amount > 0) {
+          if (categoryType === 'income') {
+            // Allow negative entries (refunds/transfers out) to reduce income totals
             categoryTotals.income += amount;
-          } else if (categoryType === 'fixed_expense' && amount < 0) {
-            categoryTotals.fixed_expense += Math.abs(amount);
-          } else if (categoryType === 'variable_expense' && amount < 0) {
-            categoryTotals.variable_expense += Math.abs(amount);
-          } else if (categoryName.includes('חיסכון')) {
-            categoryTotals.savings += Math.abs(amount);
+          } else {
+            const targetBucket = categoryType === 'fixed_expense' ? 'fixed_expense' : 'variable_expense';
+            if (amount < 0) {
+              categoryTotals[targetBucket] += absoluteAmount;
+              if (isSavingsCategory) {
+                categoryTotals.savings += absoluteAmount;
+              }
+            } else {
+              // Positive amounts in expense categories are refunds – subtract them from totals
+              categoryTotals[targetBucket] -= absoluteAmount;
+              if (isSavingsCategory) {
+                categoryTotals.savings -= absoluteAmount;
+              }
+            }
           }
         }
 
