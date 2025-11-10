@@ -117,14 +117,19 @@ export default async function handler(req, res) {
 
     console.log('🔍 DEBUG - Cash flows result:', { data: cashFlows, error: cashFlowsError });
 
-    // Get categories
+    // Get categories from category_order table (as per documentation)
     const { data: categories, error: categoriesError } = await supabase
-      .from('categories')
+      .from('category_order')
       .select('*')
       .eq('user_id', userId)
       .order('display_order', { ascending: true });
 
     console.log('🔍 DEBUG - Categories result:', { count: categories?.length, error: categoriesError });
+
+    if (categoriesError) {
+      console.error('Error fetching categories:', categoriesError);
+      return res.status(500).json({ error: 'Failed to fetch categories', details: categoriesError.message });
+    }
 
     // Get transactions for the specified period
     let transactionsQuery = supabase
@@ -143,46 +148,114 @@ export default async function handler(req, res) {
     const { data: transactions, error: transactionsError } = await transactionsQuery;
     console.log('🔍 DEBUG - Transactions result:', { count: transactions?.length, error: transactionsError });
 
+    if (transactionsError) {
+      console.error('Error fetching transactions:', transactionsError);
+      return res.status(500).json({ error: 'Failed to fetch transactions', details: transactionsError.message });
+    }
+
+    // Fetch shared category targets if any categories use them
+    const categoriesWithSharedTarget = categories?.filter(cat => 
+      cat.shared_category && cat.use_shared_target === true
+    ) || [];
+
+    let sharedTargets = {};
+    if (categoriesWithSharedTarget.length > 0) {
+      const sharedCategoryNames = [...new Set(categoriesWithSharedTarget.map(cat => cat.shared_category))];
+      const { data: sharedTargetsData, error: sharedTargetsError } = await supabase
+        .from('shared_category_targets')
+        .select('*')
+        .eq('user_id', userId)
+        .in('shared_category_name', sharedCategoryNames);
+
+      if (sharedTargetsError) {
+        console.warn('Error fetching shared category targets (optional):', sharedTargetsError);
+      } else if (sharedTargetsData) {
+        sharedTargetsData.forEach(target => {
+          sharedTargets[target.shared_category_name] = target;
+        });
+      }
+    }
+
     // Process categories and transactions
     const categoryBreakdown = [];
     const processedCategories = {};
-    let totalBalance = 0;
     let expenseTotal = 0;
     let incomeTotal = 0;
 
+    // Initialize categories from category_order
     if (categories) {
       categories.forEach(category => {
-        const categoryTransactions = transactions?.filter(t => t.category === category.name) || [];
-        const amount = categoryTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
+        // Use shared target if applicable
+        let monthlyTarget = category.monthly_target || null;
+        let weeklyDisplay = category.weekly_display || false;
+        
+        if (category.use_shared_target && category.shared_category && sharedTargets[category.shared_category]) {
+          const sharedTarget = sharedTargets[category.shared_category];
+          monthlyTarget = sharedTarget.monthly_target || monthlyTarget;
+          weeklyDisplay = sharedTarget.weekly_display !== undefined 
+            ? sharedTarget.weekly_display 
+            : weeklyDisplay;
+        }
+
+        // Filter transactions by category_name (not category)
+        const categoryTransactions = transactions?.filter(t => 
+          t.category_name === category.category_name
+        ) || [];
+
+        // Calculate amount (absolute value)
+        const amount = categoryTransactions.reduce((sum, t) => {
+          const transactionAmount = parseFloat(t.amount) || 0;
+          return sum + Math.abs(transactionAmount);
+        }, 0);
+
         const count = categoryTransactions.length;
 
+        // Determine category type from transactions if not available
+        let categoryType = null;
+        if (categoryTransactions.length > 0) {
+          // Try to infer from transaction category_type or amount sign
+          const firstTransaction = categoryTransactions[0];
+          if (firstTransaction.category_type) {
+            categoryType = firstTransaction.category_type;
+          } else {
+            // Infer from amount: positive = income, negative = expense
+            const firstAmount = parseFloat(firstTransaction.amount) || 0;
+            categoryType = firstAmount >= 0 ? 'income' : 'expense';
+          }
+        } else {
+          // Default to expense if no transactions
+          categoryType = 'expense';
+        }
+
         const categoryData = {
-          name: category.name,
-          spent: category.type === 'income' ? amount : -amount,
-          amount: Math.abs(amount),
+          name: category.category_name,
+          type: categoryType,
+          amount: amount, // Absolute amount (always positive)
           count: count,
-          type: category.type,
-          transactions: categoryTransactions,
-          category_type: category.type,
-          display_order: category.display_order,
+          is_shared_category: !!category.shared_category,
           shared_category: category.shared_category || null,
-          weekly_display: category.weekly_display || false,
-          monthly_target: category.monthly_target || null,
+          weekly_display: weeklyDisplay,
+          monthly_target: monthlyTarget,
           use_shared_target: category.use_shared_target || false,
-          is_shared_category: category.is_shared_category || false
+          display_order: category.display_order || 0
         };
 
         categoryBreakdown.push(categoryData);
-        processedCategories[category.name] = categoryData;
+        processedCategories[category.category_name] = categoryData;
 
-        // Calculate totals
-        if (category.type === 'income') {
-          incomeTotal += amount;
-          totalBalance += amount;
-        } else {
-          expenseTotal += Math.abs(amount);
-          totalBalance -= Math.abs(amount);
-        }
+        // Calculate totals (only for non-excluded transactions)
+        categoryTransactions.forEach(transaction => {
+          if (!transaction.excluded_from_flow) {
+            const transactionAmount = parseFloat(transaction.amount) || 0;
+            if (transactionAmount < 0) {
+              // Expense
+              expenseTotal += Math.abs(transactionAmount);
+            } else if (transactionAmount > 0) {
+              // Income
+              incomeTotal += transactionAmount;
+            }
+          }
+        });
       });
     }
 
@@ -201,32 +274,79 @@ export default async function handler(req, res) {
       monthlyGoal = goalData;
     }
 
-    // Prepare response data
+    // Check if user has requested to show empty categories for this period
+    let showEmptyCategories = [];
+    if (!allTime && finalYear && finalMonth && cash_flow) {
+      try {
+        const { data: emptyCategoriesToShow, error: emptyCategoriesError } = await supabase
+          .from('user_empty_categories_display')
+          .select('category_name')
+          .eq('user_id', userId)
+          .eq('cash_flow_id', cash_flow)
+          .eq('year', finalYear)
+          .eq('month', finalMonth);
+          
+        if (!emptyCategoriesError && emptyCategoriesToShow) {
+          showEmptyCategories = emptyCategoriesToShow.map(row => row.category_name);
+        }
+      } catch (error) {
+        console.error('Error checking empty categories:', error);
+      }
+    }
+
+    // Filter out empty categories based on whether month is finished or not
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    const isMonthFinished = finalYear && finalMonth && (finalYear < currentYear || (finalYear === currentYear && finalMonth < currentMonth));
+    
+    const filteredCategories = categoryBreakdown.filter(category => {
+      const hasTransactions = category.count > 0;
+      const hasMonthlyTarget = category.monthly_target && category.monthly_target > 0;
+      const explicitlyRequested = showEmptyCategories.includes(category.name);
+      
+      let shouldShow;
+      if (allTime || !isMonthFinished) {
+        // For all-time or current/future months: show if has transactions OR monthly target (or explicitly requested)
+        shouldShow = hasTransactions || hasMonthlyTarget || explicitlyRequested;
+      } else {
+        // For finished months: show only categories with transactions (or explicitly requested)
+        shouldShow = hasTransactions || explicitlyRequested;
+      }
+      
+      return shouldShow;
+    });
+
+    // Sort categories by display_order
+    const sortedCategories = filteredCategories.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+
+    // Prepare response data according to documentation
     const responseData = {
-      categories: processedCategories,
-      category_breakdown: categoryBreakdown,
-      orderedCategories: categoryBreakdown,
-      cash_flows: cashFlows || [],
-      current_cash_flow_id: cash_flow,
+      summary: {
+        total_income: incomeTotal,
+        total_expenses: expenseTotal,
+        net_balance: incomeTotal - expenseTotal
+      },
+      transaction_count: transactions?.length || 0,
       flow_month: flow_month,
+      current_cash_flow_id: cash_flow,
+      all_time: allTime,
+      orderedCategories: sortedCategories,
+      category_breakdown: sortedCategories,
+      categories: processedCategories, // Keep for backward compatibility
+      cash_flows: cashFlows || [],
       year: finalYear,
       month: finalMonth,
-      all_time: allTime,
       hebrew_month_name: finalMonth ? getHebrewMonthName(finalMonth) : null,
-      monthly_goal: monthlyGoal,
-      total_balance: totalBalance,
-      expense_total: expenseTotal,
-      income_total: incomeTotal,
-      monthly_savings: 0,
-      transaction_count: transactions?.length || 0
+      monthly_goal: monthlyGoal
     };
 
     console.log('🔍 DEBUG - Final response data:', {
       categories_count: Object.keys(processedCategories).length,
-      category_breakdown_count: categoryBreakdown.length,
+      category_breakdown_count: sortedCategories.length,
       cash_flows_count: cashFlows?.length || 0,
       transaction_count: transactions?.length || 0,
-      totals: { totalBalance, expenseTotal, incomeTotal }
+      totals: { netBalance: incomeTotal - expenseTotal, expenseTotal, incomeTotal }
     });
 
     res.json(responseData);
