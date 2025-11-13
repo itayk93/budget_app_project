@@ -557,6 +557,43 @@ class CategoryService {
       return 'הוצאות משתנות'; // Default fallback
     }
   }
+
+  static async getCategoryMonthlyTarget(userId, flowMonth, categoryName) {
+    try {
+      SharedUtilities.validateUserId(userId);
+      if (!flowMonth || !categoryName) {
+        return SharedUtilities.createErrorResponse('Flow month and category name are required');
+      }
+
+      const client = adminClient;
+
+      // This query attempts to join transactions with category_order.
+      // It relies on PostgREST's ability to detect the relationship.
+      // The !inner hint ensures an INNER JOIN.
+      const { data, error } = await client
+        .from('transactions')
+        .select('flow_month, user_id, category_name, category_order!inner(monthly_target)')
+        .eq('user_id', userId)
+        .eq('flow_month', flowMonth)
+        .eq('category_name', categoryName)
+        .limit(1);
+
+      if (error) throw error;
+
+      // The result from a join is nested. We need to flatten it to match the desired output.
+      const result = data.map(t => ({
+          flow_month: t.flow_month,
+          user_id: t.user_id,
+          category_name: t.category_name,
+          monthly_target: t.category_order.monthly_target
+      }));
+
+      return SharedUtilities.createSuccessResponse(result || []);
+    } catch (error) {
+      console.error('Error getting category monthly target:', error);
+      return SharedUtilities.handleSupabaseError(error, 'get category monthly target');
+    }
+  }
 }
 
 module.exports = CategoryService;
