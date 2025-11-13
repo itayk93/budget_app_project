@@ -16,14 +16,14 @@ class BudgetService {
       SharedUtilities.validateUserId(userId);
       const client = userClient || adminClient;
 
+      const flowMonth = `${year}-${String(month).padStart(2, '0')}`;
       const { data, error } = await client
         .from('budgets')
         .select(`
           *
         `)
         .eq('user_id', userId)
-        .eq('year', year)
-        .eq('month', month);
+        .eq('flow_month', flowMonth);
 
       if (error) throw error;
       return SharedUtilities.createSuccessResponse(data || []);
