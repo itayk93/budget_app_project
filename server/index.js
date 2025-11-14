@@ -131,6 +131,7 @@ const migrationRoutes = require('./routes/migration');
 const israeliBankScraperRoutes = require('./routes/israeliBankScraper');
 const userEmptyCategoriesDisplayRoutes = require('./routes/userEmptyCategoriesDisplay');
 const categoryMonthlyTargetRoutes = require('./routes/categoryMonthlyTarget');
+const cashflowWithTargetsRoutes = require('./routes/cashflowWithTargets');
 const demoRoutes = require('./routes/demo');
 
 // API routes
@@ -155,6 +156,7 @@ app.use('/api/migration', migrationRoutes);
 app.use('/api/bank-scraper', israeliBankScraperRoutes);
 app.use('/api/user-empty-categories-display', authenticateToken, userEmptyCategoriesDisplayRoutes);
 app.use('/api/category-monthly-target', authenticateToken, categoryMonthlyTargetRoutes);
+app.use('/api/cashflow-with-targets', authenticateToken, cashflowWithTargetsRoutes);
 app.use('/api/demo', demoRoutes);
 
 // Health check endpoint

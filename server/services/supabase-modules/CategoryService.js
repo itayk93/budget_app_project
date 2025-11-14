@@ -565,30 +565,42 @@ class CategoryService {
         return SharedUtilities.createErrorResponse('Flow month and category name are required');
       }
 
-      const client = adminClient;
+      const normalizedCategory = categoryName.trim();
 
-      // This query attempts to join transactions with category_order.
-      // It relies on PostgREST's ability to detect the relationship.
-      // The !inner hint ensures an INNER JOIN.
-      const { data, error } = await client
+      // Ensure there is at least one transaction for this category/month (to match original SQL behavior)
+      const { data: transactionData, error: transactionError } = await adminClient
         .from('transactions')
-        .select('flow_month, user_id, category_name, category_order!inner(monthly_target)')
+        .select('flow_month, user_id, category_name')
         .eq('user_id', userId)
         .eq('flow_month', flowMonth)
-        .eq('category_name', categoryName)
+        .eq('category_name', normalizedCategory)
         .limit(1);
 
-      if (error) throw error;
+      if (transactionError) throw transactionError;
 
-      // The result from a join is nested. We need to flatten it to match the desired output.
-      const result = data.map(t => ({
-          flow_month: t.flow_month,
-          user_id: t.user_id,
-          category_name: t.category_name,
-          monthly_target: t.category_order.monthly_target
-      }));
+      if (!transactionData || transactionData.length === 0) {
+        return SharedUtilities.createSuccessResponse([]);
+      }
 
-      return SharedUtilities.createSuccessResponse(result || []);
+      const { data: categoryOrderData, error: categoryOrderError } = await adminClient
+        .from('category_order')
+        .select('monthly_target, category_name')
+        .eq('user_id', userId)
+        .eq('category_name', normalizedCategory)
+        .limit(1);
+
+      if (categoryOrderError) throw categoryOrderError;
+
+      const monthlyTarget = categoryOrderData?.[0]?.monthly_target ?? null;
+
+      const result = [{
+        flow_month: flowMonth,
+        user_id: userId,
+        category_name: normalizedCategory,
+        monthly_target: monthlyTarget,
+      }];
+
+      return SharedUtilities.createSuccessResponse(result);
     } catch (error) {
       console.error('Error getting category monthly target:', error);
       return SharedUtilities.handleSupabaseError(error, 'get category monthly target');
