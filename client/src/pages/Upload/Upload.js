@@ -11,6 +11,7 @@ import TransactionReviewModal from '../../components/Upload/TransactionReviewMod
 import './Upload.css';
 
 const Upload = () => {
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedCashFlow, setSelectedCashFlow] = useState('');
   const [forceImport, setForceImport] = useState(false);
@@ -53,6 +54,9 @@ const Upload = () => {
   const [reviewTransactions, setReviewTransactions] = useState([]);
   const [reviewFileSource, setReviewFileSource] = useState('');
   const [transactionReviewCompleted, setTransactionReviewCompleted] = useState(false);
+  const [isAutoImportingPending, setIsAutoImportingPending] = useState(false);
+  const [isRunningFullPipeline, setIsRunningFullPipeline] = useState(false);
+  const [etlStatusMessage, setEtlStatusMessage] = useState('');
   
   const steps = [
     { title: 'העלאת קובץ', description: 'בחר את הקובץ לייבוא' },
@@ -768,6 +772,230 @@ const Upload = () => {
     handleBackToUpload();
   };
 
+  // Load pending-for-approval transactions and open review modal
+  const handleLoadPendingForApproval = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/bank-scraper/pending?limit=500', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        console.error('Failed to load pending:', res.status, txt);
+        alert('שגיאה בטעינת עסקאות ממתינות לאישור');
+        return;
+      }
+      const data = await res.json();
+      const pending = Array.isArray(data.transactions) ? data.transactions : [];
+      if (pending.length === 0) {
+        alert('אין עסקאות ממתינות לאישור');
+        return;
+      }
+
+      // Clean names and set source
+      const cleaned = cleanBusinessNames(pending).map(tx => ({
+        ...tx,
+        source_type: tx.source_type || 'bank_scraper',
+        file_source: tx.file_source || 'bank_scraper'
+      }));
+
+      // Pick cash flow for duplicate check (selected or default)
+      const defaultCashFlow = (cashFlows?.find(cf => cf.is_default) || cashFlows?.[0])?.id;
+      const cashFlowForDuplicateCheck = selectedCashFlow || defaultCashFlow;
+
+      if (cashFlowForDuplicateCheck) {
+        const duplicateResult = await checkForDuplicates(cleaned, 'bank_scraper', null, cashFlowForDuplicateCheck);
+        const toReview = duplicateResult?.transactions || cleaned;
+        setReviewTransactions(toReview);
+        setReviewFileSource('bank_scraper');
+        setShowTransactionReview(true);
+      } else {
+        // No cash flow available, open modal without duplicate check
+        setReviewTransactions(cleaned);
+        setReviewFileSource('bank_scraper');
+        setShowTransactionReview(true);
+      }
+    } catch (e) {
+      console.error('Error loading pending for approval:', e);
+      alert('שגיאה בטעינת עסקאות ממתינות לאישור');
+    }
+  };
+
+  const getDefaultReviewDateFilter = () => {
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    return firstDayOfMonth.toISOString().split('T')[0];
+  };
+
+  const prepareAutoImportPayload = (transactions) => {
+    const processed = transactions.map((tx, index) => ({
+      ...tx,
+      tempId: tx.tempId || `temp_${index}`,
+      originalIndex: tx.originalIndex !== undefined ? tx.originalIndex : index
+    }));
+
+    const defaultDateFilter = getDefaultReviewDateFilter();
+    const filtered = processed.filter(tx => {
+      const transactionDate = tx.payment_date?.split('T')[0] || tx.transaction_date?.split('T')[0];
+      return transactionDate >= defaultDateFilter;
+    });
+
+    const duplicateActions = {};
+    filtered.forEach(tx => {
+      if (tx.isDuplicate) {
+        duplicateActions[tx.tempId] = {
+          shouldReplace: false,
+          originalTransactionId: tx.duplicateInfo?.original_id || null,
+          duplicateHash: tx.transaction_hash
+        };
+      }
+    });
+
+    const cleanedTransactions = filtered.map(({ tempId, originalIndex, isDuplicate, duplicateInfo, ...rest }) => rest);
+    return { cleanedTransactions, duplicateActions, filteredCount: filtered.length };
+  };
+
+  const handleAutoImportPendingToMain = async ({ silent = false } = {}) => {
+    if (isAutoImportingPending) return false;
+    try {
+      setIsAutoImportingPending(true);
+
+      const mainCashFlow = cashFlows?.find(cf => cf.is_default) || cashFlows?.[0];
+      if (!mainCashFlow) {
+        const error = new Error('לא נמצא תזרים ראשי ליבוא אוטומטי');
+        if (silent) throw error;
+        alert(error.message);
+        return false;
+      }
+
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/bank-scraper/pending?limit=500', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        console.error('Failed to load pending for auto import:', res.status, txt);
+        const error = new Error('שגיאה בטעינת עסקאות ממתינות לאישור');
+        if (silent) throw error;
+        alert(error.message);
+        return false;
+      }
+
+      const data = await res.json();
+      const pending = Array.isArray(data.transactions) ? data.transactions : [];
+      if (pending.length === 0) {
+        const error = new Error('אין עסקאות ממתינות לאישור');
+        if (silent) throw error;
+        alert(error.message);
+        return false;
+      }
+
+      const cleaned = cleanBusinessNames(pending).map(tx => ({
+        ...tx,
+        source_type: tx.source_type || 'bank_scraper',
+        file_source: tx.file_source || 'bank_scraper'
+      }));
+
+      const duplicateResult = await checkForDuplicates(cleaned, 'bank_scraper', null, mainCashFlow.id);
+      const transactionsForReview = duplicateResult?.transactions || cleaned;
+
+      const { cleanedTransactions, duplicateActions, filteredCount } = prepareAutoImportPayload(transactionsForReview);
+
+      console.log(`⚡ [AUTO IMPORT] Transactions ready for auto import: ${filteredCount}`);
+
+      if (cleanedTransactions.length === 0) {
+        const error = new Error('לא נמצאו עסקאות שעומדות בסינון ברירת המחדל (תאריך תחילת חודש נוכחי)');
+        if (silent) throw error;
+        alert(error.message);
+        return false;
+      }
+
+      const dummyUploadId = `bank-scraper-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+      setUploadId(dummyUploadId);
+
+      setShowTransactionReview(false);
+      setReviewTransactions([]);
+      setReviewFileSource('');
+
+      await finalImportMutation.mutateAsync({
+        uploadId: dummyUploadId,
+        transactions: cleanedTransactions,
+        deletedIndices: [],
+        cashFlowId: mainCashFlow.id,
+        fileSource: 'bank_scraper',
+        duplicateActions
+      });
+      return true;
+    } catch (error) {
+      console.error('Error auto-importing pending transactions:', error);
+      if (silent) {
+        throw error;
+      } else {
+        alert('שגיאה באישור האוטומטי של העסקאות');
+        return false;
+      }
+    } finally {
+      setIsAutoImportingPending(false);
+    }
+  };
+
+  const handleFullBankScraperPipeline = async () => {
+    if (isRunningFullPipeline || isAutoImportingPending || finalImportMutation.isLoading) {
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('לא נמצא טוקן התחברות. התחבר מחדש כדי להמשיך.');
+      return;
+    }
+
+    try {
+      setIsRunningFullPipeline(true);
+      setEtlStatusMessage('מריץ כריית נתונים לכל הקונפיגורציות הפעילות...');
+
+      const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const scrapeResponse = await fetch(`${API_BASE_URL}/bank-scraper/configs/bulk/scrape`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ includeInactive: false, startDate })
+      });
+      const scrapeData = await scrapeResponse.json();
+      if (!scrapeResponse.ok || !scrapeData.success) {
+        throw new Error(scrapeData.error || scrapeData.message || 'שגיאה בהרצת כריית הנתונים');
+      }
+
+      setEtlStatusMessage('מכניס את כל הקונפיגורציות לתור האישור...');
+      const queueResponse = await fetch(`${API_BASE_URL}/bank-scraper/configs/bulk/queue-for-approval`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ includeInactive: false })
+      });
+      const queueData = await queueResponse.json();
+      if (!queueResponse.ok || !queueData.success) {
+        throw new Error(queueData.error || queueData.message || 'שגיאה בהוספת הקונפיגורציות לתור האישור');
+      }
+
+      setEtlStatusMessage('מייבא ומאשר את העסקאות לתזרים הראשי...');
+      await handleAutoImportPendingToMain({ silent: true });
+
+      alert('🎉 התהליך המלא הסתיים בהצלחה וכל העסקאות הועלו לתזרים הראשי.');
+    } catch (error) {
+      console.error('Error running full bank scraper pipeline:', error);
+      alert(`שגיאה בהרצת תהליך ה-ETL: ${error.message}`);
+    } finally {
+      setIsRunningFullPipeline(false);
+      setEtlStatusMessage('');
+    }
+  };
+
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -798,7 +1026,38 @@ const Upload = () => {
           >
             🔗 מיזוג קבצים
           </button>
+          <button
+            className="btn btn-warning"
+            style={{ marginInlineStart: 8 }}
+            onClick={handleFullBankScraperPipeline}
+            disabled={isRunningFullPipeline || isAutoImportingPending || finalImportMutation.isLoading}
+            title="הרץ כריית נתונים, הוסף לתור האישור וייבא לתזרים בלחיצה אחת"
+          >
+            {isRunningFullPipeline ? '⌛ מריץ ETL מלא...' : '🤖 הרץ כרייה + טעינה אוטומטית'}
+          </button>
+          <button
+            className="btn btn-primary"
+            style={{ marginInlineStart: 8 }}
+            onClick={handleLoadPendingForApproval}
+            title="טען עסקאות שממתינות לאישור"
+          >
+            📥 טען ממתינים לאישור
+          </button>
+          <button
+            className="btn btn-success"
+            style={{ marginInlineStart: 8 }}
+            onClick={() => handleAutoImportPendingToMain()}
+            disabled={isAutoImportingPending || finalImportMutation.isLoading}
+            title="טען ממתינים ואשר אותם אוטומטית לתזרים ברירת המחדל"
+          >
+            {isAutoImportingPending || finalImportMutation.isLoading ? '⌛ מעלה לתזרים...' : '⚡ טען ואשר לתזרים הראשי'}
+          </button>
         </div>
+        {etlStatusMessage && (
+          <div className="etl-status">
+            <small className="text-muted">{etlStatusMessage}</small>
+          </div>
+        )}
       </div>
 
       {/* Upload Stepper */}
