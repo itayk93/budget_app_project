@@ -9,9 +9,13 @@ import DuplicateReview from '../../components/Upload/DuplicateReview';
 import ProgressTracking from '../../components/Upload/ProgressTracking';
 import TransactionReviewModal from '../../components/Upload/TransactionReviewModal';
 import './Upload.css';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Upload = () => {
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+  const { user } = useAuth();
+  const BANK_SCRAPER_OWNER_ID = 'e3f6919b-d83b-4456-8325-676550a4382d';
+  const canSeeApiDocs = user?.id === BANK_SCRAPER_OWNER_ID;
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedCashFlow, setSelectedCashFlow] = useState('');
   const [forceImport, setForceImport] = useState(false);
@@ -1035,6 +1039,16 @@ const Upload = () => {
           >
             {isRunningFullPipeline ? '⌛ מריץ ETL מלא...' : '🤖 הרץ כרייה + טעינה אוטומטית'}
           </button>
+          {canSeeApiDocs && (
+            <button
+              className="btn btn-light"
+              style={{ marginInlineStart: 8 }}
+              onClick={() => window.location.href = '/upload/bank-scraper-api'}
+              title="הסבר מלא על הגדרת API מקומי להרצת הכפתור"
+            >
+              📘 הסבר API לכפתור
+            </button>
+          )}
           <button
             className="btn btn-primary"
             style={{ marginInlineStart: 8 }}

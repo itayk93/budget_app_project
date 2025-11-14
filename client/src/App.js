@@ -13,6 +13,7 @@ import Transactions from './pages/Transactions/Transactions';
 import TransactionDetails from './pages/TransactionDetails/TransactionDetails';
 import Upload from './pages/Upload/Upload';
 import FileMerger from './pages/Upload/FileMerger';
+import BankScraperApiSetup from './pages/Upload/BankScraperApiSetup';
 import Reports from './pages/Reports/Reports';
 import Profile from './pages/Profile/Profile';
 import StocksDashboard from './pages/Stocks/StocksDashboard';
@@ -33,6 +34,7 @@ import LoadingSpinner from './components/Common/LoadingSpinner';
 
 function App() {
   const { user, loading } = useAuth();
+  const BANK_SCRAPER_OWNER_ID = 'e3f6919b-d83b-4456-8325-676550a4382d';
 
   if (loading) {
     return (
@@ -76,6 +78,14 @@ function App() {
           <Route path="transaction/:id" element={<TransactionDetails />} />
           <Route path="upload" element={<Upload />} />
           <Route path="upload/file-merger" element={<FileMerger />} />
+          <Route
+            path="upload/bank-scraper-api"
+            element={
+              user?.id === BANK_SCRAPER_OWNER_ID
+                ? <BankScraperApiSetup />
+                : <Navigate to="/upload" replace />
+            }
+          />
           <Route path="reports" element={<Reports />} />
           <Route path="profile" element={<Profile />} />
           <Route path="stocks" element={<StocksDashboard />} />
