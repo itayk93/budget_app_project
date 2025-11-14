@@ -14,6 +14,7 @@ import TransactionDetails from './pages/TransactionDetails/TransactionDetails';
 import Upload from './pages/Upload/Upload';
 import FileMerger from './pages/Upload/FileMerger';
 import BankScraperApiSetup from './pages/Upload/BankScraperApiSetup';
+import CategoryMonthlyTargetApiSetup from './pages/Upload/CategoryMonthlyTargetApiSetup';
 import Reports from './pages/Reports/Reports';
 import Profile from './pages/Profile/Profile';
 import StocksDashboard from './pages/Stocks/StocksDashboard';
@@ -83,6 +84,14 @@ function App() {
             element={
               user?.id === BANK_SCRAPER_OWNER_ID
                 ? <BankScraperApiSetup />
+                : <Navigate to="/upload" replace />
+            }
+          />
+          <Route
+            path="upload/category-monthly-target-api"
+            element={
+              user?.id === BANK_SCRAPER_OWNER_ID
+                ? <CategoryMonthlyTargetApiSetup />
                 : <Navigate to="/upload" replace />
             }
           />

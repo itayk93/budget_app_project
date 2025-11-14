@@ -844,19 +844,11 @@ const Upload = () => {
       return transactionDate >= defaultDateFilter;
     });
 
-    const duplicateActions = {};
-    filtered.forEach(tx => {
-      if (tx.isDuplicate) {
-        duplicateActions[tx.tempId] = {
-          shouldReplace: false,
-          originalTransactionId: tx.duplicateInfo?.original_id || null,
-          duplicateHash: tx.transaction_hash
-        };
-      }
-    });
+    const nonDuplicateTransactions = filtered.filter(tx => !tx.isDuplicate);
+    const duplicatesSkipped = filtered.length - nonDuplicateTransactions.length;
 
-    const cleanedTransactions = filtered.map(({ tempId, originalIndex, isDuplicate, duplicateInfo, ...rest }) => rest);
-    return { cleanedTransactions, duplicateActions, filteredCount: filtered.length };
+    const cleanedTransactions = nonDuplicateTransactions.map(({ tempId, originalIndex, isDuplicate, duplicateInfo, ...rest }) => rest);
+    return { cleanedTransactions, duplicateActions: {}, filteredCount: cleanedTransactions.length, duplicatesSkipped };
   };
 
   const handleAutoImportPendingToMain = async ({ silent = false } = {}) => {
@@ -904,9 +896,12 @@ const Upload = () => {
       const duplicateResult = await checkForDuplicates(cleaned, 'bank_scraper', null, mainCashFlow.id);
       const transactionsForReview = duplicateResult?.transactions || cleaned;
 
-      const { cleanedTransactions, duplicateActions, filteredCount } = prepareAutoImportPayload(transactionsForReview);
+      const { cleanedTransactions, duplicateActions, filteredCount, duplicatesSkipped } = prepareAutoImportPayload(transactionsForReview);
 
       console.log(`⚡ [AUTO IMPORT] Transactions ready for auto import: ${filteredCount}`);
+      if (duplicatesSkipped > 0) {
+        console.log(`🧹 [AUTO IMPORT] Skipped ${duplicatesSkipped} duplicate/hidden transactions automatically`);
+      }
 
       if (cleanedTransactions.length === 0) {
         const error = new Error('לא נמצאו עסקאות שעומדות בסינון ברירת המחדל (תאריך תחילת חודש נוכחי)');
@@ -1040,14 +1035,24 @@ const Upload = () => {
             {isRunningFullPipeline ? '⌛ מריץ ETL מלא...' : '🤖 הרץ כרייה + טעינה אוטומטית'}
           </button>
           {canSeeApiDocs && (
-            <button
-              className="btn btn-light"
-              style={{ marginInlineStart: 8 }}
-              onClick={() => window.location.href = '/upload/bank-scraper-api'}
-              title="הסבר מלא על הגדרת API מקומי להרצת הכפתור"
-            >
-              📘 הסבר API לכפתור
-            </button>
+            <>
+              <button
+                className="btn btn-light"
+                style={{ marginInlineStart: 8 }}
+                onClick={() => window.location.href = '/upload/bank-scraper-api'}
+                title="הסבר מלא על הגדרת API מקומי להרצת הכפתור"
+              >
+                📘 הסבר API לכפתור
+              </button>
+              <button
+                className="btn btn-info"
+                style={{ marginInlineStart: 8 }}
+                onClick={() => window.location.href = '/upload/category-monthly-target-api'}
+                title="מסמך API לשליפת יעד חודשי לפי קטגוריה"
+              >
+                🎯 API יעד חודשי
+              </button>
+            </>
           )}
           <button
             className="btn btn-primary"
