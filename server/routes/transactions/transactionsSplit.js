@@ -8,7 +8,11 @@ const router = express.Router();
 // Split a transaction into multiple transactions
 router.post('/split', authenticateToken, async (req, res) => {
   try {
-    const { originalTransactionId, splits } = req.body;
+    const originalTransactionId =
+      req.body.originalTransactionId ||
+      req.body.original_transaction_id ||
+      req.body.originalTransactionID;
+    const { splits } = req.body;
 
     if (!originalTransactionId || !splits || !Array.isArray(splits) || splits.length < 2) {
       return res.status(400).json({ 
@@ -60,8 +64,12 @@ router.post('/split', authenticateToken, async (req, res) => {
     
     console.log('Transaction splitting started for ID:', originalTransactionId);
     
-    for (const split of splits) {
+    for (const [index, split] of splits.entries()) {
       try {
+        const splitPositionLabel = `חלק ${index + 1} מתוך ${splits.length}`;
+        const flowMonthLabel = split.flow_month ? ` | חודש תזרים: ${split.flow_month}` : '';
+        const splitNotes = `[SPLIT] פוצל מעסקה מקורית: ${originalTransaction.business_name} | ${splitPositionLabel}${flowMonthLabel} | מזהה מקורי: ${originalTransactionId} | הסבר: ${split.description || 'ללא הסבר'}`;
+
         const newTransaction = {
           user_id: req.user.id,
           cash_flow_id: originalTransaction.cash_flow_id,
@@ -74,7 +82,7 @@ router.post('/split', authenticateToken, async (req, res) => {
           payment_method: originalTransaction.payment_method || 'generic',
           payment_number: originalTransaction.payment_number || 1,
           total_payments: originalTransaction.total_payments || 1,
-          notes: `[SPLIT] פוצל מעסקה מקורית: ${originalTransaction.business_name} | מזהה מקורי: ${originalTransactionId} | הסבר: ${split.description || 'ללא הסבר'}`
+          notes: splitNotes
         };
 
         console.log('Creating split transaction for:', split.business_name);
