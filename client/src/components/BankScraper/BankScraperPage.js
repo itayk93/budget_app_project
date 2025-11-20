@@ -7,8 +7,9 @@ const BankScraperPage = () => {
     const [bankTypes, setBankTypes] = useState({});
     const [showAddForm, setShowAddForm] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [bulkQueueResult, setBulkQueueResult] = useState(null);
+    const [bulkScrapeResult, setBulkScrapeResult] = useState(null);
     const [selectedConfig, setSelectedConfig] = useState(null);
-    const [transactions, setTransactions] = useState([]);
     const [logs, setLogs] = useState([]);
     const [setupRequired, setSetupRequired] = useState(false);
     const [editingConfig, setEditingConfig] = useState(null);
@@ -49,6 +50,162 @@ const BankScraperPage = () => {
         }
     };
 
+    const handleQueueForApproval = async (configId) => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_BASE_URL}/bank-scraper/configs/${configId}/queue-for-approval`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                alert(`✅ ${data.message}`);
+            } else {
+                alert(`שגיאה: ${data.error}`);
+            }
+        } catch (error) {
+            console.error('Error queueing transactions for approval:', error);
+            alert('שגיאה בתור העסקאות לאישור');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleQueueAllForApproval = async () => {
+        if (configs.length === 0) {
+            alert('אין קונפיגורציות פעילות להזנה לתור האישור.');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setBulkQueueResult(null);
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_BASE_URL}/bank-scraper/configs/bulk/queue-for-approval`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ includeInactive: false })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                setBulkQueueResult({
+                    summary: data.summary || [],
+                    totals: data.totals || {},
+                    message: data.message
+                });
+
+                const summaryLines = (data.summary || []).map(item => {
+                    if (item.success) {
+                        const duplicatesText = item.duplicates ? ` (דילגנו על ${item.duplicates} כפולים)` : '';
+                        return `✅ ${item.configName}: ${item.queued} עסקאות${duplicatesText}`;
+                    }
+                    return `⚠️ ${item.configName}: ${item.error}`;
+                });
+
+                alert(`🎯 ${data.message || 'הוספנו את הקונפיגורציות לתור האישור'}\n\n${summaryLines.join('\n')}`);
+            } else {
+                setBulkQueueResult(null);
+                alert(`שגיאה: ${data.error || 'לא הצלחנו להוסיף את הקונפיגורציות לתור האישור'}`);
+            }
+        } catch (error) {
+            console.error('Error queueing all configs for approval:', error);
+            alert('שגיאה בהוספת כל הקונפיגורציות לתור האישור');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRunAllScrapers = async () => {
+        const activeConfigs = configs.filter(config => config.is_active);
+        if (activeConfigs.length === 0) {
+            alert('אין קונפיגורציות פעילות להרצה.');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setBulkScrapeResult(null);
+            const token = localStorage.getItem('token');
+            const summary = [];
+            let totalTransactions = 0;
+            let totalAccounts = 0;
+
+            for (const config of activeConfigs) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/bank-scraper/configs/${config.id}/scrape`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        totalTransactions += data.data?.transactions || 0;
+                        totalAccounts += data.data?.accounts || 0;
+                        summary.push({
+                            success: true,
+                            configId: config.id,
+                            configName: config.config_name,
+                            transactions: data.data?.transactions || 0,
+                            accounts: data.data?.accounts || 0
+                        });
+                    } else {
+                        summary.push({
+                            success: false,
+                            configId: config.id,
+                            configName: config.config_name,
+                            error: data.error || data.errorMessage || data.suggestion || 'שגיאה בהרצת הסקרייפר'
+                        });
+                    }
+                } catch (error) {
+                    summary.push({
+                        success: false,
+                        configId: config.id,
+                        configName: config.config_name,
+                        error: error.message
+                    });
+                }
+            }
+
+            const message = `הסתיימה כריית נתונים עבור ${activeConfigs.length} קונפיגורציות`;
+            setBulkScrapeResult({
+                summary,
+                totals: {
+                    configsProcessed: activeConfigs.length,
+                    totalTransactions,
+                    totalAccounts
+                },
+                message
+            });
+
+            const summaryLines = summary.map(item => 
+                item.success
+                    ? `✅ ${item.configName}: ${item.transactions} עסקאות (${item.accounts} חשבונות)`
+                    : `⚠️ ${item.configName}: ${item.error}`
+            );
+            alert(`🚀 ${message}\n\n${summaryLines.join('\n')}`);
+            await fetchConfigs();
+        } catch (error) {
+            console.error('Error running all scrapers:', error);
+            alert('שגיאה בהרצת כל הקונפיגורציות');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const fetchConfigs = async () => {
         try {
             setLoading(true);
@@ -62,11 +219,6 @@ const BankScraperPage = () => {
             if (data.success) {
                 setConfigs(data.configs);
                 setSetupRequired(false);
-                // Auto-select first config if none selected and we're on transactions tab
-                if (activeTab === 'transactions' && data.configs.length > 0 && !selectedConfig) {
-                    setSelectedConfig(data.configs[0].id);
-                    fetchTransactions(data.configs[0].id);
-                }
             } else if (data.needsSetup) {
                 setSetupRequired(true);
             }
@@ -127,10 +279,6 @@ const BankScraperPage = () => {
             if (data.success) {
                 alert(data.message);
                 await fetchConfigs();
-                // Automatically switch to transactions tab and load them
-                setActiveTab('transactions');
-                setSelectedConfig(configId);
-                await fetchTransactions(configId);
             } else {
                 let errorMessage = `שגיאה: ${data.error || data.errorMessage}`;
                 if (data.suggestion) {
@@ -144,31 +292,6 @@ const BankScraperPage = () => {
         } catch (error) {
             console.error('Error running scraper:', error);
             alert('שגיאה בהרצת הסקרייפר');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchTransactions = async (configId) => {
-        try {
-            setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_BASE_URL}/bank-scraper/configs/${configId}/transactions?limit=100`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            const data = await response.json();
-            if (data.success) {
-                setTransactions(data.transactions || []);
-                console.log(`✅ Loaded ${data.transactions?.length || 0} transactions for config ${configId}`);
-            } else {
-                console.error('Error loading transactions:', data.error);
-                setTransactions([]);
-            }
-        } catch (error) {
-            console.error('Error fetching transactions:', error);
-            setTransactions([]);
         } finally {
             setLoading(false);
         }
@@ -332,6 +455,7 @@ const BankScraperPage = () => {
         const setConfig = isEdit ? setEditForm : setNewConfig;
         const selectedBankType = bankTypes[isEdit ? editingConfig.bank_type : newConfig.bankType];
         const currentBankType = isEdit ? editingConfig.bank_type : newConfig.bankType;
+        const isEnvEnabled = selectedBankType?.envEnabled;
         
         if (!selectedBankType) return null;
 
@@ -355,6 +479,26 @@ const BankScraperPage = () => {
                 );
             }
 
+            // For banks with full ENV mode (e.g., visaCal), allow blank fields and show disabled placeholders
+            if (isEnvEnabled && currentBankType === 'visaCal' && (field === 'username' || field === 'password')) {
+                const envHint = field === 'username' ? 'VISA_CAL_USERNAME' : 'VISA_CAL_PASSWORD';
+                return (
+                    <div key={field} className="form-group">
+                        <label>{getFieldLabel(field)}:</label>
+                        <input
+                            type={field === 'password' ? 'password' : 'text'}
+                            value={field === 'password' ? '••••••••••••' : 'נטען מ-ENV'}
+                            disabled
+                            style={{background: '#f8f9fa', color: '#6c757d'}}
+                            title={`השדה נטען מ-ENV (${envHint})`}
+                        />
+                        <small style={{color: '#6c757d', fontSize: '12px'}}>
+                            🔒 השדה נטען מ-ENV ({envHint})
+                        </small>
+                    </div>
+                );
+            }
+
             return (
                 <div key={field} className="form-group">
                     <label>{getFieldLabel(field)}:</label>
@@ -368,7 +512,7 @@ const BankScraperPage = () => {
                                 [field]: e.target.value
                             }
                         })}
-                        required={!isEdit && !(currentBankType === 'yahav' && field === 'password')} // Password not required for Yahav
+                        required={!isEdit && !(currentBankType === 'yahav' && field === 'password') && !isEnvEnabled}
                         placeholder={isEdit ? 'השאר ריק אם לא רוצה לשנות' : ''}
                     />
                 </div>
@@ -404,19 +548,6 @@ const BankScraperPage = () => {
                     onClick={() => setActiveTab('configs')}
                 >
                     קונפיגורציות
-                </button>
-                <button 
-                    className={activeTab === 'transactions' ? 'active' : ''}
-                    onClick={() => {
-                        setActiveTab('transactions');
-                        // Auto-select first config if none selected
-                        if (configs.length > 0 && !selectedConfig) {
-                            setSelectedConfig(configs[0].id);
-                            fetchTransactions(configs[0].id);
-                        }
-                    }}
-                >
-                    עסקאות
                 </button>
                 <button 
                     className={activeTab === 'logs' ? 'active' : ''}
@@ -464,15 +595,99 @@ const BankScraperPage = () => {
                 {activeTab === 'configs' && (
                     <div className="configs-tab">
                         <div className="section-header">
-                            <h2>קונפיגורציות בנק</h2>
-                            <button 
-                                className="btn-primary"
-                                onClick={() => setShowAddForm(!showAddForm)}
-                                disabled={setupRequired}
-                            >
-                                הוסף קונפיגורציה חדשה
-                            </button>
+                            <div>
+                                <h2>קונפיגורציות בנק</h2>
+                                <p className="section-subtitle">נהל את כל הבנקים שלך והריץ פעולות המוניות בקליק</p>
+                            </div>
+                            <div className="section-actions">
+                                <button 
+                                    className="btn-secondary"
+                                    onClick={handleRunAllScrapers}
+                                    disabled={loading || configs.length === 0}
+                                    title="הרץ כריית נתונים לכל הקונפיגורציות הפעילות אחת אחרי השנייה"
+                                >
+                                    🚀 הרץ כריית נתונים לכולן
+                                </button>
+                                <button 
+                                    className="btn-secondary"
+                                    onClick={handleQueueAllForApproval}
+                                    disabled={loading || configs.length === 0}
+                                    title="הכנס אחת אחרי השנייה את כל הקונפיגורציות הפעילות לתור אישור העסקאות"
+                                >
+                                    📦 הוסף את כל הקונפיגורציות לתור אישור
+                                </button>
+                                <button 
+                                    className="btn-primary"
+                                    onClick={() => setShowAddForm(!showAddForm)}
+                                    disabled={setupRequired}
+                                >
+                                    הוסף קונפיגורציה חדשה
+                                </button>
+                            </div>
                         </div>
+
+                        {bulkQueueResult && (
+                            <div className="bulk-queue-summary">
+                                <div className="summary-header">
+                                    <strong>{bulkQueueResult.message || 'ריצה מרוכזת הושלמה'}</strong>
+                                    {bulkQueueResult.totals && (
+                                        <span>
+                                            {`סה"כ ${bulkQueueResult.totals.totalQueued || 0} עסקאות מ-${bulkQueueResult.totals.configsProcessed || 0} קונפיגורציות`}
+                                        </span>
+                                    )}
+                                </div>
+                                <ul>
+                                    {(bulkQueueResult.summary || []).map(item => (
+                                        <li 
+                                            key={item.configId || item.configName}
+                                            className={item.success ? 'success' : 'error'}
+                                        >
+                                            {item.success ? (
+                                                <>
+                                                    <strong>{item.configName}:</strong> {item.queued} עסקאות
+                                                    {item.duplicates ? ` (דילגנו על ${item.duplicates} כפולים)` : ''}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <strong>{item.configName}:</strong> {item.error}
+                                                </>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {bulkScrapeResult && (
+                            <div className="bulk-scrape-summary">
+                                <div className="summary-header">
+                                    <strong>{bulkScrapeResult.message || 'הסתיימה כריית נתונים לכל הקונפיגורציות'}</strong>
+                                    {bulkScrapeResult.totals && (
+                                        <span>
+                                            {`סה"כ ${bulkScrapeResult.totals.totalTransactions || 0} עסקאות מתוך ${bulkScrapeResult.totals.configsProcessed || 0} קונפיגורציות`}
+                                        </span>
+                                    )}
+                                </div>
+                                <ul>
+                                    {(bulkScrapeResult.summary || []).map(item => (
+                                        <li 
+                                            key={`scrape-${item.configId || item.configName}`}
+                                            className={item.success ? 'success' : 'error'}
+                                        >
+                                            {item.success ? (
+                                                <>
+                                                    <strong>{item.configName}:</strong> {item.transactions || 0} עסקאות ({item.accounts || 0} חשבונות)
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <strong>{item.configName}:</strong> {item.error || item.errorType}
+                                                </>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
 
                         {showAddForm && !editingConfig && (
                             <div className="add-config-form">
@@ -516,6 +731,14 @@ const BankScraperPage = () => {
                                                 מספר החשבון נדרש להעברת העסקאות למערכת הראשית.
                                                 <br />
                                                 לשינוי סיסמה: ערוך YAHAV_BANK_PASSWORD בקובץ .env ואתחל את השרת.
+                                            </p>
+                                        </div>
+                                    )}
+                                    {newConfig.bankType && bankTypes[newConfig.bankType]?.envEnabled && newConfig.bankType !== 'yahav' && (
+                                        <div className="bank-info" style={{background: '#e8f5e9', borderColor: '#c8e6c9'}}>
+                                            <p><strong>🌍 קרדנציאלס מ-ENV</strong></p>
+                                            <p className="note">
+                                                הבנק הזה מוגדר למשוך פרטי התחברות ישירות מ-ENV. ניתן להשאיר את השדות ריקים.
                                             </p>
                                         </div>
                                     )}
@@ -629,22 +852,21 @@ const BankScraperPage = () => {
                                             </button>
                                             <button 
                                                 className="btn-secondary"
-                                                onClick={() => {
-                                                    setSelectedConfig(config.id);
-                                                    setActiveTab('transactions');
-                                                    fetchTransactions(config.id);
-                                                }}
-                                            >
-                                                צפה בעסקאות
-                                            </button>
-                                            <button 
-                                                className="btn-secondary"
                                                 onClick={() => handleConvertToTransactions(config.id)}
                                                 disabled={loading}
                                                 style={{background: '#28a745', color: 'white', border: 'none'}}
                                                 title="העבר עסקאות למסך אישור העסקאות הרגיל"
                                             >
                                                 🔄 העבר לאישור
+                                            </button>
+                                            <button 
+                                                className="btn-secondary"
+                                                onClick={() => handleQueueForApproval(config.id)}
+                                                disabled={loading}
+                                                style={{background: '#6f42c1', color: 'white', border: 'none'}}
+                                                title="הכנס את העסקאות לטבלת המתנה לאישור (ב-Supabase)"
+                                            >
+                                                📥 הוסף לתור אישור
                                             </button>
                                             <button 
                                                 className="btn-secondary"
@@ -661,97 +883,6 @@ const BankScraperPage = () => {
                                         </div>
                                     </div>
                                 ))
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'transactions' && (
-                    <div className="transactions-tab">
-                        <div className="section-header">
-                            <h2>עסקאות</h2>
-                            {configs.length > 0 && (
-                                <select 
-                                    value={selectedConfig || ''}
-                                    onChange={(e) => {
-                                        setSelectedConfig(e.target.value);
-                                        if (e.target.value) {
-                                            fetchTransactions(e.target.value);
-                                        }
-                                    }}
-                                >
-                                    <option value="">בחר קונפיגורציה</option>
-                                    {configs.map(config => (
-                                        <option key={config.id} value={config.id}>
-                                            {config.config_name}
-                                        </option>
-                                    ))}
-                                </select>
-                            )}
-                        </div>
-
-                        <div className="transactions-list">
-                            {loading ? (
-                                <div className="loading">טוען עסקאות...</div>
-                            ) : transactions.length === 0 ? (
-                                <div className="no-data">
-                                    {selectedConfig ? 
-                                        'אין עסקאות עבור הקונפיגורציה הנבחרת. נסה להריץ כריית נתונים.' : 
-                                        'בחר קונפיגורציה לצפייה בעסקאות'
-                                    }
-                                </div>
-                            ) : (
-                                <div>
-                                    <div className="transactions-summary">
-                                        <p><strong>נמצאו {transactions.length} עסקאות</strong></p>
-                                        <p>סך הכל: {transactions.reduce((sum, txn) => sum + txn.charged_amount, 0).toLocaleString('he-IL', { 
-                                            minimumFractionDigits: 2, 
-                                            maximumFractionDigits: 2 
-                                        })} ₪</p>
-                                    </div>
-                                    <div className="transactions-table">
-                                        <table>
-                                            <thead>
-                                                <tr>
-                                                    <th>תאריך</th>
-                                                    <th>תיאור</th>
-                                                    <th>סכום</th>
-                                                    <th>מטבע</th>
-                                                    <th>חשבון</th>
-                                                    <th>סטטוס</th>
-                                                    <th>הערות</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {transactions.map(txn => (
-                                                    <tr key={txn.id}>
-                                                        <td>{new Date(txn.transaction_date).toLocaleDateString('he-IL')}</td>
-                                                        <td title={txn.description}>{txn.description}</td>
-                                                        <td className={txn.charged_amount < 0 ? 'negative' : 'positive'}>
-                                                            {txn.charged_amount.toLocaleString('he-IL', { 
-                                                                minimumFractionDigits: 2, 
-                                                                maximumFractionDigits: 2 
-                                                            })} ₪
-                                                        </td>
-                                                        <td>{txn.original_currency}</td>
-                                                        <td>{txn.account_number}</td>
-                                                        <td>
-                                                            <span className={`status ${txn.status}`}>
-                                                                {txn.status === 'completed' ? 'הושלם' : 'ממתין'}
-                                                            </span>
-                                                        </td>
-                                                        <td>
-                                                            {txn.memo && <small>{txn.memo}</small>}
-                                                            {txn.transaction_type === 'installments' && 
-                                                                <small>תשלום {txn.installment_number}/{txn.total_installments}</small>
-                                                            }
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
                             )}
                         </div>
                     </div>

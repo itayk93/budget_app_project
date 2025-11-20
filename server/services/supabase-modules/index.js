@@ -67,6 +67,7 @@ class SupabaseService {
   static createCategory = CategoryService.createCategory;
   static updateCategory = CategoryService.updateCategory;
   static deleteCategory = CategoryService.deleteCategory;
+  static getBusinessCategoryDefault = CategoryService.getBusinessCategoryDefault;
   static getMostFrequentCategoryForBusiness = CategoryService.getMostFrequentCategoryForBusiness;
   static getAutoCategoryForBusiness = CategoryService.getAutoCategoryForBusiness;
 

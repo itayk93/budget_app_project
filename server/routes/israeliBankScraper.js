@@ -90,7 +90,7 @@ router.get('/configs', async (req, res) => {
 });
 
 // Run scraper for specific configuration
-router.post('/configs/:configId/scrape', async (req, res) => {
+router.post('/configs/:configId(\\d+)/scrape', async (req, res) => {
     try {
         const { configId } = req.params;
         const { startDate, endDate } = req.body;
@@ -127,7 +127,7 @@ router.post('/configs/:configId/scrape', async (req, res) => {
 });
 
 // Get scraped transactions for a configuration
-router.get('/configs/:configId/transactions', async (req, res) => {
+router.get('/configs/:configId(\\d+)/transactions', async (req, res) => {
     try {
         const { configId } = req.params;
         const { limit = 100, offset = 0 } = req.query;
@@ -152,7 +152,7 @@ router.get('/configs/:configId/transactions', async (req, res) => {
 });
 
 // Get scraping logs for a configuration
-router.get('/configs/:configId/logs', async (req, res) => {
+router.get('/configs/:configId(\\d+)/logs', async (req, res) => {
     try {
         const { configId } = req.params;
         const { limit = 50 } = req.query;
@@ -176,7 +176,7 @@ router.get('/configs/:configId/logs', async (req, res) => {
 });
 
 // Delete configuration
-router.delete('/configs/:configId', async (req, res) => {
+router.delete('/configs/:configId(\\d+)', async (req, res) => {
     try {
         const { configId } = req.params;
         const userId = req.user.id;
@@ -198,7 +198,7 @@ router.delete('/configs/:configId', async (req, res) => {
 });
 
 // Update configuration
-router.put('/configs/:configId', async (req, res) => {
+router.put('/configs/:configId(\\d+)', async (req, res) => {
     try {
         const { configId } = req.params;
         const { configName, credentials } = req.body;
@@ -227,7 +227,7 @@ router.put('/configs/:configId', async (req, res) => {
 });
 
 // Toggle configuration active status
-router.put('/configs/:configId/toggle', async (req, res) => {
+router.put('/configs/:configId(\\d+)/toggle', async (req, res) => {
     try {
         const { configId } = req.params;
         const userId = req.user.id;
@@ -253,7 +253,7 @@ router.put('/configs/:configId/toggle', async (req, res) => {
 });
 
 // Convert scraped transactions to main transaction format for approval
-router.post('/configs/:configId/convert-to-transactions', async (req, res) => {
+router.post('/configs/:configId(\\d+)/convert-to-transactions', async (req, res) => {
     try {
         const { configId } = req.params;
         const userId = req.user.id;
@@ -285,6 +285,106 @@ router.post('/configs/:configId/convert-to-transactions', async (req, res) => {
         }
     } catch (error) {
         console.error('Error converting transactions:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Get pending transactions for approval
+router.get('/pending', async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { limit = 200 } = req.query;
+
+        const result = await israeliBankScraperService.getPendingTransactions(userId, parseInt(limit));
+        if (result.success) {
+            res.json(result);
+        } else {
+            res.status(400).json(result);
+        }
+    } catch (error) {
+        console.error('Error fetching pending transactions:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Queue all configurations sequentially into the approval queue
+router.post('/configs/bulk/queue-for-approval', async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const includeInactive = req.body?.includeInactive || false;
+
+        const result = await israeliBankScraperService.queueAllConfigsForApproval(
+            userId,
+            includeInactive
+        );
+
+        if (result.success) {
+            res.json({
+                success: true,
+                message: `הוספנו ${result.totals.totalQueued} עסקאות מתוך ${result.totals.configsProcessed} קונפיגורציות.`,
+                summary: result.summary,
+                totals: result.totals
+            });
+        } else {
+            res.status(result.needsSetup ? 412 : 400).json(result);
+        }
+    } catch (error) {
+        console.error('Error queueing all configs for approval:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Run scraper sequentially for all configurations
+router.post('/configs/bulk/scrape', async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { includeInactive = false, startDate = null, endDate = null } = req.body || {};
+
+        const result = await israeliBankScraperService.runAllScrapers(userId, {
+            includeInactive,
+            startDate,
+            endDate
+        });
+
+        if (result.success) {
+            res.json({
+                success: true,
+                message: `השלמנו כריית נתונים עבור ${result.totals.configsProcessed} קונפיגורציות.`,
+                summary: result.summary,
+                totals: result.totals
+            });
+        } else {
+            res.status(result.needsSetup ? 412 : 400).json(result);
+        }
+    } catch (error) {
+        console.error('Error running scrapers for all configs:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Queue converted transactions into a pending-approval table
+router.post('/configs/:configId(\\d+)/queue-for-approval', async (req, res) => {
+    try {
+        const { configId } = req.params;
+        const userId = req.user.id;
+
+        const result = await israeliBankScraperService.queueTransactionsForApproval(
+            parseInt(configId),
+            userId
+        );
+
+        if (result.success) {
+            res.json({
+                success: true,
+                message: result.message,
+                data: result.data,
+                count: result.count
+            });
+        } else {
+            res.status(400).json({ success: false, error: result.error });
+        }
+    } catch (error) {
+        console.error('Error queueing transactions for approval:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });

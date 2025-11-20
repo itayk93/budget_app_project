@@ -108,6 +108,7 @@ class BackwardCompatibleSupabaseService {
   static createCategory = unwrapResponse(CategoryService.createCategory, null);
   static updateCategory = unwrapResponse(CategoryService.updateCategory, null);
   static deleteCategory = unwrapResponse(CategoryService.deleteCategory, null);
+  static getBusinessCategoryDefault = CategoryService.getBusinessCategoryDefault;
   static getMostFrequentCategoryForBusiness = CategoryService.getMostFrequentCategoryForBusiness;
   static getAutoCategoryForBusiness = CategoryService.getAutoCategoryForBusiness;
 

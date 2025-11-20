@@ -445,6 +445,41 @@ class CategoryService {
 
   // ===== BUSINESS-CATEGORY MAPPING =====
 
+  static async getBusinessCategoryDefault(businessName, userId = null, userClient = null) {
+    try {
+      if (!businessName || !userId) {
+        return null;
+      }
+
+      const client = userClient || adminClient;
+      const normalizedName = businessName.trim();
+
+      if (!normalizedName) {
+        return null;
+      }
+
+      const sanitizedName = normalizedName.replace(/[%_]/g, '\\$&');
+
+      const { data, error } = await client
+        .from('business_category_defaults')
+        .select('category_name')
+        .eq('user_id', userId)
+        .ilike('business_name', sanitizedName)
+        .limit(1);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        return data[0].category_name;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error fetching business category default:', error);
+      return null;
+    }
+  }
+
   static async getMostFrequentCategoryForBusiness(businessName, userId = null, userClient = null) {
     try {
       if (!businessName) {
@@ -516,16 +551,22 @@ class CategoryService {
         return null;
       }
       const client = userClient || adminClient;
+      const logger = require('../../utils/logger');
+
+      // First priority: explicit defaults table
+      const defaultCategory = await this.getBusinessCategoryDefault(businessName, userId, client);
+      if (defaultCategory) {
+        logger.debug('AUTO-CATEGORY', 'Using business_category_defaults entry', { businessName, defaultCategory, userId });
+        return defaultCategory;
+      }
 
       // First try to get the most frequent category for this business
       const frequentCategory = await this.getMostFrequentCategoryForBusiness(businessName, userId, client);
       
       if (frequentCategory) {
-        const logger = require('../../utils/logger');
         logger.debug('AUTO-CATEGORY', 'Found frequent category', { businessName, frequentCategory });
         return frequentCategory;
       } else {
-        const logger = require('../../utils/logger');
         logger.debug('AUTO-CATEGORY', 'No frequent category found, using patterns', { businessName });
       }
 

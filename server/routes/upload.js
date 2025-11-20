@@ -12,6 +12,7 @@ const BankYahavService = require('../services/bankYahavService');
 const blinkProcessor = require('../services/blinkProcessor');
 const { authenticateToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
+const fuzz = require('fuzzball');
 const router = express.Router();
 
 // Cleanup old temporary files older than 1 hour
@@ -897,10 +898,49 @@ router.post('/finalize', authenticateToken, async (req, res) => {
 
     // Filter out hidden business transactions - they should not be imported
     const originalCount = finalTransactions.length;
-    finalTransactions = finalTransactions.filter(transaction => 
+    let filteredTransactions = finalTransactions.filter(transaction =>
       transaction.duplicateReason !== 'hidden_business'
     );
-    const hiddenBusinessFilteredCount = originalCount - finalTransactions.length;
+    let hiddenBusinessFilteredCount = originalCount - filteredTransactions.length;
+
+    // Extra safety: make sure any remaining transactions don't belong to hidden businesses
+    const hiddenBusinessRecords = await HiddenBusinessService.getHiddenBusinessNames(req.user.id);
+    if (hiddenBusinessRecords && hiddenBusinessRecords.length > 0) {
+      const hiddenBusinessNames = hiddenBusinessRecords
+        .map(record => record.business_name ? record.business_name.trim() : null)
+        .filter(Boolean);
+      const fuzzyThreshold = 95;
+
+      const beforeFuzzyFilter = filteredTransactions.length;
+      filteredTransactions = filteredTransactions.filter(transaction => {
+        if (!transaction.business_name) {
+          return true;
+        }
+
+        const normalizedBusinessName = transaction.business_name.trim();
+        const match = hiddenBusinessNames.find(hiddenName => {
+          return hiddenName && fuzz.ratio(normalizedBusinessName, hiddenName) >= fuzzyThreshold;
+        });
+
+        if (match) {
+          console.log(`🚫 Hidden business (finalize safeguard) filtered: "${normalizedBusinessName}" matched "${match}"`);
+          transaction.duplicateReason = 'hidden_business';
+          transaction.hiddenBusinessName = match;
+          return false;
+        }
+
+        return true;
+      });
+
+      const fuzzyFiltered = beforeFuzzyFilter - filteredTransactions.length;
+      if (fuzzyFiltered > 0) {
+        hiddenBusinessFilteredCount += fuzzyFiltered;
+        console.log(`🚫 Hidden business fuzzy safeguard removed ${fuzzyFiltered} transactions before import for user ${req.user.id}`);
+      }
+    }
+
+    finalTransactions = filteredTransactions;
+
     if (hiddenBusinessFilteredCount > 0) {
       console.log(`🚫 Hidden business filter: ${originalCount} -> ${finalTransactions.length} transactions (filtered out ${hiddenBusinessFilteredCount} hidden business transactions)`);
     }

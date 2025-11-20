@@ -242,7 +242,8 @@ class BankYahavService {
         const autoCategory = await SupabaseService.getAutoCategoryForBusiness(
           businessName, 
           amount, 
-          'bank_yahav'
+          'bank_yahav',
+          userId
         );
         transaction.category_name = autoCategory || 'הוצאות משתנות';
         

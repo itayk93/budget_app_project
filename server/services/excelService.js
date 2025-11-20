@@ -168,7 +168,7 @@ class ExcelService {
         };
         
         // Apply auto-categorization
-        const autoCategory = await SupabaseService.getAutoCategoryForBusiness(businessName, transaction.amount, 'isracard');
+        const autoCategory = await SupabaseService.getAutoCategoryForBusiness(businessName, transaction.amount, 'isracard', userId);
         transaction.category_name = autoCategory || 'הוצאות משתנות';
         
         // Generate transaction hash
@@ -269,7 +269,7 @@ class ExcelService {
         
         // Apply auto-categorization if no category provided
         if (!transaction.category_name) {
-          const autoCategory = await SupabaseService.getAutoCategoryForBusiness(businessName, transaction.amount, 'max_credit');
+          const autoCategory = await SupabaseService.getAutoCategoryForBusiness(businessName, transaction.amount, 'max_credit', userId);
           transaction.category_name = autoCategory || 'הוצאות משתנות';
         }
         
@@ -333,7 +333,7 @@ class ExcelService {
         };
         
         // Apply auto-categorization
-        const autoCategory = await SupabaseService.getAutoCategoryForBusiness(businessName, transaction.amount, 'leumi');
+        const autoCategory = await SupabaseService.getAutoCategoryForBusiness(businessName, transaction.amount, 'leumi', userId);
         transaction.category_name = autoCategory || 'הוצאות משתנות';
         
         transaction.transaction_hash = SupabaseService.generateTransactionHash(transaction);
@@ -390,7 +390,7 @@ class ExcelService {
         };
         
         // Apply auto-categorization
-        const autoCategory = await SupabaseService.getAutoCategoryForBusiness(businessName, transaction.amount, 'hapoalim');
+        const autoCategory = await SupabaseService.getAutoCategoryForBusiness(businessName, transaction.amount, 'hapoalim', userId);
         transaction.category_name = autoCategory || 'הוצאות משתנות';
         
         transaction.transaction_hash = SupabaseService.generateTransactionHash(transaction);
@@ -461,7 +461,8 @@ class ExcelService {
           const autoCategory = await SupabaseService.getAutoCategoryForBusiness(
             transaction.business_name, 
             transaction.amount, 
-            'budgetlens_export'
+            'budgetlens_export',
+            userId
           );
           transaction.category_name = autoCategory || 'הוצאות משתנות';
           console.log(`🔍 [BudgetLens] Applied fallback category "${transaction.category_name}" for ${transaction.business_name}`);
@@ -527,7 +528,12 @@ class ExcelService {
         
         if (transaction.business_name && transaction.amount && transaction.payment_date) {
           // Apply auto-categorization
-          const autoCategory = await SupabaseService.getAutoCategoryForBusiness(transaction.business_name, transaction.amount, 'generic');
+          const autoCategory = await SupabaseService.getAutoCategoryForBusiness(
+            transaction.business_name,
+            transaction.amount,
+            'generic',
+            userId
+          );
           transaction.category_name = autoCategory || 'הוצאות משתנות';
           
           transaction.transaction_hash = SupabaseService.generateTransactionHash(transaction);
