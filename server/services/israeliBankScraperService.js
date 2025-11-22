@@ -2,6 +2,7 @@ const { CompanyTypes, createScraper } = require('israeli-bank-scrapers');
 const crypto = require('crypto');
 const { supabase } = require('../config/supabase');
 const SupabaseService = require('./supabaseService');
+const HiddenBusinessService = require('./hiddenBusinessService');
 
 const ENCRYPTION_KEY = process.env.BANK_SCRAPER_ENCRYPTION_KEY || 'default-key-change-in-production';
 
@@ -180,8 +181,37 @@ class IsraeliBankScraperService {
                 };
             }
 
-            // Prepare rows for pending table
-            const rows = newTransactions.map(tx => ({
+            // Filter out transactions from hidden businesses before queuing
+            const filteredTransactions = [];
+            let hiddenBusinessCount = 0;
+
+            // Get hidden business names for debugging
+            const hiddenBusinessNames = await HiddenBusinessService.getHiddenBusinessNames(userId);
+            console.log(`📊 [HIDDEN BUSINESS DEBUG] Found ${hiddenBusinessNames.length} hidden businesses for user ${userId}:`,
+                hiddenBusinessNames.map(hb => hb.business_name));
+
+            for (const tx of newTransactions) {
+                if (tx.business_name) {
+                    console.log(`🔍 [HIDDEN BUSINESS CHECK] Checking transaction: "${tx.business_name}" with hash ${tx.transaction_hash} for user ${userId}`);
+                    const isHidden = await HiddenBusinessService.isBusinessHidden(tx.business_name, userId);
+                    if (isHidden) {
+                        hiddenBusinessCount++;
+                        console.log(`🚫 Hidden business filtered from queue: "${tx.business_name}" for user ${userId}`);
+                    } else {
+                        console.log(`✅ Transaction allowed in queue: "${tx.business_name}"`);
+                        filteredTransactions.push(tx);
+                    }
+                } else {
+                    // If no business name, still add to queue
+                    console.log(`❓ Transaction with no business name added to queue: hash ${tx.transaction_hash}`);
+                    filteredTransactions.push(tx);
+                }
+            }
+
+            console.log(`📊 [QUEUE FILTERING SUMMARY] Total new transactions: ${newTransactions.length}, Filtered: ${filteredTransactions.length}, Hidden filtered: ${hiddenBusinessCount}`);
+
+            // Prepare rows for pending table with filtered transactions
+            const rows = filteredTransactions.map(tx => ({
                 user_id: userId,
                 config_id: configId,
                 business_name: tx.business_name,
@@ -235,11 +265,14 @@ class IsraeliBankScraperService {
 
             return {
                 success: true,
-                message: `Queued ${inserted} new transactions for approval from ${conversion.configName}. Skipped ${transactions.length - inserted} duplicates.`,
+                message: hiddenBusinessCount > 0
+                    ? `Queued ${inserted} new transactions for approval from ${conversion.configName}. Skipped ${transactions.length - newTransactions.length} duplicates and ${hiddenBusinessCount} hidden business transactions.`
+                    : `Queued ${inserted} new transactions for approval from ${conversion.configName}. Skipped ${transactions.length - newTransactions.length} duplicates.`,
                 count: inserted,
                 data: {
                     queued: inserted,
-                    duplicates: transactions.length - inserted,
+                    duplicates: transactions.length - newTransactions.length,
+                    hiddenBusinesses: hiddenBusinessCount,
                     configName: conversion.configName,
                     accountNumber: conversion.accountNumber
                 }
@@ -1135,13 +1168,13 @@ class IsraeliBankScraperService {
             let scrapedTransactions;
 
             if (creditCardBanks.includes(config.bank_type)) {
-                // For credit cards: exclude pending status AND zero/negative charged amount (unauthorized transactions)
+                // For credit cards: exclude pending status. The charged_amount filter was too restrictive.
                 const result = await supabase
                     .from('bank_scraper_transactions')
                     .select('*')
                     .eq('config_id', configId)
                     .neq('status', 'pending')  // Exclude pending status transactions
-                    .gt('charged_amount', 0)   // Only include positive amounts
+                    // .gt('charged_amount', 0)   // Temporarily removed to debug ETL issue where only hidden businesses were being processed
                     .order('transaction_date', { ascending: false });
 
                 if (result.error) throw result.error;
