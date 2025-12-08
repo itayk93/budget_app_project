@@ -1,8 +1,13 @@
 const { CompanyTypes, createScraper } = require('israeli-bank-scrapers');
 const crypto = require('crypto');
+const fs = require('fs/promises');
+const path = require('path');
 const { supabase } = require('../config/supabase');
 const SupabaseService = require('./supabaseService');
 const HiddenBusinessService = require('./hiddenBusinessService');
+
+const SCRAPER_DEBUG_DIR = path.join(__dirname, '..', 'logs', 'bank-scraper-debug');
+const SAVE_SCRAPER_DEBUG_ARTIFACTS = process.env.SAVE_SCRAPER_DEBUG_ARTIFACTS === 'true';
 
 const ENCRYPTION_KEY = process.env.BANK_SCRAPER_ENCRYPTION_KEY || 'default-key-change-in-production';
 
@@ -540,6 +545,19 @@ class IsraeliBankScraperService {
             
             const startTime = Date.now();
             const scraper = createScraper(options);
+            const debugTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            let capturedHtml = null;
+            const originalTerminate = scraper.terminate.bind(scraper);
+            scraper.terminate = async function (success) {
+                if (this.page) {
+                    try {
+                        capturedHtml = await this.page.content();
+                    } catch (error) {
+                        console.error('Failed to capture scraper page HTML for debugging:', error);
+                    }
+                }
+                return originalTerminate(success);
+            };
             
             console.log(`🔧 Scraper created, starting scrape...`);
             const scrapeResult = await scraper.scrape(credentials);
@@ -553,6 +571,9 @@ class IsraeliBankScraperService {
             }
 
             if (scrapeResult.success) {
+                if (SAVE_SCRAPER_DEBUG_ARTIFACTS) {
+                    await this.saveScrapeDebugArtifacts(normalizedConfigId, scrapeResult.accounts || [], capturedHtml, debugTimestamp);
+                }
                 // Store transactions and accounts
                 let totalTransactions = 0;
                 for (const account of scrapeResult.accounts) {
@@ -1168,13 +1189,13 @@ class IsraeliBankScraperService {
             let scrapedTransactions;
 
             if (creditCardBanks.includes(config.bank_type)) {
-                // For credit cards: exclude pending status. The charged_amount filter was too restrictive.
+                // For credit cards: exclude pending/unauthorized rows but keep approved credits (negative amounts)
                 const result = await supabase
                     .from('bank_scraper_transactions')
                     .select('*')
                     .eq('config_id', configId)
                     .neq('status', 'pending')  // Exclude pending status transactions
-                    // .gt('charged_amount', 0)   // Temporarily removed to debug ETL issue where only hidden businesses were being processed
+                    .neq('charged_amount', 0)   // Drop zero-amount placeholders but keep positive/negative values (credits)
                     .order('transaction_date', { ascending: false });
 
                 if (result.error) throw result.error;
@@ -1333,6 +1354,84 @@ class IsraeliBankScraperService {
         const crypto = require('crypto');
         const hashString = `${transaction.transaction_date}_${transaction.charged_amount}_${transaction.description}_${transaction.account_number}`;
         return crypto.createHash('md5').update(hashString).digest('hex');
+    }
+
+    async saveScrapeDebugArtifacts(configId, accounts, htmlContent, timestamp) {
+        if (!SAVE_SCRAPER_DEBUG_ARTIFACTS) {
+            return;
+        }
+        if ((!accounts || accounts.length === 0) && !htmlContent) {
+            return;
+        }
+
+        try {
+            await fs.mkdir(SCRAPER_DEBUG_DIR, { recursive: true });
+            const baseName = `config-${configId}-${timestamp}`;
+
+            if (accounts && accounts.length > 0) {
+                const escapeCsv = (value) => {
+                    if (value === undefined || value === null) return '';
+                    const str = `${value}`;
+                    if (/["\n,]/.test(str)) {
+                        return `"${str.replace(/"/g, '""')}"`;
+                    }
+                    return str;
+                };
+
+                const header = [
+                    'accountNumber',
+                    'transactionIndex',
+                    'identifier',
+                    'status',
+                    'transactionDate',
+                    'processedDate',
+                    'chargedAmount',
+                    'originalAmount',
+                    'currency',
+                    'description',
+                    'memo',
+                    'transactionType',
+                    'installmentsNumber',
+                    'installmentsTotal'
+                ];
+
+                const rows = [header.join(',')];
+                accounts.forEach(account => {
+                    const txns = Array.isArray(account.txns) ? account.txns : [];
+                    txns.forEach((txn, index) => {
+                        const cells = [
+                            account.accountNumber || '',
+                            index + 1,
+                            txn.identifier,
+                            txn.status,
+                            txn.date,
+                            txn.processedDate,
+                            txn.chargedAmount,
+                            txn.originalAmount,
+                            txn.chargedCurrency || txn.originalCurrency || '',
+                            txn.description,
+                            txn.memo,
+                            txn.type,
+                            txn.installments?.number,
+                            txn.installments?.total
+                        ].map(escapeCsv);
+                        rows.push(cells.join(','));
+                    });
+                });
+
+                const csvPath = path.join(SCRAPER_DEBUG_DIR, `${baseName}.csv`);
+                await fs.writeFile(csvPath, rows.join('\n'), 'utf8');
+                console.log(`🐛 Saved bank scraper CSV debug file: ${csvPath}`);
+            }
+
+            if (htmlContent) {
+                const htmlPath = path.join(SCRAPER_DEBUG_DIR, `${baseName}.html`);
+                await fs.writeFile(htmlPath, htmlContent, 'utf8');
+                console.log(`🐛 Saved bank scraper HTML debug file: ${htmlPath}`);
+            }
+        } catch (error) {
+            console.error('Failed saving scraper debug artifacts:', error);
+        }
     }
 
     normalizeConfigId(configId) {
