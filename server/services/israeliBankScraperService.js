@@ -5,6 +5,11 @@ const path = require('path');
 const { supabase } = require('../config/supabase');
 const SupabaseService = require('./supabaseService');
 const HiddenBusinessService = require('./hiddenBusinessService');
+const PerplexityService = require('./perplexityService');
+const CategoryService = require('./supabase-modules/CategoryService');
+
+const SCRAPER_DEBUG_DIR = path.join(__dirname, '..', 'logs', 'bank-scraper-debug');
+const SAVE_SCRAPER_DEBUG_ARTIFACTS = process.env.SAVE_SCRAPER_DEBUG_ARTIFACTS === 'true';
 
 const SCRAPER_DEBUG_DIR = path.join(__dirname, '..', 'logs', 'bank-scraper-debug');
 const SAVE_SCRAPER_DEBUG_ARTIFACTS = process.env.SAVE_SCRAPER_DEBUG_ARTIFACTS === 'true';
@@ -17,11 +22,11 @@ class IsraeliBankScraperService {
         const algorithm = 'aes-256-cbc';
         const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
         const iv = crypto.randomBytes(16);
-        
+
         const cipher = crypto.createCipheriv(algorithm, key, iv);
         let encrypted = cipher.update(JSON.stringify(credentials), 'utf8', 'hex');
         encrypted += cipher.final('hex');
-        
+
         // Prepend IV to encrypted data
         return iv.toString('hex') + ':' + encrypted;
     }
@@ -50,11 +55,11 @@ class IsraeliBankScraperService {
     decryptCredentials(encryptedCredentials) {
         const algorithm = 'aes-256-cbc';
         const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
-        
+
         const textParts = encryptedCredentials.split(':');
         const iv = Buffer.from(textParts.shift(), 'hex');
         const encryptedText = textParts.join(':');
-        
+
         const decipher = crypto.createDecipheriv(algorithm, key, iv);
         let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
         decrypted += decipher.final('utf8');
@@ -101,7 +106,7 @@ class IsraeliBankScraperService {
             // For Yahav, check if ENV is properly configured
             if (bankType === 'yahav') {
                 const envEnabled = process.env.BANK_ENV_CREDENTIALS_ENABLED === 'true';
-                const allowedBanks = process.env.BANK_ENV_ALLOWED_BANKS ? 
+                const allowedBanks = process.env.BANK_ENV_ALLOWED_BANKS ?
                     process.env.BANK_ENV_ALLOWED_BANKS.split(',').map(b => b.trim()) : [];
                 const yahavPassword = process.env.YAHAV_BANK_PASSWORD;
 
@@ -122,7 +127,7 @@ class IsraeliBankScraperService {
             }
 
             const encryptedCredentials = this.encryptCredentials(credentials);
-            
+
             const { data, error } = await supabase
                 .from('bank_scraper_configs')
                 .insert([{
@@ -173,7 +178,7 @@ class IsraeliBankScraperService {
             }
 
             const existingHashSet = new Set(existingHashes.map(h => h.transaction_hash));
-            
+
             // Filter out transactions that already exist
             const newTransactions = transactions.filter(tx => !existingHashSet.has(tx.transaction_hash));
 
@@ -478,8 +483,8 @@ class IsraeliBankScraperService {
             if (error) {
                 if (error.code === '42P01') {
                     // Table doesn't exist
-                    return { 
-                        success: false, 
+                    return {
+                        success: false,
                         error: 'הטבלאות של Bank Scraper לא נוצרו עדיין. אנא צור את הטבלאות ב-Supabase Dashboard לפי המדריך.',
                         needsSetup: true
                     };
@@ -542,7 +547,7 @@ class IsraeliBankScraperService {
 
             console.log(`🚀 Starting scraper for ${config.bank_type} (Config ID: ${normalizedConfigId})`);
             console.log(`📅 Date range: ${options.startDate.toISOString().split('T')[0]} to ${options.endDate ? options.endDate.toISOString().split('T')[0] : 'now'}`);
-            
+
             const startTime = Date.now();
             const scraper = createScraper(options);
             const debugTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -558,14 +563,13 @@ class IsraeliBankScraperService {
                 }
                 return originalTerminate(success);
             };
-            
             console.log(`🔧 Scraper created, starting scrape...`);
             const scrapeResult = await scraper.scrape(credentials);
             const executionTime = Math.round((Date.now() - startTime) / 1000);
-            
+
             console.log(`✅ Scrape completed in ${executionTime} seconds`);
             console.log(`📊 Result:`, scrapeResult.success ? 'SUCCESS' : `FAILED - ${scrapeResult.errorType}`);
-            
+
             if (scrapeResult.success && scrapeResult.accounts) {
                 console.log(`🏦 Found ${scrapeResult.accounts.length} accounts with total ${scrapeResult.accounts.reduce((sum, acc) => sum + acc.txns.length, 0)} transactions`);
             }
@@ -613,7 +617,7 @@ class IsraeliBankScraperService {
 
         } catch (error) {
             console.error('❌ Error running scraper:', error);
-            
+
             // Try to determine error type
             let errorType = 'UNKNOWN_ERROR';
             if (error.message.includes('timeout') || error.message.includes('Navigation timeout')) {
@@ -623,10 +627,10 @@ class IsraeliBankScraperService {
             } else if (error.message.includes('blocked') || error.message.includes('captcha')) {
                 errorType = 'ACCOUNT_BLOCKED';
             }
-            
+
             await this.logScrapeAttempt(configId, false, errorType, error.message, 0, 0);
-            return { 
-                success: false, 
+            return {
+                success: false,
                 error: error.message,
                 errorType: errorType,
                 suggestion: this.getErrorSuggestion(errorType)
@@ -696,7 +700,7 @@ class IsraeliBankScraperService {
                             installment_number: txn.installments?.number || null,
                             total_installments: txn.installments?.total || null
                         }]);
-                    
+
                     if (insertError) {
                         console.error('Error storing transaction:', insertError, txn);
                     } else {
@@ -707,7 +711,7 @@ class IsraeliBankScraperService {
                 }
             }
             console.log(`💾 Stored ${storedCount} new transactions for account ${account.accountNumber}. Skipped ${duplicateCount} duplicates.`);
-            
+
             return storedCount;
         } catch (error) {
             console.error('Error storing account data:', error);
@@ -762,7 +766,7 @@ class IsraeliBankScraperService {
     async getScrapedTransactions(configId, userId, limit = 100, offset = 0) {
         try {
             console.log(`🔍 Getting transactions for config ${configId}, user ${userId}`);
-            
+
             // Verify user owns the config
             const { data: config } = await supabase
                 .from('bank_scraper_configs')
@@ -861,7 +865,7 @@ class IsraeliBankScraperService {
             }
 
             const updateData = {};
-            
+
             // Update config name if provided
             if (configName && configName !== config.config_name) {
                 updateData.config_name = configName;
@@ -874,14 +878,14 @@ class IsraeliBankScraperService {
                 const filteredCredentials = Object.fromEntries(
                     Object.entries(credentials).filter(([key, value]) => value && value.trim() !== '')
                 );
-                
+
                 if (Object.keys(filteredCredentials).length > 0) {
                     // Decrypt existing credentials
                     const existingCredentials = this.decryptCredentials(config.credentials_encrypted);
-                    
+
                     // Merge with new credentials
                     const mergedCredentials = { ...existingCredentials, ...filteredCredentials };
-                    
+
                     // Encrypt and update
                     updateData.credentials_encrypted = this.encryptCredentials(mergedCredentials);
                     updateData.updated_at = new Date().toISOString();
@@ -902,7 +906,7 @@ class IsraeliBankScraperService {
 
             if (error) throw error;
             return { success: true, config: updatedConfig };
-            
+
         } catch (error) {
             console.error('Error updating config:', error);
             return { success: false, error: error.message };
@@ -954,7 +958,7 @@ class IsraeliBankScraperService {
     // Get credentials for a bank - use hybrid ENV+DB approach for Yahav, otherwise decrypt stored credentials
     getCredentialsForBank(bankType, encryptedCredentials) {
         const envCredentialsEnabled = process.env.BANK_ENV_CREDENTIALS_ENABLED === 'true';
-        const allowedBanks = process.env.BANK_ENV_ALLOWED_BANKS ? 
+        const allowedBanks = process.env.BANK_ENV_ALLOWED_BANKS ?
             process.env.BANK_ENV_ALLOWED_BANKS.split(',').map(b => b.trim()) : [];
 
         console.log(`🔐 Getting credentials for ${bankType}, ENV enabled: ${envCredentialsEnabled}, Allowed: [${allowedBanks.join(', ')}]`);
@@ -996,11 +1000,11 @@ class IsraeliBankScraperService {
             console.error(`❌ Failed to decrypt DB credentials:`, error.message);
             throw new Error('Failed to decrypt database credentials for Yahav. Please check your configuration.');
         }
-        
+
         // Get password from ENV
         const envPassword = process.env.YAHAV_BANK_PASSWORD;
         console.log(`🌍 ENV password loaded: ${envPassword ? 'YES' : 'NO'}`);
-        
+
         // Validate ENV password
         if (!envPassword || envPassword.trim() === '' || envPassword.includes('your_') || envPassword.includes('_here')) {
             throw new Error('Missing or invalid YAHAV_BANK_PASSWORD in ENV. Please update your .env file with actual password.');
@@ -1013,7 +1017,7 @@ class IsraeliBankScraperService {
             if (!dbCredentials.username) missingFields.push('שם משתמש');
             if (!dbCredentials.nationalID) missingFields.push('תעודת זהות');
             if (!dbCredentials.accountNumber) missingFields.push('מספר חשבון');
-            
+
             throw new Error(`חסרים שדות נדרשים בקונפיגורציה: ${missingFields.join(', ')}. אנא ערוך את הקונפיגורציה והוסף את מספר החשבון (${dbCredentials.accountNumber ? 'קיים' : 'חסר'}).`);
         }
 
@@ -1038,22 +1042,22 @@ class IsraeliBankScraperService {
                 credentials.password = process.env.YAHAV_BANK_PASSWORD;
                 credentials.nationalID = process.env.YAHAV_BANK_NATIONAL_ID;
                 break;
-            
+
             case 'hapoalim':
                 credentials.userCode = process.env.HAPOALIM_BANK_USER_CODE;
                 credentials.password = process.env.HAPOALIM_BANK_PASSWORD;
                 break;
-            
+
             case 'leumi':
                 credentials.username = process.env.LEUMI_BANK_USERNAME;
                 credentials.password = process.env.LEUMI_BANK_PASSWORD;
                 break;
-            
+
             case 'visaCal':
                 credentials.username = process.env.VISA_CAL_USERNAME;
                 credentials.password = process.env.VISA_CAL_PASSWORD;
                 break;
-            
+
             // Add more banks as needed
             default:
                 throw new Error(`ENV credentials not configured for bank type: ${bankType}`);
@@ -1075,9 +1079,9 @@ class IsraeliBankScraperService {
     // Check if a bank is configured to use ENV credentials
     isBankUsingEnvCredentials(bankType) {
         const envCredentialsEnabled = process.env.BANK_ENV_CREDENTIALS_ENABLED === 'true';
-        const allowedBanks = process.env.BANK_ENV_ALLOWED_BANKS ? 
+        const allowedBanks = process.env.BANK_ENV_ALLOWED_BANKS ?
             process.env.BANK_ENV_ALLOWED_BANKS.split(',').map(b => b.trim()) : [];
-        
+
         return envCredentialsEnabled && allowedBanks.includes(bankType);
     }
 
@@ -1098,7 +1102,7 @@ class IsraeliBankScraperService {
             if (bankType === 'yahav') {
                 // Test hybrid mode for Yahav
                 const envPassword = process.env.YAHAV_BANK_PASSWORD;
-                
+
                 if (!envPassword || envPassword.trim() === '' || envPassword.includes('your_') || envPassword.includes('_here')) {
                     return {
                         success: false,
@@ -1146,7 +1150,7 @@ class IsraeliBankScraperService {
     async convertScrapedTransactionsToMainFormat(configId, userId) {
         try {
             console.log(`🔄 Converting scraped transactions from config ${configId} to main format...`);
-            
+
             // Get configuration to extract account number
             const { data: config } = await supabase
                 .from('bank_scraper_configs')
@@ -1280,7 +1284,12 @@ class IsraeliBankScraperService {
                 if (finalBusinessName) {
                     lookupNames.push(finalBusinessName);
                 }
-                if (businessName && businessName !== finalBusinessName) {
+                // Add original description (trimmed) to lookup names to support matching against uncleaned names in defaults table
+                if (txn.description && txn.description.trim() !== finalBusinessName) {
+                    lookupNames.push(txn.description.trim());
+                }
+
+                if (businessName && businessName !== finalBusinessName && businessName !== txn.description?.trim()) {
                     lookupNames.push(businessName);
                 }
 
@@ -1292,11 +1301,41 @@ class IsraeliBankScraperService {
                     }
                 }
 
+                // If no default category found, try Perplexity smart categorization for expenses
+                if (!transaction.category_name && parseFloat(transaction.amount) <= 0) {
+                    try {
+                        // Fetch all categories for the user (cached if possible, but for now fetch fresh to be safe/simple)
+                        // Optimization: In a real high-volume scenario, we should cache this list outside the loop
+                        const categoriesResult = await CategoryService.getCategories(userId);
+                        const userCategories = categoriesResult.success ? categoriesResult.data.map(c => c.name) : [];
+
+                        if (userCategories.length > 0) {
+                            const smartCategory = await PerplexityService.categorizeTransaction(
+                                transaction.business_name, // Use the clean/formatted name
+                                userCategories
+                            );
+
+                            if (smartCategory) {
+                                console.log(`🧠 Knowledge: Perplexity categorized "${transaction.business_name}" as "${smartCategory}"`);
+                                transaction.category_name = smartCategory;
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error in smart categorization:', err);
+                        // Continue to fallback
+                    }
+                }
+
+                // Final Fallback if still no category
+                if (!transaction.category_name) {
+                    transaction.category_name = parseFloat(transaction.amount) <= 0 ? 'הוצאות משתנות' : 'הכנסות משתנות';
+                }
+
                 return transaction;
             }));
 
             console.log(`✅ Converted ${convertedTransactions.length} transactions from scraper format to main format`);
-            
+
             return {
                 success: true,
                 transactions: convertedTransactions,
@@ -1314,15 +1353,13 @@ class IsraeliBankScraperService {
     // Clean business name from Hebrew formatting issues and problematic SQL characters
     cleanBusinessName(description) {
         if (!description) return 'עסקה ללא תיאור';
-        
+
         // Remove RTL marks, formatting characters, and SQL-problematic characters
         return description
             .replace(/[\u200E\u200F\u202A\u202B\u202C\u202D\u202E\u061C]/g, '') // RTL marks
             .replace(/[()[\]{}]/g, '') // Brackets
             .replace(/^[‫]+|[‫]+$/g, '') // Leading/trailing Hebrew punctuation
             .replace(/\//g, ' ') // Replace slashes with spaces
-            .replace(/[״""''`]/g, '') // Remove quotes and apostrophes
-            .replace(/[';]/g, '') // Remove semicolons and single quotes (SQL injection prevention)
             .replace(/\s+/g, ' ') // Replace multiple spaces with single space
             .trim();
     }
@@ -1331,9 +1368,9 @@ class IsraeliBankScraperService {
         if (!description || typeof description !== 'string') {
             return null;
         }
-        
+
         const desc = description.trim();
-        
+
         // Pattern for Bit transfers: "העברה בביט ל [name]"
         let recipientMatch = desc.match(/העברה בביט ל(.+)/);
         if (recipientMatch) {
