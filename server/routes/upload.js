@@ -10,6 +10,7 @@ const ComprehensiveExcelService = require('../services/comprehensiveExcelService
 const WorkingExcelService = require('../services/workingExcelService');
 const BankYahavService = require('../services/bankYahavService');
 const blinkProcessor = require('../services/blinkProcessor');
+const israeliBankScraperService = require('../services/israeliBankScraperService');
 const { authenticateToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const fuzz = require('fuzzball');
