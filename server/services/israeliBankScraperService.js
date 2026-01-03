@@ -11,9 +11,6 @@ const CategoryService = require('./supabase-modules/CategoryService');
 const SCRAPER_DEBUG_DIR = path.join(__dirname, '..', 'logs', 'bank-scraper-debug');
 const SAVE_SCRAPER_DEBUG_ARTIFACTS = process.env.SAVE_SCRAPER_DEBUG_ARTIFACTS === 'true';
 
-const SCRAPER_DEBUG_DIR = path.join(__dirname, '..', 'logs', 'bank-scraper-debug');
-const SAVE_SCRAPER_DEBUG_ARTIFACTS = process.env.SAVE_SCRAPER_DEBUG_ARTIFACTS === 'true';
-
 const ENCRYPTION_KEY = process.env.BANK_SCRAPER_ENCRYPTION_KEY || 'default-key-change-in-production';
 
 class IsraeliBankScraperService {
