@@ -1,0 +1,259 @@
+.recipients-page {
+  direction: rtl;
+  padding: 24px;
+  color: #0f172a;
+  background: radial-gradient(circle at 20% 20%, #f7f8ff 0, #ffffff 45%, #ffffff 100%);
+  text-align: right;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  text-align: right;
+}
+
+.eyebrow {
+  font-size: 14px;
+  color: #6366f1;
+  letter-spacing: 0.4px;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  color: #475569;
+  margin-top: 4px;
+}
+
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.preset-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.preset-btn {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.preset-btn.active {
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 10px 30px rgba(99, 102, 241, 0.25);
+}
+
+.date-range {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.date-field input {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 14px;
+  min-width: 150px;
+  text-align: right;
+}
+
+.refresh-btn {
+  background: #0ea5e9;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 9px 14px;
+  cursor: pointer;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(14, 165, 233, 0.25);
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+  text-align: right;
+}
+
+.summary-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+}
+
+.summary-card.highlight {
+  background: linear-gradient(135deg, #eef2ff, #ecfeff);
+  border-color: transparent;
+}
+
+.summary-card .label {
+  color: #475569;
+  font-size: 14px;
+  text-align: right;
+}
+
+.summary-card .value {
+  font-size: 28px;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+.summary-card .hint {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.chart-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+  height: 360px;
+  direction: rtl;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+
+.chart-subtitle {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.recipients-section {
+  margin-top: 28px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.recipients-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.recipient-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: right;
+}
+
+.recipient-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.recipient-name {
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.recipient-amount {
+  color: #0ea5e9;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.badge {
+  background: #eef2ff;
+  color: #4338ca;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.chip {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.notes {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 8px;
+  border: 1px dashed #e2e8f0;
+}
+
+.note-line {
+  font-size: 13px;
+  color: #334155;
+  padding: 4px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.note-line:last-child {
+  border-bottom: none;
+}
+
+.loading-state,
+.error-state,
+.empty-state {
+  margin: 24px 0;
+  text-align: center;
+  color: #475569;
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .date-range {
+    flex-wrap: wrap;
+  }
+}

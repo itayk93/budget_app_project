@@ -8,6 +8,7 @@ import App from './App';
 import { AuthProvider } from './contexts/AuthContext';
 import './index.css';
 import './styles/global-forms.css';
+import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 
 // Suppress React Beautiful DnD defaultProps warning in development
 if (process.env.NODE_ENV === 'development') {
@@ -55,3 +56,5 @@ root.render(
     </QueryClientProvider>
   </React.StrictMode>
 );
+
+serviceWorkerRegistration.register();
