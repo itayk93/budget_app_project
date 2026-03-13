@@ -81,7 +81,7 @@ const TransactionSearchModal = ({ isOpen, onClose }) => {
     const cleaned = rawQuery.replace(/\s+/g, '');
 
     // Patterns
-    const rangeMatch = cleaned.match(/^₪?(-?\d+(?:[.,]\d+)?)\-(-?\d+(?:[.,]\d+)?)₪?$/);
+    const rangeMatch = cleaned.match(/^₪?(-?\d+(?:[.,]\d+)?)-(-?\d+(?:[.,]\d+)?)₪?$/);
     const compMatch = cleaned.match(/^(<=|>=|<|>|=)?₪?(-?\d+(?:[.,]\d+)?)₪?$/);
 
     const toNumber = (str) => {

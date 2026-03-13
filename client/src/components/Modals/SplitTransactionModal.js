@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Modal from '../Common/Modal';
 import CategoryDropdown from '../Upload/CategoryDropdown';
 import { transactionsAPI } from '../../services/api';
@@ -17,6 +17,28 @@ const SplitTransactionModal = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [categories, setCategories] = useState([]);
+
+  const loadCategories = useCallback(async () => {
+    try {
+      console.log('🔍 [SplitTransactionModal] Starting to load categories...');
+      const response = await transactionsAPI.getUniqueCategories();
+      console.log('🔍 [SplitTransactionModal] Categories API response:', response);
+      
+      if (response && response.categories) {
+        console.log('✅ [SplitTransactionModal] Categories loaded successfully:', response.categories.length, 'categories');
+        setCategories(response.categories);
+      } else if (response && Array.isArray(response)) {
+        console.log('✅ [SplitTransactionModal] Categories loaded as array:', response.length, 'categories');
+        setCategories(response);
+      } else {
+        console.warn('⚠️ [SplitTransactionModal] No categories found in response');
+        setCategories([]);
+      }
+    } catch (error) {
+      console.error('❌ Error loading categories:', error);
+      setCategories([]);
+    }
+  }, []);
 
   useEffect(() => {
     if (isOpen && transaction) {
@@ -38,30 +60,7 @@ const SplitTransactionModal = ({
       // טען קטגוריות
       loadCategories();
     }
-  }, [isOpen, transaction]);
-
-  const loadCategories = async () => {
-    try {
-      console.log('🔍 [SplitTransactionModal] Starting to load categories...');
-      console.log('🔍 [SplitTransactionModal] Transaction:', transaction?.id, transaction?.business_name);
-      const response = await transactionsAPI.getUniqueCategories();
-      console.log('🔍 [SplitTransactionModal] Categories API response:', response);
-      
-      if (response && response.categories) {
-        console.log('✅ [SplitTransactionModal] Categories loaded successfully:', response.categories.length, 'categories');
-        setCategories(response.categories);
-      } else if (response && Array.isArray(response)) {
-        console.log('✅ [SplitTransactionModal] Categories loaded as array:', response.length, 'categories');
-        setCategories(response);
-      } else {
-        console.warn('⚠️ [SplitTransactionModal] No categories found in response');
-        setCategories([]);
-      }
-    } catch (error) {
-      console.error('❌ Error loading categories:', error);
-      setCategories([]);
-    }
-  };
+  }, [isOpen, transaction, loadCategories]);
 
   const handleSplitChange = (index, field, value) => {
     const newSplits = [...splits];

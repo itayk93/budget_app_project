@@ -15,7 +15,6 @@ import {
   LineElement,
   PointElement,
 } from 'chart.js';
-import { Bar as ChartJSBar } from 'react-chartjs-2';
 import '../../pages/Dashboard/Dashboard.css'; // Reuse existing dashboard styles
 import './DemoDashboard.css';
 
@@ -57,7 +56,7 @@ const DemoDashboard = () => {
         setDashboardData(data);
         
         // Set default cash flow if not set
-        if (!selectedCashFlow && data.cash_flows?.[0]) {
+        if (!selectedCashFlow?.id && data.cash_flows?.[0]) {
           setSelectedCashFlow(data.cash_flows[0]);
         }
       } catch (error) {
@@ -98,13 +97,6 @@ const DemoDashboard = () => {
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('he-IL');
-  };
-
-  const getMonthName = (date) => {
-    return date.toLocaleDateString('he-IL', { 
-      year: 'numeric', 
-      month: 'long' 
-    });
   };
 
   const formatMonth = (date) => {

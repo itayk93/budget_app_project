@@ -12,13 +12,6 @@ const TransactionActionsModal = ({ isOpen, onClose, transaction, categoryName, o
     onClose();
   };
 
-  const handleBackdropClick = (e) => {
-    // Only close if clicking on the backdrop itself, not on any child elements
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="transaction-actions-modal" size="small">
       <div className="modal-header">

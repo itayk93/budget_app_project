@@ -412,7 +412,6 @@ const CategoryCard = ({ categoryName, categoryData, formatCurrency, formatDate, 
   // Modal handlers
   const handleCategoryTransfer = async (transactionId, newCategory) => {
     try {
-      const transaction = transactions?.find(t => t.id === transactionId);
       await transactionsAPI.update(transactionId, { category_name: newCategory });
       if (onDataChange) {
         onDataChange();
